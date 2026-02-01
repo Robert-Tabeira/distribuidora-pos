@@ -20,6 +20,7 @@ export default function ProductosPage() {
   const [editUnit, setEditUnit] = useState<'unidad' | 'kg' | 'litro' | 'caja' | 'funda'>('unidad')
   const [editCategory, setEditCategory] = useState<string | null>(null)
   const [editLocation, setEditLocation] = useState('')
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -71,10 +72,12 @@ export default function ProductosPage() {
     setEditUnit(product.unit)
     setEditCategory(product.category_id)
     setEditLocation(product.location || '')
+    setShowLocationDropdown(false)
   }
 
   function closeEditModal() {
     setEditingProduct(null)
+    setShowLocationDropdown(false)
   }
 
   async function saveProduct() {
@@ -425,13 +428,21 @@ export default function ProductosPage() {
               <input
                 type="text"
                 value={editLocation}
-                onChange={(e) => setEditLocation(e.target.value)}
+                onChange={(e) => {
+                  setEditLocation(e.target.value)
+                  setShowLocationDropdown(true)
+                }}
+                onFocus={() => setShowLocationDropdown(true)}
+                onBlur={() => {
+                  // Delay para permitir click en opción
+                  setTimeout(() => setShowLocationDropdown(false), 150)
+                }}
                 placeholder="Ej: Pasillo 3, Heladera"
                 className="input"
                 autoComplete="off"
               />
               {/* Dropdown de sugerencias */}
-              {editLocation.trim() && locations.filter(loc => 
+              {showLocationDropdown && editLocation.trim() && locations.filter(loc => 
                 loc.toLowerCase().includes(editLocation.toLowerCase()) && 
                 loc.toLowerCase() !== editLocation.toLowerCase()
               ).length > 0 && (
@@ -445,7 +456,10 @@ export default function ProductosPage() {
                       <button
                         key={loc}
                         type="button"
-                        onClick={() => setEditLocation(loc)}
+                        onClick={() => {
+                          setEditLocation(loc)
+                          setShowLocationDropdown(false)
+                        }}
                         className="w-full px-4 py-3 text-left hover:bg-surface-hover transition-colors flex items-center gap-2"
                       >
                         <svg className="w-4 h-4 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
