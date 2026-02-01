@@ -418,39 +418,44 @@ export default function ProductosPage() {
             </div>
 
             {/* Ubicación */}
-            <div className="mb-6">
+            <div className="mb-6 relative">
               <label className="block text-sm font-semibold text-text-muted mb-2">
                 Ubicación <span className="text-text-light">(opcional)</span>
               </label>
               <input
                 type="text"
-                list="locations-list"
                 value={editLocation}
                 onChange={(e) => setEditLocation(e.target.value)}
                 placeholder="Ej: Pasillo 3, Heladera"
                 className="input"
+                autoComplete="off"
               />
-              <datalist id="locations-list">
-                {locations.map(loc => (
-                  <option key={loc} value={loc} />
-                ))}
-              </datalist>
-              {locations.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {locations.map(loc => (
-                    <button
-                      key={loc}
-                      type="button"
-                      onClick={() => setEditLocation(loc)}
-                      className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
-                        editLocation === loc
-                          ? 'bg-primary text-white'
-                          : 'bg-bg text-text-muted hover:bg-surface-hover'
-                      }`}
-                    >
-                      {loc}
-                    </button>
-                  ))}
+              {/* Dropdown de sugerencias */}
+              {editLocation.trim() && locations.filter(loc => 
+                loc.toLowerCase().includes(editLocation.toLowerCase()) && 
+                loc.toLowerCase() !== editLocation.toLowerCase()
+              ).length > 0 && (
+                <div className="absolute left-0 right-0 top-full mt-1 bg-surface border border-border rounded-xl shadow-lg z-10 overflow-hidden">
+                  {locations
+                    .filter(loc => 
+                      loc.toLowerCase().includes(editLocation.toLowerCase()) && 
+                      loc.toLowerCase() !== editLocation.toLowerCase()
+                    )
+                    .map(loc => (
+                      <button
+                        key={loc}
+                        type="button"
+                        onClick={() => setEditLocation(loc)}
+                        className="w-full px-4 py-3 text-left hover:bg-surface-hover transition-colors flex items-center gap-2"
+                      >
+                        <svg className="w-4 h-4 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span>{loc}</span>
+                      </button>
+                    ))
+                  }
                 </div>
               )}
             </div>
