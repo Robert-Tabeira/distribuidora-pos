@@ -43,7 +43,39 @@ export default function MostradorPage() {
     }
     setEmployee(JSON.parse(stored))
     loadData()
+    
+    // Cargar borrador si existe
+    const draft = localStorage.getItem('cartDraft')
+    const draftCustomer = localStorage.getItem('cartDraftCustomer')
+    if (draft) {
+      try {
+        setCart(JSON.parse(draft))
+      } catch (e) {
+        console.error('Error al cargar borrador:', e)
+      }
+    }
+    if (draftCustomer) {
+      setCustomerName(draftCustomer)
+    }
   }, [router])
+
+  // Guardar borrador automáticamente cuando cambia el carrito
+  useEffect(() => {
+    if (cart.length > 0) {
+      localStorage.setItem('cartDraft', JSON.stringify(cart))
+    } else {
+      localStorage.removeItem('cartDraft')
+    }
+  }, [cart])
+
+  // Guardar nombre del cliente como borrador
+  useEffect(() => {
+    if (customerName.trim()) {
+      localStorage.setItem('cartDraftCustomer', customerName)
+    } else {
+      localStorage.removeItem('cartDraftCustomer')
+    }
+  }, [customerName])
 
   async function loadData() {
     const [categoriesRes, productsRes] = await Promise.all([
@@ -58,6 +90,8 @@ export default function MostradorPage() {
 
   function logout() {
     localStorage.removeItem('employee')
+    localStorage.removeItem('cartDraft')
+    localStorage.removeItem('cartDraftCustomer')
     router.push('/login')
   }
 
@@ -157,6 +191,9 @@ export default function MostradorPage() {
     setCart([])
     setCustomerName('')
     setShowCart(false)
+    // Limpiar borradores
+    localStorage.removeItem('cartDraft')
+    localStorage.removeItem('cartDraftCustomer')
   }
 
   // Agregar producto nuevo a la BD con status pending
