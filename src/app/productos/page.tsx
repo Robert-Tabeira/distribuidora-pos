@@ -10,6 +10,7 @@ export default function ProductosPage() {
   const [employee, setEmployee] = useState<Employee | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [locations, setLocations] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'pending' | 'complete'>('pending')
   
@@ -43,7 +44,16 @@ export default function ProductosPage() {
       supabase.from('categories').select('*').order('order_position')
     ])
 
-    if (productsRes.data) setProducts(productsRes.data)
+    if (productsRes.data) {
+      setProducts(productsRes.data)
+      // Extraer ubicaciones únicas
+      const uniqueLocations = [...new Set(
+        productsRes.data
+          .map(p => p.location)
+          .filter((loc): loc is string => loc !== null && loc.trim() !== '')
+      )].sort()
+      setLocations(uniqueLocations)
+    }
     if (categoriesRes.data) setCategories(categoriesRes.data)
     setLoading(false)
   }
@@ -73,13 +83,15 @@ export default function ProductosPage() {
     setSaving(true)
 
     try {
+      const newLocation = editLocation.trim() || null
+      
       const { error } = await supabase
         .from('products')
         .update({
           name: editName.trim(),
           unit: editUnit,
           category_id: editCategory,
-          location: editLocation.trim() || null,
+          location: newLocation,
           status: 'complete',
         })
         .eq('id', editingProduct.id)
@@ -89,9 +101,14 @@ export default function ProductosPage() {
       // Actualizar lista local
       setProducts(products.map(p => 
         p.id === editingProduct.id 
-          ? { ...p, name: editName.trim(), unit: editUnit, category_id: editCategory, location: editLocation.trim() || null, status: 'complete' as const }
+          ? { ...p, name: editName.trim(), unit: editUnit, category_id: editCategory, location: newLocation, status: 'complete' as const }
           : p
       ))
+
+      // Agregar ubicación a la lista si es nueva
+      if (newLocation && !locations.includes(newLocation)) {
+        setLocations([...locations, newLocation].sort())
+      }
 
       closeEditModal()
       if (navigator.vibrate) navigator.vibrate(50)
@@ -407,11 +424,35 @@ export default function ProductosPage() {
               </label>
               <input
                 type="text"
+                list="locations-list"
                 value={editLocation}
                 onChange={(e) => setEditLocation(e.target.value)}
                 placeholder="Ej: Pasillo 3, Heladera"
                 className="input"
               />
+              <datalist id="locations-list">
+                {locations.map(loc => (
+                  <option key={loc} value={loc} />
+                ))}
+              </datalist>
+              {locations.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {locations.map(loc => (
+                    <button
+                      key={loc}
+                      type="button"
+                      onClick={() => setEditLocation(loc)}
+                      className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+                        editLocation === loc
+                          ? 'bg-primary text-white'
+                          : 'bg-bg text-text-muted hover:bg-surface-hover'
+                      }`}
+                    >
+                      {loc}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3">
