@@ -224,6 +224,26 @@ export default function AdminPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
+
+          {/* Ubicaciones */}
+          <button
+            onClick={() => router.push('/ubicaciones')}
+            className="w-full card p-4 flex items-center gap-4 active:scale-[0.98] transition-all text-left"
+          >
+            <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 flex items-center justify-center">
+              <svg className="w-7 h-7 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <div className="font-semibold text-text">Ubicaciones</div>
+              <div className="text-sm text-text-muted">Gestionar ubicaciones de productos</div>
+            </div>
+            <svg className="w-5 h-5 text-text-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
         </div>
 
         {/* Accesos a otras pantallas */}
