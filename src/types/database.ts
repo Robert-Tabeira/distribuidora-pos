@@ -26,7 +26,7 @@ export type Database = {
           id: string
           category_id: string | null
           name: string
-          unit: 'unidad' | 'kg' | 'litro'
+          unit: 'unidad' | 'kg' | 'litro' | 'caja' | 'funda'
           status: 'pending' | 'complete'
           location: string | null
           created_at: string
@@ -35,7 +35,7 @@ export type Database = {
           id?: string
           category_id?: string | null
           name: string
-          unit?: 'unidad' | 'kg' | 'litro'
+          unit?: 'unidad' | 'kg' | 'litro' | 'caja' | 'funda'
           status?: 'pending' | 'complete'
           location?: string | null
           created_at?: string
@@ -44,7 +44,7 @@ export type Database = {
           id?: string
           category_id?: string | null
           name?: string
-          unit?: 'unidad' | 'kg' | 'litro'
+          unit?: 'unidad' | 'kg' | 'litro' | 'caja' | 'funda'
           status?: 'pending' | 'complete'
           location?: string | null
           created_at?: string
@@ -111,6 +111,7 @@ export type Database = {
           quantity: number
           weight: number | null
           volume: number | null
+          box_detail: string | null
           notes: string | null
           created_at: string
         }
@@ -122,6 +123,7 @@ export type Database = {
           quantity?: number
           weight?: number | null
           volume?: number | null
+          box_detail?: string | null
           notes?: string | null
           created_at?: string
         }
@@ -133,6 +135,7 @@ export type Database = {
           quantity?: number
           weight?: number | null
           volume?: number | null
+          box_detail?: string | null
           notes?: string | null
           created_at?: string
         }
@@ -157,5 +160,7 @@ export type CartItem = {
   quantity: number
   weight?: number
   volume?: number
+  boxDetail?: string
   notes?: string
+  checked?: boolean
 }

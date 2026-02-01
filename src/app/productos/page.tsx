@@ -16,7 +16,7 @@ export default function ProductosPage() {
   // Modal de edición
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [editName, setEditName] = useState('')
-  const [editUnit, setEditUnit] = useState<'unidad' | 'kg' | 'litro'>('unidad')
+  const [editUnit, setEditUnit] = useState<'unidad' | 'kg' | 'litro' | 'caja' | 'funda'>('unidad')
   const [editCategory, setEditCategory] = useState<string | null>(null)
   const [editLocation, setEditLocation] = useState('')
   const [saving, setSaving] = useState(false)
@@ -128,7 +128,9 @@ export default function ProductosPage() {
     switch (unit) {
       case 'kg': return '⚖️'
       case 'litro': return '💧'
-      default: return '📦'
+      case 'caja': return '📦'
+      case 'funda': return '🛍️'
+      default: return '🔢'
     }
   }
 
@@ -342,15 +344,34 @@ export default function ProductosPage() {
             {/* Unidad */}
             <div className="mb-4">
               <label className="block text-sm font-semibold text-text-muted mb-2">Se vende por</label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-2 mb-2">
                 {[
-                  { value: 'unidad', label: 'Unidad', icon: '📦' },
+                  { value: 'unidad', label: 'Unidad', icon: '🔢' },
                   { value: 'kg', label: 'Kilo', icon: '⚖️' },
                   { value: 'litro', label: 'Litro', icon: '💧' },
                 ].map(opt => (
                   <button
                     key={opt.value}
-                    onClick={() => setEditUnit(opt.value as 'unidad' | 'kg' | 'litro')}
+                    onClick={() => setEditUnit(opt.value as 'unidad' | 'kg' | 'litro' | 'caja' | 'funda')}
+                    className={`p-4 rounded-xl border-2 transition-all ${
+                      editUnit === opt.value
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border'
+                    }`}
+                  >
+                    <div className="text-2xl mb-1">{opt.icon}</div>
+                    <div className="text-sm font-medium">{opt.label}</div>
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: 'caja', label: 'Caja', icon: '📦' },
+                  { value: 'funda', label: 'Funda', icon: '🛍️' },
+                ].map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setEditUnit(opt.value as 'unidad' | 'kg' | 'litro' | 'caja' | 'funda')}
                     className={`p-4 rounded-xl border-2 transition-all ${
                       editUnit === opt.value
                         ? 'border-primary bg-primary/10'

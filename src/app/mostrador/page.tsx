@@ -25,6 +25,11 @@ export default function MostradorPage() {
   const [modalWeight, setModalWeight] = useState('')
   const [modalVolume, setModalVolume] = useState('')
   
+  // Para cajas/fundas
+  const [modalBoxes, setModalBoxes] = useState(1)
+  const [modalFraction, setModalFraction] = useState<0 | 0.5 | 0.25>(0)
+  const [modalExtraUnits, setModalExtraUnits] = useState(0)
+  
   // Para agregar producto nuevo
   const [addingNew, setAddingNew] = useState(false)
 
@@ -73,6 +78,9 @@ export default function MostradorPage() {
     setModalQuantity(1)
     setModalWeight('')
     setModalVolume('')
+    setModalBoxes(1)
+    setModalFraction(0)
+    setModalExtraUnits(0)
     if (navigator.vibrate) navigator.vibrate(20)
   }
 
@@ -83,11 +91,48 @@ export default function MostradorPage() {
   function addToCart() {
     if (!modalProduct) return
 
+    // Generar descripción de caja/funda
+    let boxDetail: string | undefined
+    if (modalProduct.unit === 'caja' || modalProduct.unit === 'funda') {
+      const unitLabel = modalProduct.unit === 'caja' ? 'caja' : 'funda'
+      const unitLabelPlural = modalProduct.unit === 'caja' ? 'cajas' : 'fundas'
+      
+      let parts: string[] = []
+      
+      // Cajas/fundas enteras + fracción
+      const total = modalBoxes + modalFraction
+      if (total > 0) {
+        if (modalFraction === 0.5) {
+          if (modalBoxes === 0) {
+            parts.push(`½ ${unitLabel}`)
+          } else {
+            parts.push(`${modalBoxes} y ½ ${modalBoxes === 1 ? unitLabel : unitLabelPlural}`)
+          }
+        } else if (modalFraction === 0.25) {
+          if (modalBoxes === 0) {
+            parts.push(`¼ ${unitLabel}`)
+          } else {
+            parts.push(`${modalBoxes} y ¼ ${modalBoxes === 1 ? unitLabel : unitLabelPlural}`)
+          }
+        } else {
+          parts.push(`${modalBoxes} ${modalBoxes === 1 ? unitLabel : unitLabelPlural}`)
+        }
+      }
+      
+      // Unidades extra
+      if (modalExtraUnits > 0) {
+        parts.push(`${modalExtraUnits}u`)
+      }
+      
+      boxDetail = parts.join(' + ')
+    }
+
     const newItem: CartItemWithCheck = {
       product: modalProduct,
       quantity: modalQuantity,
       weight: modalWeight ? parseFloat(modalWeight) : undefined,
       volume: modalVolume ? parseFloat(modalVolume) : undefined,
+      boxDetail,
       checked: false,
     }
 
@@ -177,6 +222,7 @@ export default function MostradorPage() {
         quantity: item.quantity,
         weight: item.weight || null,
         volume: item.volume || null,
+        box_detail: item.boxDetail || null,
       }))
 
       const { error: itemsError } = await supabase
@@ -203,6 +249,9 @@ export default function MostradorPage() {
     if (item.product.unit === 'litro') {
       return `${item.product.name} - ${item.volume || 0}L`
     }
+    if ((item.product.unit === 'caja' || item.product.unit === 'funda') && item.boxDetail) {
+      return `${item.product.name} - ${item.boxDetail}`
+    }
     return `${item.quantity}x ${item.product.name}`
   }
 
@@ -210,7 +259,9 @@ export default function MostradorPage() {
     switch (unit) {
       case 'kg': return '⚖️'
       case 'litro': return '💧'
-      default: return '📦'
+      case 'caja': return '📦'
+      case 'funda': return '🛍️'
+      default: return '🔢'
     }
   }
 
@@ -518,6 +569,120 @@ export default function MostradorPage() {
                   placeholder="Ej: 10"
                   className="input text-center text-xl"
                 />
+              </div>
+            )}
+
+            {/* Cajas/Fundas */}
+            {(modalProduct.unit === 'caja' || modalProduct.unit === 'funda') && (
+              <div className="space-y-4">
+                {/* Cantidad de cajas/fundas con botones */}
+                <div>
+                  <label className="block text-sm font-semibold text-text-muted mb-3">
+                    {modalProduct.unit === 'caja' ? 'Cajas' : 'Fundas'}
+                  </label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[0, 1, 2, 3, 4, 5, '½', '¼'].map((val) => (
+                      <button
+                        key={val}
+                        onClick={() => {
+                          if (val === '½') {
+                            setModalBoxes(0)
+                            setModalFraction(0.5)
+                          } else if (val === '¼') {
+                            setModalBoxes(0)
+                            setModalFraction(0.25)
+                          } else {
+                            setModalBoxes(val as number)
+                            setModalFraction(0)
+                          }
+                        }}
+                        className={`py-4 rounded-xl border-2 text-xl font-bold transition-all ${
+                          (typeof val === 'number' && modalBoxes === val && modalFraction === 0) ||
+                          (val === '½' && modalFraction === 0.5 && modalBoxes === 0) ||
+                          (val === '¼' && modalFraction === 0.25 && modalBoxes === 0)
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border'
+                        }`}
+                      >
+                        {val}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {/* Combinaciones con fracción */}
+                  {modalBoxes > 0 && (
+                    <div className="mt-3">
+                      <label className="block text-sm font-semibold text-text-muted mb-2">+ Fracción</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { value: 0, label: '0' },
+                          { value: 0.5, label: '+ ½' },
+                          { value: 0.25, label: '+ ¼' },
+                        ].map(opt => (
+                          <button
+                            key={opt.value}
+                            onClick={() => setModalFraction(opt.value as 0 | 0.5 | 0.25)}
+                            className={`py-3 rounded-xl border-2 text-lg font-bold transition-all ${
+                              modalFraction === opt.value
+                                ? 'border-primary bg-primary/10 text-primary'
+                                : 'border-border'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Unidades extra */}
+                <div>
+                  <label className="block text-sm font-semibold text-text-muted mb-3">+ Unidades sueltas</label>
+                  <div className="flex items-center justify-center gap-4">
+                    <button
+                      onClick={() => setModalExtraUnits(Math.max(0, modalExtraUnits - 1))}
+                      className="w-12 h-12 rounded-xl bg-bg flex items-center justify-center text-xl font-bold active:scale-90 transition-transform"
+                    >
+                      −
+                    </button>
+                    <span className="text-4xl font-bold w-16 text-center">{modalExtraUnits}</span>
+                    <button
+                      onClick={() => setModalExtraUnits(modalExtraUnits + 1)}
+                      className="w-12 h-12 rounded-xl bg-bg flex items-center justify-center text-xl font-bold active:scale-90 transition-transform"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* Preview */}
+                <div className="bg-bg rounded-xl p-4 text-center">
+                  <span className="text-text-muted text-sm">Total: </span>
+                  <span className="font-bold text-lg text-primary">
+                    {(() => {
+                      const unitLabel = modalProduct.unit === 'caja' ? 'caja' : 'funda'
+                      const unitLabelPlural = modalProduct.unit === 'caja' ? 'cajas' : 'fundas'
+                      let parts: string[] = []
+                      
+                      if (modalBoxes > 0 || modalFraction > 0) {
+                        if (modalFraction === 0.5) {
+                          if (modalBoxes === 0) parts.push(`½ ${unitLabel}`)
+                          else parts.push(`${modalBoxes} y ½ ${unitLabelPlural}`)
+                        } else if (modalFraction === 0.25) {
+                          if (modalBoxes === 0) parts.push(`¼ ${unitLabel}`)
+                          else parts.push(`${modalBoxes} y ¼ ${unitLabelPlural}`)
+                        } else {
+                          parts.push(`${modalBoxes} ${modalBoxes === 1 ? unitLabel : unitLabelPlural}`)
+                        }
+                      }
+                      
+                      if (modalExtraUnits > 0) parts.push(`${modalExtraUnits}u`)
+                      
+                      return parts.length > 0 ? parts.join(' + ') : 'Selecciona cantidad'
+                    })()}
+                  </span>
+                </div>
               </div>
             )}
 
