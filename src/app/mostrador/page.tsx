@@ -126,6 +126,7 @@ export default function MostradorPage() {
 
   function openEditItemModal(index: number) {
     const item = cart[index]
+    setShowCart(false) // Cerrar el carrito primero
     setEditingIndex(index)
     setModalProduct(item.product)
     setModalQuantity(item.quantity)
@@ -156,8 +157,13 @@ export default function MostradorPage() {
   }
 
   function closeModal() {
+    const wasEditing = editingIndex !== null
     setModalProduct(null)
     setEditingIndex(null)
+    // Si estaba editando, volver a abrir el carrito
+    if (wasEditing) {
+      setShowCart(true)
+    }
   }
 
   function addToCart() {
