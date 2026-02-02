@@ -24,6 +24,7 @@ export default function MostradorPage() {
   const [modalQuantity, setModalQuantity] = useState(1)
   const [modalWeight, setModalWeight] = useState('')
   const [modalVolume, setModalVolume] = useState('')
+  const [modalNotes, setModalNotes] = useState('')
   
   // Para cajas/fundas
   const [modalBoxes, setModalBoxes] = useState(1)
@@ -112,6 +113,7 @@ export default function MostradorPage() {
     setModalQuantity(1)
     setModalWeight('')
     setModalVolume('')
+    setModalNotes('')
     setModalBoxes(1)
     setModalFraction(0)
     setModalExtraUnits(0)
@@ -167,6 +169,7 @@ export default function MostradorPage() {
       weight: modalWeight ? parseFloat(modalWeight) : undefined,
       volume: modalVolume ? parseFloat(modalVolume) : undefined,
       boxDetail,
+      notes: modalNotes.trim() || undefined,
       checked: false,
     }
 
@@ -260,6 +263,7 @@ export default function MostradorPage() {
         weight: item.weight || null,
         volume: item.volume || null,
         box_detail: item.boxDetail || null,
+        notes: item.notes || null,
       }))
 
       const { error: itemsError } = await supabase
@@ -281,7 +285,10 @@ export default function MostradorPage() {
 
   function formatItemDisplay(item: CartItem) {
     if (item.product.unit === 'kg') {
-      return `${item.product.name} - ${item.weight || 0}kg`
+      let display = item.product.name
+      if (item.notes) display += ` (${item.notes})`
+      if (item.weight) display += ` - ${item.weight}kg`
+      return display
     }
     if (item.product.unit === 'litro') {
       return `${item.product.name} - ${item.volume || 0}L`
@@ -579,17 +586,55 @@ export default function MostradorPage() {
 
             {/* Peso - solo para productos por kilo */}
             {modalProduct.unit === 'kg' && (
-              <div className="mb-5">
-                <label className="block text-sm font-semibold text-text-muted mb-2">Peso (kg)</label>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  step="0.001"
-                  value={modalWeight}
-                  onChange={(e) => setModalWeight(e.target.value)}
-                  placeholder="Ej: 1.250"
-                  className="input text-center text-xl"
-                />
+              <div className="space-y-4 mb-5">
+                {/* Notas rápidas */}
+                <div>
+                  <label className="block text-sm font-semibold text-text-muted mb-2">¿Cuánto?</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {['½', '¼', '1', '2'].map(opt => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => setModalNotes(opt === '1' || opt === '2' ? `${opt} horma` : `${opt} horma`)}
+                        className={`py-3 rounded-xl border-2 text-lg font-bold transition-all ${
+                          modalNotes === `${opt} horma` || modalNotes === `${opt} horma`
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border'
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Campo de nota personalizada */}
+                <div>
+                  <label className="block text-sm font-semibold text-text-muted mb-2">Nota (opcional)</label>
+                  <input
+                    type="text"
+                    value={modalNotes}
+                    onChange={(e) => setModalNotes(e.target.value)}
+                    placeholder="Ej: ½ horma, poca cantidad, etc."
+                    className="input"
+                  />
+                </div>
+
+                {/* Peso - se llena cuando se prepare */}
+                <div>
+                  <label className="block text-sm font-semibold text-text-muted mb-2">
+                    Peso (kg) <span className="text-text-light font-normal">- opcional, se puede poner después</span>
+                  </label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.001"
+                    value={modalWeight}
+                    onChange={(e) => setModalWeight(e.target.value)}
+                    placeholder="Ej: 1.250"
+                    className="input text-center text-xl"
+                  />
+                </div>
               </div>
             )}
 
@@ -760,49 +805,92 @@ export default function MostradorPage() {
             </div>
 
             <div className="flex-1 overflow-auto p-6">
-              <div className="space-y-3">
-                {cart.map((item, i) => (
-                  <div 
-                    key={i} 
-                    onClick={() => toggleCheck(i)}
-                    className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all active:scale-[0.98] ${
-                      item.checked 
-                        ? 'bg-success/10 border-2 border-success' 
-                        : 'bg-bg border-2 border-transparent'
-                    }`}
-                  >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
-                      item.checked 
-                        ? 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white' 
-                        : 'border-2 border-border'
-                    }`}>
-                      {item.checked && (
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
-                    </div>
-                    
-                    <span className={`flex-1 font-medium transition-all ${
-                      item.checked ? 'line-through text-text-muted' : 'text-text'
-                    }`}>
-                      {formatItemDisplay(item)}
-                    </span>
-                    
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        removeFromCart(i)
-                      }}
-                      className="w-9 h-9 rounded-xl flex items-center justify-center text-text-light hover:text-danger hover:bg-danger/10 transition-all"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
+              {(() => {
+                // Agrupar items por ubicación
+                const grouped: Record<string, { items: typeof cart, indices: number[] }> = {}
+                
+                cart.forEach((item, index) => {
+                  const location = item.product.location || 'Sin ubicación'
+                  if (!grouped[location]) {
+                    grouped[location] = { items: [], indices: [] }
+                  }
+                  grouped[location].items.push(item)
+                  grouped[location].indices.push(index)
+                })
+
+                // Ordenar ubicaciones (Sin ubicación al final)
+                const sortedLocations = Object.keys(grouped).sort((a, b) => {
+                  if (a === 'Sin ubicación') return 1
+                  if (b === 'Sin ubicación') return -1
+                  return a.localeCompare(b)
+                })
+
+                return (
+                  <div className="space-y-4">
+                    {sortedLocations.map(location => (
+                      <div key={location}>
+                        {/* Header de ubicación */}
+                        <div className="flex items-center gap-2 mb-2 px-1">
+                          <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          <span className="text-sm font-semibold text-primary">{location}</span>
+                          <span className="text-xs text-text-muted">({grouped[location].items.length})</span>
+                        </div>
+                        
+                        {/* Items de esta ubicación */}
+                        <div className="space-y-2">
+                          {grouped[location].items.map((item, localIndex) => {
+                            const globalIndex = grouped[location].indices[localIndex]
+                            return (
+                              <div 
+                                key={globalIndex} 
+                                onClick={() => toggleCheck(globalIndex)}
+                                className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all active:scale-[0.98] ${
+                                  item.checked 
+                                    ? 'bg-success/10 border-2 border-success' 
+                                    : 'bg-bg border-2 border-transparent'
+                                }`}
+                              >
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
+                                  item.checked 
+                                    ? 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white' 
+                                    : 'border-2 border-border'
+                                }`}>
+                                  {item.checked && (
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  )}
+                                </div>
+                                
+                                <span className={`flex-1 font-medium transition-all ${
+                                  item.checked ? 'line-through text-text-muted' : 'text-text'
+                                }`}>
+                                  {formatItemDisplay(item)}
+                                </span>
+                                
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    removeFromCart(globalIndex)
+                                  }}
+                                  className="w-9 h-9 rounded-xl flex items-center justify-center text-text-light hover:text-danger hover:bg-danger/10 transition-all"
+                                >
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                )
+              })()}
             </div>
 
             <div className="p-6 border-t border-border">
