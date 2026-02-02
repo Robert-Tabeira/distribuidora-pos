@@ -31,6 +31,9 @@ export default function MostradorPage() {
   const [modalFraction, setModalFraction] = useState<0 | 0.5 | 0.25>(0)
   const [modalExtraUnits, setModalExtraUnits] = useState(0)
   
+  // Para editar item existente
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  
   // Para agregar producto nuevo
   const [addingNew, setAddingNew] = useState(false)
 
@@ -109,6 +112,7 @@ export default function MostradorPage() {
   )
 
   function openAddModal(product: Product) {
+    setEditingIndex(null)
     setModalProduct(product)
     setModalQuantity(1)
     setModalWeight('')
@@ -120,8 +124,40 @@ export default function MostradorPage() {
     if (navigator.vibrate) navigator.vibrate(20)
   }
 
+  function openEditItemModal(index: number) {
+    const item = cart[index]
+    setEditingIndex(index)
+    setModalProduct(item.product)
+    setModalQuantity(item.quantity)
+    setModalWeight(item.weight?.toString() || '')
+    setModalVolume(item.volume?.toString() || '')
+    setModalNotes(item.notes || '')
+    
+    // Parsear boxDetail si existe
+    if (item.boxDetail) {
+      // Intentar extraer cajas y fracción del texto
+      const match = item.boxDetail.match(/^(\d+)?\s*y?\s*(½|¼)?\s*(caja|funda|cajas|fundas)?/)
+      if (match) {
+        setModalBoxes(match[1] ? parseInt(match[1]) : 0)
+        if (match[2] === '½') setModalFraction(0.5)
+        else if (match[2] === '¼') setModalFraction(0.25)
+        else setModalFraction(0)
+      }
+      // Extraer unidades extra
+      const unitsMatch = item.boxDetail.match(/(\d+)u/)
+      setModalExtraUnits(unitsMatch ? parseInt(unitsMatch[1]) : 0)
+    } else {
+      setModalBoxes(1)
+      setModalFraction(0)
+      setModalExtraUnits(0)
+    }
+    
+    if (navigator.vibrate) navigator.vibrate(20)
+  }
+
   function closeModal() {
     setModalProduct(null)
+    setEditingIndex(null)
   }
 
   function addToCart() {
@@ -170,10 +206,17 @@ export default function MostradorPage() {
       volume: modalVolume ? parseFloat(modalVolume) : undefined,
       boxDetail,
       notes: modalNotes.trim() || undefined,
-      checked: false,
+      checked: editingIndex !== null ? cart[editingIndex].checked : false,
     }
 
-    setCart([...cart, newItem])
+    if (editingIndex !== null) {
+      // Editar item existente
+      setCart(cart.map((item, i) => i === editingIndex ? newItem : item))
+    } else {
+      // Agregar nuevo item
+      setCart([...cart, newItem])
+    }
+    
     closeModal()
     setSearchQuery('')
     if (navigator.vibrate) navigator.vibrate(50)
@@ -555,9 +598,12 @@ export default function MostradorPage() {
               <div>
                 <h3 className="font-bold text-xl">{modalProduct.name}</h3>
                 <p className="text-text-muted">
+                  {editingIndex !== null && <span className="text-primary font-medium">Editando • </span>}
                   {modalProduct.unit === 'kg' && 'Se vende por kilo'}
                   {modalProduct.unit === 'litro' && 'Se vende por litro'}
                   {modalProduct.unit === 'unidad' && 'Se vende por unidad'}
+                  {modalProduct.unit === 'caja' && 'Se vende por caja'}
+                  {modalProduct.unit === 'funda' && 'Se vende por funda'}
                 </p>
               </div>
             </div>
@@ -773,7 +819,7 @@ export default function MostradorPage() {
                 Cancelar
               </button>
               <button onClick={addToCart} className="btn btn-primary flex-1">
-                Agregar
+                {editingIndex !== null ? 'Guardar' : 'Agregar'}
               </button>
             </div>
           </div>
@@ -871,6 +917,20 @@ export default function MostradorPage() {
                                   {formatItemDisplay(item)}
                                 </span>
                                 
+                                {/* Botón editar */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    openEditItemModal(globalIndex)
+                                  }}
+                                  className="w-9 h-9 rounded-xl flex items-center justify-center text-text-light hover:text-primary hover:bg-primary/10 transition-all"
+                                >
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                  </svg>
+                                </button>
+                                
+                                {/* Botón eliminar */}
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation()
