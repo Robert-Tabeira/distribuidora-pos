@@ -69,7 +69,8 @@ export default function ProductosPage() {
   function openEditModal(product: Product) {
     setEditingProduct(product)
     setEditName(product.name)
-    setEditUnits(product.unit || ['unidad'])
+    const units = Array.isArray(product.unit) ? product.unit : [product.unit]
+    setEditUnits(units.length > 0 ? units : ['unidad'])
     setEditCategory(product.category_id)
     setEditLocation(product.location || '')
     setShowLocationDropdown(false)
@@ -318,10 +319,12 @@ export default function ProductosPage() {
                   }`}
                 >
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center text-2xl">
-                    {product.unit.length > 1 
-                      ? product.unit.map(u => getUnitIcon(u)).join('')
-                      : getUnitIcon(product.unit[0])
-                    }
+                    {(() => {
+                      const units = Array.isArray(product.unit) ? product.unit : [product.unit]
+                      return units.length > 1 
+                        ? units.map(u => getUnitIcon(u)).join('')
+                        : getUnitIcon(units[0])
+                    })()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-text truncate">{product.name}</div>

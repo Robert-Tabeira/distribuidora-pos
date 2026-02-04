@@ -283,7 +283,7 @@ export default function ReposicionPage() {
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-text truncate">{product.name}</div>
                   <div className="text-sm text-text-muted">
-                    {product.unit.includes('kg') ? 'Por peso → unidades' : product.unit.join(' / ')}
+                    {(Array.isArray(product.unit) ? product.unit : [product.unit]).includes('kg') ? 'Por peso → unidades' : (Array.isArray(product.unit) ? product.unit : [product.unit]).join(' / ')}
                   </div>
                 </div>
                 <svg className="w-5 h-5 text-text-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -427,7 +427,7 @@ export default function ReposicionPage() {
             
             <h3 className="font-bold text-xl text-center mb-2">{modalProduct.name}</h3>
             <p className="text-center text-text-muted text-sm mb-6">
-              {modalProduct.unit.includes('kg') ? 'Unidades enteras (ej: hormas, piezas)' : 'Cantidad'}
+              {(Array.isArray(modalProduct.unit) ? modalProduct.unit : [modalProduct.unit]).includes('kg') ? 'Unidades enteras (ej: hormas, piezas)' : 'Cantidad'}
             </p>
 
             {/* Selector de cantidad */}

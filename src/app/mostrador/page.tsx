@@ -115,7 +115,8 @@ export default function MostradorPage() {
   function openAddModal(product: Product) {
     setEditingIndex(null)
     setModalProduct(product)
-    setModalSelectedUnit(product.unit[0] || 'unidad')
+    const units = Array.isArray(product.unit) ? product.unit : [product.unit]
+    setModalSelectedUnit(units[0] || 'unidad')
     setModalQuantity(1)
     setModalWeight('')
     setModalVolume('')
@@ -131,7 +132,8 @@ export default function MostradorPage() {
     setShowCart(false) // Cerrar el carrito primero
     setEditingIndex(index)
     setModalProduct(item.product)
-    setModalSelectedUnit(item.selectedUnit || item.product.unit[0] || 'unidad')
+    const units = Array.isArray(item.product.unit) ? item.product.unit : [item.product.unit]
+    setModalSelectedUnit(item.selectedUnit || units[0] || 'unidad')
     setModalQuantity(item.quantity)
     setModalWeight(item.weight?.toString() || '')
     setModalVolume(item.volume?.toString() || '')
@@ -530,7 +532,7 @@ export default function MostradorPage() {
                 }`}
               >
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center text-2xl">
-                  {getUnitIcon(product.unit[0])}
+                  {getUnitIcon((Array.isArray(product.unit) ? product.unit : [product.unit])[0])}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-text truncate flex items-center gap-2">
@@ -542,7 +544,7 @@ export default function MostradorPage() {
                     )}
                   </div>
                   <div className="text-sm text-text-muted">
-                    {product.unit.map(u => {
+                    {(Array.isArray(product.unit) ? product.unit : [product.unit]).map(u => {
                       if (u === 'kg') return 'Kilo'
                       if (u === 'litro') return 'Litro'
                       if (u === 'unidad') return 'Unidad'
@@ -625,33 +627,36 @@ export default function MostradorPage() {
             </div>
 
             {/* Selector de unidad - solo si tiene múltiples */}
-            {modalProduct.unit.length > 1 && (
-              <div className="mb-5">
-                <label className="block text-sm font-semibold text-text-muted mb-2">¿Cómo se vende?</label>
-                <div className="flex flex-wrap gap-2">
-                  {modalProduct.unit.map(unit => (
-                    <button
-                      key={unit}
-                      onClick={() => setModalSelectedUnit(unit)}
-                      className={`px-4 py-2 rounded-xl border-2 font-medium transition-all flex items-center gap-2 ${
-                        modalSelectedUnit === unit
-                          ? 'border-primary bg-primary/10 text-primary'
-                          : 'border-border'
-                      }`}
-                    >
-                      <span>{getUnitIcon(unit)}</span>
-                      <span>
-                        {unit === 'unidad' && 'Unidad'}
-                        {unit === 'kg' && 'Kilo'}
-                        {unit === 'litro' && 'Litro'}
-                        {unit === 'caja' && 'Caja'}
-                        {unit === 'funda' && 'Funda'}
-                      </span>
-                    </button>
-                  ))}
+            {(() => {
+              const units = Array.isArray(modalProduct.unit) ? modalProduct.unit : [modalProduct.unit]
+              return units.length > 1 && (
+                <div className="mb-5">
+                  <label className="block text-sm font-semibold text-text-muted mb-2">¿Cómo se vende?</label>
+                  <div className="flex flex-wrap gap-2">
+                    {units.map(unit => (
+                      <button
+                        key={unit}
+                        onClick={() => setModalSelectedUnit(unit)}
+                        className={`px-4 py-2 rounded-xl border-2 font-medium transition-all flex items-center gap-2 ${
+                          modalSelectedUnit === unit
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border'
+                        }`}
+                      >
+                        <span>{getUnitIcon(unit)}</span>
+                        <span>
+                          {unit === 'unidad' && 'Unidad'}
+                          {unit === 'kg' && 'Kilo'}
+                          {unit === 'litro' && 'Litro'}
+                          {unit === 'caja' && 'Caja'}
+                          {unit === 'funda' && 'Funda'}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )
+            })()}
             
             {/* Cantidad - solo para productos por unidad */}
             {modalSelectedUnit === 'unidad' && (
