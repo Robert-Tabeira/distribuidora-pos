@@ -21,6 +21,7 @@ export default function MostradorPage() {
   const [showCart, setShowCart] = useState(false)
   
   const [modalProduct, setModalProduct] = useState<Product | null>(null)
+  const [modalSelectedUnit, setModalSelectedUnit] = useState<string>('unidad')
   const [modalQuantity, setModalQuantity] = useState(1)
   const [modalWeight, setModalWeight] = useState('')
   const [modalVolume, setModalVolume] = useState('')
@@ -114,6 +115,7 @@ export default function MostradorPage() {
   function openAddModal(product: Product) {
     setEditingIndex(null)
     setModalProduct(product)
+    setModalSelectedUnit(product.unit[0] || 'unidad')
     setModalQuantity(1)
     setModalWeight('')
     setModalVolume('')
@@ -129,6 +131,7 @@ export default function MostradorPage() {
     setShowCart(false) // Cerrar el carrito primero
     setEditingIndex(index)
     setModalProduct(item.product)
+    setModalSelectedUnit(item.selectedUnit || item.product.unit[0] || 'unidad')
     setModalQuantity(item.quantity)
     setModalWeight(item.weight?.toString() || '')
     setModalVolume(item.volume?.toString() || '')
@@ -171,9 +174,9 @@ export default function MostradorPage() {
 
     // Generar descripción de caja/funda
     let boxDetail: string | undefined
-    if (modalProduct.unit === 'caja' || modalProduct.unit === 'funda') {
-      const unitLabel = modalProduct.unit === 'caja' ? 'caja' : 'funda'
-      const unitLabelPlural = modalProduct.unit === 'caja' ? 'cajas' : 'fundas'
+    if (modalSelectedUnit === 'caja' || modalSelectedUnit === 'funda') {
+      const unitLabel = modalSelectedUnit === 'caja' ? 'caja' : 'funda'
+      const unitLabelPlural = modalSelectedUnit === 'caja' ? 'cajas' : 'fundas'
       
       let parts: string[] = []
       
@@ -207,6 +210,7 @@ export default function MostradorPage() {
 
     const newItem: CartItemWithCheck = {
       product: modalProduct,
+      selectedUnit: modalSelectedUnit,
       quantity: modalQuantity,
       weight: modalWeight ? parseFloat(modalWeight) : undefined,
       volume: modalVolume ? parseFloat(modalVolume) : undefined,
@@ -333,16 +337,17 @@ export default function MostradorPage() {
   }
 
   function formatItemDisplay(item: CartItem) {
-    if (item.product.unit === 'kg') {
+    const unit = item.selectedUnit || item.product.unit[0]
+    if (unit === 'kg') {
       let display = item.product.name
       if (item.notes) display += ` (${item.notes})`
       if (item.weight) display += ` - ${item.weight}kg`
       return display
     }
-    if (item.product.unit === 'litro') {
+    if (unit === 'litro') {
       return `${item.product.name} - ${item.volume || 0}L`
     }
-    if ((item.product.unit === 'caja' || item.product.unit === 'funda') && item.boxDetail) {
+    if ((unit === 'caja' || unit === 'funda') && item.boxDetail) {
       return `${item.product.name} - ${item.boxDetail}`
     }
     return `${item.quantity}x ${item.product.name}`
@@ -525,7 +530,7 @@ export default function MostradorPage() {
                 }`}
               >
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center text-2xl">
-                  {getUnitIcon(product.unit)}
+                  {getUnitIcon(product.unit[0])}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-text truncate flex items-center gap-2">
@@ -537,9 +542,14 @@ export default function MostradorPage() {
                     )}
                   </div>
                   <div className="text-sm text-text-muted">
-                    {product.unit === 'kg' && 'Por kilo'}
-                    {product.unit === 'litro' && 'Por litro'}
-                    {product.unit === 'unidad' && 'Por unidad'}
+                    {product.unit.map(u => {
+                      if (u === 'kg') return 'Kilo'
+                      if (u === 'litro') return 'Litro'
+                      if (u === 'unidad') return 'Unidad'
+                      if (u === 'caja') return 'Caja'
+                      if (u === 'funda') return 'Funda'
+                      return u
+                    }).join(' / ')}
                     {product.location && ` • ${product.location}`}
                   </div>
                 </div>
@@ -599,23 +609,52 @@ export default function MostradorPage() {
             
             <div className="flex items-center gap-4 mb-6">
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center text-3xl">
-                {getUnitIcon(modalProduct.unit)}
+                {getUnitIcon(modalSelectedUnit)}
               </div>
               <div>
                 <h3 className="font-bold text-xl">{modalProduct.name}</h3>
                 <p className="text-text-muted">
                   {editingIndex !== null && <span className="text-primary font-medium">Editando • </span>}
-                  {modalProduct.unit === 'kg' && 'Se vende por kilo'}
-                  {modalProduct.unit === 'litro' && 'Se vende por litro'}
-                  {modalProduct.unit === 'unidad' && 'Se vende por unidad'}
-                  {modalProduct.unit === 'caja' && 'Se vende por caja'}
-                  {modalProduct.unit === 'funda' && 'Se vende por funda'}
+                  {modalSelectedUnit === 'kg' && 'Se vende por kilo'}
+                  {modalSelectedUnit === 'litro' && 'Se vende por litro'}
+                  {modalSelectedUnit === 'unidad' && 'Se vende por unidad'}
+                  {modalSelectedUnit === 'caja' && 'Se vende por caja'}
+                  {modalSelectedUnit === 'funda' && 'Se vende por funda'}
                 </p>
               </div>
             </div>
+
+            {/* Selector de unidad - solo si tiene múltiples */}
+            {modalProduct.unit.length > 1 && (
+              <div className="mb-5">
+                <label className="block text-sm font-semibold text-text-muted mb-2">¿Cómo se vende?</label>
+                <div className="flex flex-wrap gap-2">
+                  {modalProduct.unit.map(unit => (
+                    <button
+                      key={unit}
+                      onClick={() => setModalSelectedUnit(unit)}
+                      className={`px-4 py-2 rounded-xl border-2 font-medium transition-all flex items-center gap-2 ${
+                        modalSelectedUnit === unit
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-border'
+                      }`}
+                    >
+                      <span>{getUnitIcon(unit)}</span>
+                      <span>
+                        {unit === 'unidad' && 'Unidad'}
+                        {unit === 'kg' && 'Kilo'}
+                        {unit === 'litro' && 'Litro'}
+                        {unit === 'caja' && 'Caja'}
+                        {unit === 'funda' && 'Funda'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             
             {/* Cantidad - solo para productos por unidad */}
-            {modalProduct.unit === 'unidad' && (
+            {modalSelectedUnit === 'unidad' && (
               <div className="mb-5">
                 <label className="block text-sm font-semibold text-text-muted mb-3">Cantidad</label>
                 <div className="flex items-center justify-center gap-6">
@@ -637,7 +676,7 @@ export default function MostradorPage() {
             )}
 
             {/* Peso - solo para productos por kilo */}
-            {modalProduct.unit === 'kg' && (
+            {modalSelectedUnit === 'kg' && (
               <div className="space-y-4 mb-5">
                 {/* Notas rápidas */}
                 <div>
@@ -691,7 +730,7 @@ export default function MostradorPage() {
             )}
 
             {/* Volumen - solo para productos por litro */}
-            {modalProduct.unit === 'litro' && (
+            {modalSelectedUnit === 'litro' && (
               <div className="mb-5">
                 <label className="block text-sm font-semibold text-text-muted mb-2">Litros</label>
                 <input
@@ -707,12 +746,12 @@ export default function MostradorPage() {
             )}
 
             {/* Cajas/Fundas */}
-            {(modalProduct.unit === 'caja' || modalProduct.unit === 'funda') && (
+            {(modalSelectedUnit === 'caja' || modalSelectedUnit === 'funda') && (
               <div className="space-y-4">
                 {/* Cantidad de cajas/fundas con botones */}
                 <div>
                   <label className="block text-sm font-semibold text-text-muted mb-3">
-                    {modalProduct.unit === 'caja' ? 'Cajas' : 'Fundas'}
+                    {modalSelectedUnit === 'caja' ? 'Cajas' : 'Fundas'}
                   </label>
                   <div className="grid grid-cols-4 gap-2">
                     {[0, 1, 2, 3, 4, 5, '½', '¼'].map((val) => (
@@ -795,8 +834,8 @@ export default function MostradorPage() {
                   <span className="text-text-muted text-sm">Total: </span>
                   <span className="font-bold text-lg text-primary">
                     {(() => {
-                      const unitLabel = modalProduct.unit === 'caja' ? 'caja' : 'funda'
-                      const unitLabelPlural = modalProduct.unit === 'caja' ? 'cajas' : 'fundas'
+                      const unitLabel = modalSelectedUnit === 'caja' ? 'caja' : 'funda'
+                      const unitLabelPlural = modalSelectedUnit === 'caja' ? 'cajas' : 'fundas'
                       let parts: string[] = []
                       
                       if (modalBoxes > 0 || modalFraction > 0) {

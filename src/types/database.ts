@@ -26,7 +26,7 @@ export type Database = {
           id: string
           category_id: string | null
           name: string
-          unit: 'unidad' | 'kg' | 'litro' | 'caja' | 'funda'
+          unit: string[]
           status: 'pending' | 'complete'
           location: string | null
           created_at: string
@@ -35,7 +35,7 @@ export type Database = {
           id?: string
           category_id?: string | null
           name: string
-          unit?: 'unidad' | 'kg' | 'litro' | 'caja' | 'funda'
+          unit?: string[]
           status?: 'pending' | 'complete'
           location?: string | null
           created_at?: string
@@ -44,7 +44,7 @@ export type Database = {
           id?: string
           category_id?: string | null
           name?: string
-          unit?: 'unidad' | 'kg' | 'litro' | 'caja' | 'funda'
+          unit?: string[]
           status?: 'pending' | 'complete'
           location?: string | null
           created_at?: string
@@ -157,6 +157,7 @@ export type OrderWithItems = Order & {
 
 export type CartItem = {
   product: Product
+  selectedUnit: string
   quantity: number
   weight?: number
   volume?: number

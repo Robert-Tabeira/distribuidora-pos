@@ -17,7 +17,7 @@ export default function ProductosPage() {
   // Modal de edición
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [editName, setEditName] = useState('')
-  const [editUnit, setEditUnit] = useState<'unidad' | 'kg' | 'litro' | 'caja' | 'funda'>('unidad')
+  const [editUnits, setEditUnits] = useState<string[]>(['unidad'])
   const [editCategory, setEditCategory] = useState<string | null>(null)
   const [editLocation, setEditLocation] = useState('')
   const [showLocationDropdown, setShowLocationDropdown] = useState(false)
@@ -69,7 +69,7 @@ export default function ProductosPage() {
   function openEditModal(product: Product) {
     setEditingProduct(product)
     setEditName(product.name)
-    setEditUnit(product.unit)
+    setEditUnits(product.unit || ['unidad'])
     setEditCategory(product.category_id)
     setEditLocation(product.location || '')
     setShowLocationDropdown(false)
@@ -80,8 +80,19 @@ export default function ProductosPage() {
     setShowLocationDropdown(false)
   }
 
+  function toggleUnit(unit: string) {
+    if (editUnits.includes(unit)) {
+      // No permitir quitar si es el único
+      if (editUnits.length > 1) {
+        setEditUnits(editUnits.filter(u => u !== unit))
+      }
+    } else {
+      setEditUnits([...editUnits, unit])
+    }
+  }
+
   async function saveProduct() {
-    if (!editingProduct || !editName.trim()) return
+    if (!editingProduct || !editName.trim() || editUnits.length === 0) return
 
     setSaving(true)
 
@@ -92,7 +103,7 @@ export default function ProductosPage() {
         .from('products')
         .update({
           name: editName.trim(),
-          unit: editUnit,
+          unit: editUnits,
           category_id: editCategory,
           location: newLocation,
           status: 'complete',
@@ -104,7 +115,7 @@ export default function ProductosPage() {
       // Actualizar lista local
       setProducts(products.map(p => 
         p.id === editingProduct.id 
-          ? { ...p, name: editName.trim(), unit: editUnit, category_id: editCategory, location: newLocation, status: 'complete' as const }
+          ? { ...p, name: editName.trim(), unit: editUnits, category_id: editCategory, location: newLocation, status: 'complete' as const }
           : p
       ))
 
@@ -307,7 +318,10 @@ export default function ProductosPage() {
                   }`}
                 >
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center text-2xl">
-                    {getUnitIcon(product.unit)}
+                    {product.unit.length > 1 
+                      ? product.unit.map(u => getUnitIcon(u)).join('')
+                      : getUnitIcon(product.unit[0])
+                    }
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-text truncate">{product.name}</div>
@@ -363,7 +377,9 @@ export default function ProductosPage() {
 
             {/* Unidad */}
             <div className="mb-4">
-              <label className="block text-sm font-semibold text-text-muted mb-2">Se vende por</label>
+              <label className="block text-sm font-semibold text-text-muted mb-2">
+                Se vende por <span className="text-text-light font-normal">(podés elegir varias)</span>
+              </label>
               <div className="grid grid-cols-3 gap-2 mb-2">
                 {[
                   { value: 'unidad', label: 'Unidad', icon: '🔢' },
@@ -372,13 +388,20 @@ export default function ProductosPage() {
                 ].map(opt => (
                   <button
                     key={opt.value}
-                    onClick={() => setEditUnit(opt.value as 'unidad' | 'kg' | 'litro' | 'caja' | 'funda')}
-                    className={`p-4 rounded-xl border-2 transition-all ${
-                      editUnit === opt.value
+                    onClick={() => toggleUnit(opt.value)}
+                    className={`p-4 rounded-xl border-2 transition-all relative ${
+                      editUnits.includes(opt.value)
                         ? 'border-primary bg-primary/10'
                         : 'border-border'
                     }`}
                   >
+                    {editUnits.includes(opt.value) && (
+                      <div className="absolute top-1 right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    )}
                     <div className="text-2xl mb-1">{opt.icon}</div>
                     <div className="text-sm font-medium">{opt.label}</div>
                   </button>
@@ -391,13 +414,20 @@ export default function ProductosPage() {
                 ].map(opt => (
                   <button
                     key={opt.value}
-                    onClick={() => setEditUnit(opt.value as 'unidad' | 'kg' | 'litro' | 'caja' | 'funda')}
-                    className={`p-4 rounded-xl border-2 transition-all ${
-                      editUnit === opt.value
+                    onClick={() => toggleUnit(opt.value)}
+                    className={`p-4 rounded-xl border-2 transition-all relative ${
+                      editUnits.includes(opt.value)
                         ? 'border-primary bg-primary/10'
                         : 'border-border'
                     }`}
                   >
+                    {editUnits.includes(opt.value) && (
+                      <div className="absolute top-1 right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    )}
                     <div className="text-2xl mb-1">{opt.icon}</div>
                     <div className="text-sm font-medium">{opt.label}</div>
                   </button>
