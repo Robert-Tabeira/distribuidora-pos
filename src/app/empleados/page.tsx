@@ -80,7 +80,7 @@ export default function EmpleadosPage() {
     try {
       if (editingEmployee) {
         // Actualizar empleado existente
-        const updateData: { name: string; role: string; pin_hash?: string } = {
+        const updateData: { name: string; role: string; pin?: string } = {
           name: formName.trim(),
           role: formRole,
         }
@@ -89,7 +89,7 @@ export default function EmpleadosPage() {
         if (formPin.length === 4) {
           const { data: hashData } = await supabase.rpc('hash_pin', { pin: formPin })
           if (hashData) {
-            updateData.pin_hash = hashData
+            updateData.pin = hashData
           }
         }
 
@@ -112,7 +112,7 @@ export default function EmpleadosPage() {
           .insert({
             name: formName.trim(),
             role: formRole,
-            pin_hash: hashData,
+            pin: hashData,
           })
 
         if (error) throw error
