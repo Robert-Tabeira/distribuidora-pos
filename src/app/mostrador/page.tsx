@@ -129,7 +129,7 @@ export default function MostradorPage() {
 
   function openEditItemModal(index: number) {
     const item = cart[index]
-    setShowCart(false) // Cerrar el carrito primero
+    setShowCart(false)
     setEditingIndex(index)
     setModalProduct(item.product)
     const units = Array.isArray(item.product.unit) ? item.product.unit : [item.product.unit]
@@ -141,7 +141,6 @@ export default function MostradorPage() {
     
     // Parsear boxDetail si existe
     if (item.boxDetail) {
-      // Intentar extraer cajas y fracción del texto
       const match = item.boxDetail.match(/^(\d+)?\s*y?\s*(½|¼)?\s*(caja|funda|cajas|fundas)?/)
       if (match) {
         setModalBoxes(match[1] ? parseInt(match[1]) : 0)
@@ -149,7 +148,6 @@ export default function MostradorPage() {
         else if (match[2] === '¼') setModalFraction(0.25)
         else setModalFraction(0)
       }
-      // Extraer unidades extra
       const unitsMatch = item.boxDetail.match(/(\d+)u/)
       setModalExtraUnits(unitsMatch ? parseInt(unitsMatch[1]) : 0)
     } else {
@@ -165,7 +163,6 @@ export default function MostradorPage() {
     const wasEditing = editingIndex !== null
     setModalProduct(null)
     setEditingIndex(null)
-    // Si estaba editando, volver a abrir el carrito
     if (wasEditing) {
       setShowCart(true)
     }
@@ -174,7 +171,6 @@ export default function MostradorPage() {
   function addToCart() {
     if (!modalProduct) return
 
-    // Generar descripción de caja/funda
     let boxDetail: string | undefined
     if (modalSelectedUnit === 'caja' || modalSelectedUnit === 'funda') {
       const unitLabel = modalSelectedUnit === 'caja' ? 'caja' : 'funda'
@@ -182,7 +178,6 @@ export default function MostradorPage() {
       
       let parts: string[] = []
       
-      // Cajas/fundas enteras + fracción
       const total = modalBoxes + modalFraction
       if (total > 0) {
         if (modalFraction === 0.5) {
@@ -202,7 +197,6 @@ export default function MostradorPage() {
         }
       }
       
-      // Unidades extra
       if (modalExtraUnits > 0) {
         parts.push(`${modalExtraUnits}u`)
       }
@@ -222,10 +216,8 @@ export default function MostradorPage() {
     }
 
     if (editingIndex !== null) {
-      // Editar item existente
       setCart(cart.map((item, i) => i === editingIndex ? newItem : item))
     } else {
-      // Agregar nuevo item
       setCart([...cart, newItem])
     }
     
@@ -249,12 +241,11 @@ export default function MostradorPage() {
     setCart([])
     setCustomerName('')
     setShowCart(false)
-    // Limpiar borradores
     localStorage.removeItem('cartDraft')
     localStorage.removeItem('cartDraftCustomer')
   }
 
-  // Agregar producto nuevo a la BD con status pending
+  // FIX: unit como array en vez de string
   async function quickAddFromSearch() {
     const name = searchQuery.trim()
     if (!name) return
@@ -266,7 +257,7 @@ export default function MostradorPage() {
         .from('products')
         .insert({
           name: name,
-          unit: 'unidad',
+          unit: ['unidad'],
           status: 'pending',
         })
         .select()
@@ -274,10 +265,7 @@ export default function MostradorPage() {
 
       if (error) throw error
 
-      // Agregar a la lista local
       setProducts([...products, data])
-      
-      // Abrir modal para agregar al carrito
       setSearchQuery('')
       openAddModal(data)
       
@@ -603,274 +591,282 @@ export default function MostradorPage() {
         )}
       </div>
 
-      {/* Modal agregar producto */}
+      {/* FIX: Modal agregar producto - con max-h y overflow para evitar que se desborde */}
       {modalProduct && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50" onClick={closeModal}>
-          <div className="bg-surface w-full max-w-lg rounded-t-3xl p-6 animate-slide-up" onClick={e => e.stopPropagation()}>
-            <div className="w-12 h-1.5 bg-border rounded-full mx-auto mb-6" />
-            
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center text-3xl">
-                {getUnitIcon(modalSelectedUnit)}
-              </div>
-              <div>
-                <h3 className="font-bold text-xl">{modalProduct.name}</h3>
-                <p className="text-text-muted">
-                  {editingIndex !== null && <span className="text-primary font-medium">Editando • </span>}
-                  {modalSelectedUnit === 'kg' && 'Se vende por kilo'}
-                  {modalSelectedUnit === 'litro' && 'Se vende por litro'}
-                  {modalSelectedUnit === 'unidad' && 'Se vende por unidad'}
-                  {modalSelectedUnit === 'caja' && 'Se vende por caja'}
-                  {modalSelectedUnit === 'funda' && 'Se vende por funda'}
-                </p>
-              </div>
-            </div>
-
-            {/* Selector de unidad - solo si tiene múltiples */}
-            {(() => {
-              const units = Array.isArray(modalProduct.unit) ? modalProduct.unit : [modalProduct.unit]
-              return units.length > 1 && (
-                <div className="mb-5">
-                  <label className="block text-sm font-semibold text-text-muted mb-2">¿Cómo se vende?</label>
-                  <div className="flex flex-wrap gap-2">
-                    {units.map(unit => (
-                      <button
-                        key={unit}
-                        onClick={() => setModalSelectedUnit(unit)}
-                        className={`px-4 py-2 rounded-xl border-2 font-medium transition-all flex items-center gap-2 ${
-                          modalSelectedUnit === unit
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'border-border'
-                        }`}
-                      >
-                        <span>{getUnitIcon(unit)}</span>
-                        <span>
-                          {unit === 'unidad' && 'Unidad'}
-                          {unit === 'kg' && 'Kilo'}
-                          {unit === 'litro' && 'Litro'}
-                          {unit === 'caja' && 'Caja'}
-                          {unit === 'funda' && 'Funda'}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50" 
+          onClick={closeModal}
+        >
+          <div 
+            className="bg-surface w-full max-w-lg rounded-t-3xl flex flex-col max-h-[90vh] animate-slide-up"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Contenido scrolleable */}
+            <div className="overflow-y-auto flex-1 p-6">
+              <div className="w-12 h-1.5 bg-border rounded-full mx-auto mb-6" />
+              
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center text-3xl">
+                  {getUnitIcon(modalSelectedUnit)}
                 </div>
-              )
-            })()}
-            
-            {/* Cantidad - solo para productos por unidad */}
-            {modalSelectedUnit === 'unidad' && (
-              <div className="mb-5">
-                <label className="block text-sm font-semibold text-text-muted mb-3">Cantidad</label>
-                <div className="flex items-center justify-center gap-6">
-                  <button
-                    onClick={() => setModalQuantity(Math.max(1, modalQuantity - 1))}
-                    className="w-14 h-14 rounded-2xl bg-bg flex items-center justify-center text-2xl font-bold active:scale-90 transition-transform"
-                  >
-                    −
-                  </button>
-                  <span className="text-5xl font-bold w-20 text-center">{modalQuantity}</span>
-                  <button
-                    onClick={() => setModalQuantity(modalQuantity + 1)}
-                    className="w-14 h-14 rounded-2xl bg-bg flex items-center justify-center text-2xl font-bold active:scale-90 transition-transform"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Peso - solo para productos por kilo */}
-            {modalSelectedUnit === 'kg' && (
-              <div className="space-y-4 mb-5">
-                {/* Notas rápidas */}
                 <div>
-                  <label className="block text-sm font-semibold text-text-muted mb-2">¿Cuánto?</label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {['½', '¼', '1', '2'].map(opt => (
-                      <button
-                        key={opt}
-                        type="button"
-                        onClick={() => setModalNotes(opt === '1' || opt === '2' ? `${opt} horma` : `${opt} horma`)}
-                        className={`py-3 rounded-xl border-2 text-lg font-bold transition-all ${
-                          modalNotes === `${opt} horma` || modalNotes === `${opt} horma`
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'border-border'
-                        }`}
-                      >
-                        {opt}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Campo de nota personalizada */}
-                <div>
-                  <label className="block text-sm font-semibold text-text-muted mb-2">Nota (opcional)</label>
-                  <input
-                    type="text"
-                    value={modalNotes}
-                    onChange={(e) => setModalNotes(e.target.value)}
-                    placeholder="Ej: ½ horma, poca cantidad, etc."
-                    className="input"
-                  />
-                </div>
-
-                {/* Peso - se llena cuando se prepare */}
-                <div>
-                  <label className="block text-sm font-semibold text-text-muted mb-2">
-                    Peso (kg) <span className="text-text-light font-normal">- opcional, se puede poner después</span>
-                  </label>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    step="0.001"
-                    value={modalWeight}
-                    onChange={(e) => setModalWeight(e.target.value)}
-                    placeholder="Ej: 1.250"
-                    className="input text-center text-xl"
-                  />
+                  <h3 className="font-bold text-xl">{modalProduct.name}</h3>
+                  <p className="text-text-muted">
+                    {editingIndex !== null && <span className="text-primary font-medium">Editando • </span>}
+                    {modalSelectedUnit === 'kg' && 'Se vende por kilo'}
+                    {modalSelectedUnit === 'litro' && 'Se vende por litro'}
+                    {modalSelectedUnit === 'unidad' && 'Se vende por unidad'}
+                    {modalSelectedUnit === 'caja' && 'Se vende por caja'}
+                    {modalSelectedUnit === 'funda' && 'Se vende por funda'}
+                  </p>
                 </div>
               </div>
-            )}
 
-            {/* Volumen - solo para productos por litro */}
-            {modalSelectedUnit === 'litro' && (
-              <div className="mb-5">
-                <label className="block text-sm font-semibold text-text-muted mb-2">Litros</label>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  step="0.1"
-                  value={modalVolume}
-                  onChange={(e) => setModalVolume(e.target.value)}
-                  placeholder="Ej: 10"
-                  className="input text-center text-xl"
-                />
-              </div>
-            )}
-
-            {/* Cajas/Fundas */}
-            {(modalSelectedUnit === 'caja' || modalSelectedUnit === 'funda') && (
-              <div className="space-y-4">
-                {/* Cantidad de cajas/fundas con botones */}
-                <div>
-                  <label className="block text-sm font-semibold text-text-muted mb-3">
-                    {modalSelectedUnit === 'caja' ? 'Cajas' : 'Fundas'}
-                  </label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {[0, 1, 2, 3, 4, 5, '½', '¼'].map((val) => (
-                      <button
-                        key={val}
-                        onClick={() => {
-                          if (val === '½') {
-                            setModalBoxes(0)
-                            setModalFraction(0.5)
-                          } else if (val === '¼') {
-                            setModalBoxes(0)
-                            setModalFraction(0.25)
-                          } else {
-                            setModalBoxes(val as number)
-                            setModalFraction(0)
-                          }
-                        }}
-                        className={`py-4 rounded-xl border-2 text-xl font-bold transition-all ${
-                          (typeof val === 'number' && modalBoxes === val && modalFraction === 0) ||
-                          (val === '½' && modalFraction === 0.5 && modalBoxes === 0) ||
-                          (val === '¼' && modalFraction === 0.25 && modalBoxes === 0)
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'border-border'
-                        }`}
-                      >
-                        {val}
-                      </button>
-                    ))}
-                  </div>
-                  
-                  {/* Combinaciones con fracción */}
-                  {modalBoxes > 0 && (
-                    <div className="mt-3">
-                      <label className="block text-sm font-semibold text-text-muted mb-2">+ Fracción</label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {[
-                          { value: 0, label: '0' },
-                          { value: 0.5, label: '+ ½' },
-                          { value: 0.25, label: '+ ¼' },
-                        ].map(opt => (
-                          <button
-                            key={opt.value}
-                            onClick={() => setModalFraction(opt.value as 0 | 0.5 | 0.25)}
-                            className={`py-3 rounded-xl border-2 text-lg font-bold transition-all ${
-                              modalFraction === opt.value
-                                ? 'border-primary bg-primary/10 text-primary'
-                                : 'border-border'
-                            }`}
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
+              {/* Selector de unidad - solo si tiene múltiples */}
+              {(() => {
+                const units = Array.isArray(modalProduct.unit) ? modalProduct.unit : [modalProduct.unit]
+                return units.length > 1 && (
+                  <div className="mb-5">
+                    <label className="block text-sm font-semibold text-text-muted mb-2">¿Cómo se vende?</label>
+                    <div className="flex flex-wrap gap-2">
+                      {units.map(unit => (
+                        <button
+                          key={unit}
+                          onClick={() => setModalSelectedUnit(unit)}
+                          className={`px-4 py-2 rounded-xl border-2 font-medium transition-all flex items-center gap-2 ${
+                            modalSelectedUnit === unit
+                              ? 'border-primary bg-primary/10 text-primary'
+                              : 'border-border'
+                          }`}
+                        >
+                          <span>{getUnitIcon(unit)}</span>
+                          <span>
+                            {unit === 'unidad' && 'Unidad'}
+                            {unit === 'kg' && 'Kilo'}
+                            {unit === 'litro' && 'Litro'}
+                            {unit === 'caja' && 'Caja'}
+                            {unit === 'funda' && 'Funda'}
+                          </span>
+                        </button>
+                      ))}
                     </div>
-                  )}
-                </div>
-
-                {/* Unidades extra */}
-                <div>
-                  <label className="block text-sm font-semibold text-text-muted mb-3">+ Unidades sueltas</label>
-                  <div className="flex items-center justify-center gap-4">
+                  </div>
+                )
+              })()}
+              
+              {/* Cantidad - solo para productos por unidad */}
+              {modalSelectedUnit === 'unidad' && (
+                <div className="mb-5">
+                  <label className="block text-sm font-semibold text-text-muted mb-3">Cantidad</label>
+                  <div className="flex items-center justify-center gap-6">
                     <button
-                      onClick={() => setModalExtraUnits(Math.max(0, modalExtraUnits - 1))}
-                      className="w-12 h-12 rounded-xl bg-bg flex items-center justify-center text-xl font-bold active:scale-90 transition-transform"
+                      onClick={() => setModalQuantity(Math.max(1, modalQuantity - 1))}
+                      className="w-14 h-14 rounded-2xl bg-bg flex items-center justify-center text-2xl font-bold active:scale-90 transition-transform"
                     >
                       −
                     </button>
-                    <span className="text-4xl font-bold w-16 text-center">{modalExtraUnits}</span>
+                    <span className="text-5xl font-bold w-20 text-center">{modalQuantity}</span>
                     <button
-                      onClick={() => setModalExtraUnits(modalExtraUnits + 1)}
-                      className="w-12 h-12 rounded-xl bg-bg flex items-center justify-center text-xl font-bold active:scale-90 transition-transform"
+                      onClick={() => setModalQuantity(modalQuantity + 1)}
+                      className="w-14 h-14 rounded-2xl bg-bg flex items-center justify-center text-2xl font-bold active:scale-90 transition-transform"
                     >
                       +
                     </button>
                   </div>
                 </div>
+              )}
 
-                {/* Preview */}
-                <div className="bg-bg rounded-xl p-4 text-center">
-                  <span className="text-text-muted text-sm">Total: </span>
-                  <span className="font-bold text-lg text-primary">
-                    {(() => {
-                      const unitLabel = modalSelectedUnit === 'caja' ? 'caja' : 'funda'
-                      const unitLabelPlural = modalSelectedUnit === 'caja' ? 'cajas' : 'fundas'
-                      let parts: string[] = []
-                      
-                      if (modalBoxes > 0 || modalFraction > 0) {
-                        if (modalFraction === 0.5) {
-                          if (modalBoxes === 0) parts.push(`½ ${unitLabel}`)
-                          else parts.push(`${modalBoxes} y ½ ${unitLabelPlural}`)
-                        } else if (modalFraction === 0.25) {
-                          if (modalBoxes === 0) parts.push(`¼ ${unitLabel}`)
-                          else parts.push(`${modalBoxes} y ¼ ${unitLabelPlural}`)
-                        } else {
-                          parts.push(`${modalBoxes} ${modalBoxes === 1 ? unitLabel : unitLabelPlural}`)
-                        }
-                      }
-                      
-                      if (modalExtraUnits > 0) parts.push(`${modalExtraUnits}u`)
-                      
-                      return parts.length > 0 ? parts.join(' + ') : 'Selecciona cantidad'
-                    })()}
-                  </span>
+              {/* Peso - solo para productos por kilo */}
+              {modalSelectedUnit === 'kg' && (
+                <div className="space-y-4 mb-5">
+                  <div>
+                    <label className="block text-sm font-semibold text-text-muted mb-2">¿Cuánto?</label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {['½', '¼', '1', '2'].map(opt => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => setModalNotes(`${opt} horma`)}
+                          className={`py-3 rounded-xl border-2 text-lg font-bold transition-all ${
+                            modalNotes === `${opt} horma`
+                              ? 'border-primary bg-primary/10 text-primary'
+                              : 'border-border'
+                          }`}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-text-muted mb-2">Nota (opcional)</label>
+                    <input
+                      type="text"
+                      value={modalNotes}
+                      onChange={(e) => setModalNotes(e.target.value)}
+                      placeholder="Ej: ½ horma, poca cantidad, etc."
+                      className="input"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-text-muted mb-2">
+                      Peso (kg) <span className="text-text-light font-normal">- opcional, se puede poner después</span>
+                    </label>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.001"
+                      value={modalWeight}
+                      onChange={(e) => setModalWeight(e.target.value)}
+                      placeholder="Ej: 1.250"
+                      className="input text-center text-xl"
+                    />
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            <div className="flex gap-3 mt-6">
-              <button onClick={closeModal} className="btn btn-outline flex-1">
-                Cancelar
-              </button>
-              <button onClick={addToCart} className="btn btn-primary flex-1">
-                {editingIndex !== null ? 'Guardar' : 'Agregar'}
-              </button>
+              {/* Volumen - solo para productos por litro */}
+              {modalSelectedUnit === 'litro' && (
+                <div className="mb-5">
+                  <label className="block text-sm font-semibold text-text-muted mb-2">Litros</label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.1"
+                    value={modalVolume}
+                    onChange={(e) => setModalVolume(e.target.value)}
+                    placeholder="Ej: 10"
+                    className="input text-center text-xl"
+                  />
+                </div>
+              )}
+
+              {/* Cajas/Fundas */}
+              {(modalSelectedUnit === 'caja' || modalSelectedUnit === 'funda') && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-text-muted mb-3">
+                      {modalSelectedUnit === 'caja' ? 'Cajas' : 'Fundas'}
+                    </label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[0, 1, 2, 3, 4, 5, '½', '¼'].map((val) => (
+                        <button
+                          key={val}
+                          onClick={() => {
+                            if (val === '½') {
+                              setModalBoxes(0)
+                              setModalFraction(0.5)
+                            } else if (val === '¼') {
+                              setModalBoxes(0)
+                              setModalFraction(0.25)
+                            } else {
+                              setModalBoxes(val as number)
+                              setModalFraction(0)
+                            }
+                          }}
+                          className={`py-4 rounded-xl border-2 text-xl font-bold transition-all ${
+                            (typeof val === 'number' && modalBoxes === val && modalFraction === 0) ||
+                            (val === '½' && modalFraction === 0.5 && modalBoxes === 0) ||
+                            (val === '¼' && modalFraction === 0.25 && modalBoxes === 0)
+                              ? 'border-primary bg-primary/10 text-primary'
+                              : 'border-border'
+                          }`}
+                        >
+                          {val}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    {/* Combinaciones con fracción */}
+                    {modalBoxes > 0 && (
+                      <div className="mt-3">
+                        <label className="block text-sm font-semibold text-text-muted mb-2">+ Fracción</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            { value: 0, label: '0' },
+                            { value: 0.5, label: '+ ½' },
+                            { value: 0.25, label: '+ ¼' },
+                          ].map(opt => (
+                            <button
+                              key={opt.value}
+                              onClick={() => setModalFraction(opt.value as 0 | 0.5 | 0.25)}
+                              className={`py-3 rounded-xl border-2 text-lg font-bold transition-all ${
+                                modalFraction === opt.value
+                                  ? 'border-primary bg-primary/10 text-primary'
+                                  : 'border-border'
+                              }`}
+                            >
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Unidades extra */}
+                  <div>
+                    <label className="block text-sm font-semibold text-text-muted mb-3">+ Unidades sueltas</label>
+                    <div className="flex items-center justify-center gap-4">
+                      <button
+                        onClick={() => setModalExtraUnits(Math.max(0, modalExtraUnits - 1))}
+                        className="w-12 h-12 rounded-xl bg-bg flex items-center justify-center text-xl font-bold active:scale-90 transition-transform"
+                      >
+                        −
+                      </button>
+                      <span className="text-4xl font-bold w-16 text-center">{modalExtraUnits}</span>
+                      <button
+                        onClick={() => setModalExtraUnits(modalExtraUnits + 1)}
+                        className="w-12 h-12 rounded-xl bg-bg flex items-center justify-center text-xl font-bold active:scale-90 transition-transform"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Preview */}
+                  <div className="bg-bg rounded-xl p-4 text-center">
+                    <span className="text-text-muted text-sm">Total: </span>
+                    <span className="font-bold text-lg text-primary">
+                      {(() => {
+                        const unitLabel = modalSelectedUnit === 'caja' ? 'caja' : 'funda'
+                        const unitLabelPlural = modalSelectedUnit === 'caja' ? 'cajas' : 'fundas'
+                        let parts: string[] = []
+                        
+                        if (modalBoxes > 0 || modalFraction > 0) {
+                          if (modalFraction === 0.5) {
+                            if (modalBoxes === 0) parts.push(`½ ${unitLabel}`)
+                            else parts.push(`${modalBoxes} y ½ ${unitLabelPlural}`)
+                          } else if (modalFraction === 0.25) {
+                            if (modalBoxes === 0) parts.push(`¼ ${unitLabel}`)
+                            else parts.push(`${modalBoxes} y ¼ ${unitLabelPlural}`)
+                          } else {
+                            parts.push(`${modalBoxes} ${modalBoxes === 1 ? unitLabel : unitLabelPlural}`)
+                          }
+                        }
+                        
+                        if (modalExtraUnits > 0) parts.push(`${modalExtraUnits}u`)
+                        
+                        return parts.length > 0 ? parts.join(' + ') : 'Selecciona cantidad'
+                      })()}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Botones fijos en el fondo */}
+            <div className="p-6 pt-3 border-t border-border">
+              <div className="flex gap-3">
+                <button onClick={closeModal} className="btn btn-outline flex-1">
+                  Cancelar
+                </button>
+                <button onClick={addToCart} className="btn btn-primary flex-1">
+                  {editingIndex !== null ? 'Guardar' : 'Agregar'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -902,7 +898,6 @@ export default function MostradorPage() {
 
             <div className="flex-1 overflow-auto p-6">
               {(() => {
-                // Agrupar items por ubicación
                 const grouped: Record<string, { items: typeof cart, indices: number[] }> = {}
                 
                 cart.forEach((item, index) => {
@@ -914,7 +909,6 @@ export default function MostradorPage() {
                   grouped[location].indices.push(index)
                 })
 
-                // Ordenar ubicaciones (Sin ubicación al final)
                 const sortedLocations = Object.keys(grouped).sort((a, b) => {
                   if (a === 'Sin ubicación') return 1
                   if (b === 'Sin ubicación') return -1
@@ -925,7 +919,6 @@ export default function MostradorPage() {
                   <div className="space-y-4">
                     {sortedLocations.map(location => (
                       <div key={location}>
-                        {/* Header de ubicación */}
                         <div className="flex items-center gap-2 mb-2 px-1">
                           <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -935,7 +928,6 @@ export default function MostradorPage() {
                           <span className="text-xs text-text-muted">({grouped[location].items.length})</span>
                         </div>
                         
-                        {/* Items de esta ubicación */}
                         <div className="space-y-2">
                           {grouped[location].items.map((item, localIndex) => {
                             const globalIndex = grouped[location].indices[localIndex]
@@ -967,7 +959,6 @@ export default function MostradorPage() {
                                   {formatItemDisplay(item)}
                                 </span>
                                 
-                                {/* Botón editar */}
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation()
@@ -980,7 +971,6 @@ export default function MostradorPage() {
                                   </svg>
                                 </button>
                                 
-                                {/* Botón eliminar */}
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation()
