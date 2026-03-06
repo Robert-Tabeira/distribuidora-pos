@@ -29,6 +29,11 @@ export type Database = {
           unit: string[]
           status: 'pending' | 'complete'
           location: string | null
+          price_kg: number | null
+          price_unidad: number | null
+          price_caja: number | null
+          price_funda: number | null
+          price_litro: number | null
           created_at: string
         }
         Insert: {
@@ -38,6 +43,11 @@ export type Database = {
           unit?: string[]
           status?: 'pending' | 'complete'
           location?: string | null
+          price_kg?: number | null
+          price_unidad?: number | null
+          price_caja?: number | null
+          price_funda?: number | null
+          price_litro?: number | null
           created_at?: string
         }
         Update: {
@@ -47,6 +57,11 @@ export type Database = {
           unit?: string[]
           status?: 'pending' | 'complete'
           location?: string | null
+          price_kg?: number | null
+          price_unidad?: number | null
+          price_caja?: number | null
+          price_funda?: number | null
+          price_litro?: number | null
           created_at?: string
         }
       }
