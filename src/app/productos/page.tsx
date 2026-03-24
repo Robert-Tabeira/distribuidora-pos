@@ -23,6 +23,10 @@ export default function ProductosPage() {
   const [showLocationDropdown, setShowLocationDropdown] = useState(false)
   const [saving, setSaving] = useState(false)
 
+  // Modal de coincidencias
+  const [similarProducts, setSimilarProducts] = useState<Product[]>([])
+  const [showSimilarModal, setShowSimilarModal] = useState(false)
+
   useEffect(() => {
     const stored = localStorage.getItem('employee')
     if (!stored) {
@@ -92,7 +96,61 @@ export default function ProductosPage() {
     }
   }
 
+  // Buscar productos similares basándose en palabras compartidas
+  function findSimilarProducts(name: string, currentProductId: string): Product[] {
+    // Palabras a ignorar
+    const stopWords = ['de', 'del', 'la', 'el', 'los', 'las', 'y', 'con', 'sin', 'a', 'en']
+    
+    // Extraer palabras significativas (mínimo 3 caracteres)
+    const words = name
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(word => word.length >= 3 && !stopWords.includes(word))
+    
+    if (words.length === 0) return []
+
+    // Buscar productos que compartan al menos 1 palabra
+    const similar = products.filter(p => {
+      if (p.id === currentProductId) return false
+      
+      const productWords = p.name
+        .toLowerCase()
+        .split(/\s+/)
+        .filter(word => word.length >= 3 && !stopWords.includes(word))
+      
+      // Verificar si comparten al menos 1 palabra
+      return words.some(word => productWords.includes(word))
+    })
+
+    // Ordenar por cantidad de palabras compartidas (más coincidencias primero)
+    return similar
+      .map(p => {
+        const productWords = p.name.toLowerCase().split(/\s+/)
+        const sharedCount = words.filter(word => productWords.includes(word)).length
+        return { product: p, sharedCount }
+      })
+      .sort((a, b) => b.sharedCount - a.sharedCount)
+      .slice(0, 4) // Máximo 4 coincidencias
+      .map(item => item.product)
+  }
+
   async function saveProduct() {
+    if (!editingProduct || !editName.trim() || editUnits.length === 0) return
+
+    // Buscar coincidencias antes de guardar
+    const similar = findSimilarProducts(editName.trim(), editingProduct.id)
+    
+    if (similar.length > 0) {
+      setSimilarProducts(similar)
+      setShowSimilarModal(true)
+      return
+    }
+
+    // Si no hay coincidencias, guardar directamente
+    await performSave()
+  }
+
+  async function performSave() {
     if (!editingProduct || !editName.trim() || editUnits.length === 0) return
 
     setSaving(true)
@@ -126,6 +184,7 @@ export default function ProductosPage() {
       }
 
       closeEditModal()
+      setShowSimilarModal(false)
       if (navigator.vibrate) navigator.vibrate(50)
 
     } catch (error) {
@@ -359,7 +418,7 @@ export default function ProductosPage() {
       </div>
 
       {/* Modal de edición */}
-      {editingProduct && (
+      {editingProduct && !showSimilarModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50" onClick={closeEditModal}>
           <div className="bg-surface w-full max-w-lg rounded-t-3xl p-6 animate-slide-up max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
             <div className="w-12 h-1.5 bg-border rounded-full mx-auto mb-6" />
@@ -467,14 +526,12 @@ export default function ProductosPage() {
                 }}
                 onFocus={() => setShowLocationDropdown(true)}
                 onBlur={() => {
-                  // Delay para permitir click en opción
                   setTimeout(() => setShowLocationDropdown(false), 150)
                 }}
                 placeholder="Ej: Pasillo 3, Heladera"
                 className="input"
                 autoComplete="off"
               />
-              {/* Dropdown de sugerencias */}
               {showLocationDropdown && editLocation.trim() && locations.filter(loc => 
                 loc.toLowerCase().includes(editLocation.toLowerCase()) && 
                 loc.toLowerCase() !== editLocation.toLowerCase()
@@ -517,6 +574,53 @@ export default function ProductosPage() {
                 className="btn btn-primary flex-1"
               >
                 {saving ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de productos similares */}
+      {showSimilarModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50">
+          <div className="bg-surface w-full max-w-lg rounded-t-3xl p-6 animate-slide-up max-h-[80vh] overflow-auto" onClick={e => e.stopPropagation()}>
+            <div className="w-12 h-1.5 bg-border rounded-full mx-auto mb-6" />
+            
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-warning/10 flex items-center justify-center mb-4">
+                <svg className="w-8 h-8 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="font-bold text-xl mb-2">¿Es el mismo producto?</h3>
+              <p className="text-text-muted">Encontramos productos similares a <span className="font-semibold text-text">"{editName}"</span></p>
+            </div>
+
+            <div className="space-y-2 mb-6">
+              {similarProducts.map(product => (
+                <div key={product.id} className="p-4 rounded-xl bg-bg border border-border">
+                  <div className="font-semibold text-text">{product.name}</div>
+                  <div className="text-sm text-text-muted mt-1">
+                    {getCategoryName(product.category_id)}
+                    {product.location && ` • ${product.location}`}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowSimilarModal(false)}
+                className="btn btn-outline flex-1"
+              >
+                Sí, es el mismo
+              </button>
+              <button 
+                onClick={performSave}
+                disabled={saving}
+                className="btn btn-primary flex-1"
+              >
+                {saving ? 'Guardando...' : 'No, es diferente'}
               </button>
             </div>
           </div>
