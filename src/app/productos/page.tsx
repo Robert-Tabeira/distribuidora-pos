@@ -22,6 +22,21 @@ export default function ProductosPage() {
   const [editLocation, setEditLocation] = useState('')
   const [showLocationDropdown, setShowLocationDropdown] = useState(false)
   const [saving, setSaving] = useState(false)
+  
+  // Precios Lista 1
+  const [editPrices, setEditPrices] = useState<{
+    kg: string
+    unidad: string
+    caja: string
+    funda: string
+    litro: string
+  }>({
+    kg: '',
+    unidad: '',
+    caja: '',
+    funda: '',
+    litro: ''
+  })
 
   // Modal de coincidencias
   const [similarProducts, setSimilarProducts] = useState<Product[]>([])
@@ -78,6 +93,15 @@ export default function ProductosPage() {
     setEditCategory(product.category_id)
     setEditLocation(product.location || '')
     setShowLocationDropdown(false)
+    
+    // Cargar precios existentes
+    setEditPrices({
+      kg: product.price_lista1_kg?.toString() || '',
+      unidad: product.price_lista1_unidad?.toString() || '',
+      caja: product.price_lista1_caja?.toString() || '',
+      funda: product.price_lista1_funda?.toString() || '',
+      litro: product.price_lista1_litro?.toString() || ''
+    })
   }
 
   function closeEditModal() {
@@ -109,9 +133,10 @@ export default function ProductosPage() {
     
     if (words.length === 0) return []
 
-    // Buscar productos que compartan al menos 1 palabra
+    // Buscar productos que compartan al menos 1 palabra - SOLO en productos complete
     const similar = products.filter(p => {
       if (p.id === currentProductId) return false
+      if (p.status !== 'complete') return false // Solo comparar con productos ya agregados
       
       const productWords = p.name
         .toLowerCase()
@@ -166,6 +191,11 @@ export default function ProductosPage() {
           category_id: editCategory,
           location: newLocation,
           status: 'complete',
+          price_lista1_kg: editPrices.kg ? parseFloat(editPrices.kg) : null,
+          price_lista1_unidad: editPrices.unidad ? parseFloat(editPrices.unidad) : null,
+          price_lista1_caja: editPrices.caja ? parseFloat(editPrices.caja) : null,
+          price_lista1_funda: editPrices.funda ? parseFloat(editPrices.funda) : null,
+          price_lista1_litro: editPrices.litro ? parseFloat(editPrices.litro) : null,
         })
         .eq('id', editingProduct.id)
 
@@ -174,7 +204,19 @@ export default function ProductosPage() {
       // Actualizar lista local
       setProducts(products.map(p => 
         p.id === editingProduct.id 
-          ? { ...p, name: editName.trim(), unit: editUnits, category_id: editCategory, location: newLocation, status: 'complete' as const }
+          ? { 
+              ...p, 
+              name: editName.trim(), 
+              unit: editUnits, 
+              category_id: editCategory, 
+              location: newLocation, 
+              status: 'complete' as const,
+              price_lista1_kg: editPrices.kg ? parseFloat(editPrices.kg) : null,
+              price_lista1_unidad: editPrices.unidad ? parseFloat(editPrices.unidad) : null,
+              price_lista1_caja: editPrices.caja ? parseFloat(editPrices.caja) : null,
+              price_lista1_funda: editPrices.funda ? parseFloat(editPrices.funda) : null,
+              price_lista1_litro: editPrices.litro ? parseFloat(editPrices.litro) : null,
+            }
           : p
       ))
 
@@ -563,6 +605,88 @@ export default function ProductosPage() {
                 </div>
               )}
             </div>
+
+            {/* Precios Lista 1 (solo para productos pendientes) */}
+            {editingProduct?.status === 'pending' && (
+              <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="font-semibold text-emerald-900">Precios Lista 1 (con IVA)</span>
+                </div>
+                <p className="text-sm text-emerald-700 mb-4">Ingresá los precios para las unidades seleccionadas</p>
+                
+                <div className="space-y-3">
+                  {editUnits.includes('kg') && (
+                    <div>
+                      <label className="block text-sm font-medium text-emerald-900 mb-1">Precio por Kilo ($)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editPrices.kg}
+                        onChange={(e) => setEditPrices({...editPrices, kg: e.target.value})}
+                        placeholder="Ej: 150.00"
+                        className="input bg-white"
+                      />
+                    </div>
+                  )}
+                  {editUnits.includes('unidad') && (
+                    <div>
+                      <label className="block text-sm font-medium text-emerald-900 mb-1">Precio por Unidad ($)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editPrices.unidad}
+                        onChange={(e) => setEditPrices({...editPrices, unidad: e.target.value})}
+                        placeholder="Ej: 50.00"
+                        className="input bg-white"
+                      />
+                    </div>
+                  )}
+                  {editUnits.includes('caja') && (
+                    <div>
+                      <label className="block text-sm font-medium text-emerald-900 mb-1">Precio por Caja ($)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editPrices.caja}
+                        onChange={(e) => setEditPrices({...editPrices, caja: e.target.value})}
+                        placeholder="Ej: 500.00"
+                        className="input bg-white"
+                      />
+                    </div>
+                  )}
+                  {editUnits.includes('funda') && (
+                    <div>
+                      <label className="block text-sm font-medium text-emerald-900 mb-1">Precio por Funda ($)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editPrices.funda}
+                        onChange={(e) => setEditPrices({...editPrices, funda: e.target.value})}
+                        placeholder="Ej: 300.00"
+                        className="input bg-white"
+                      />
+                    </div>
+                  )}
+                  {editUnits.includes('litro') && (
+                    <div>
+                      <label className="block text-sm font-medium text-emerald-900 mb-1">Precio por Litro ($)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editPrices.litro}
+                        onChange={(e) => setEditPrices({...editPrices, litro: e.target.value})}
+                        placeholder="Ej: 80.00"
+                        className="input bg-white"
+                      />
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-emerald-600 mt-3">💡 La Lista 5 se calcula automáticamente quitando el IVA (22%)</p>
+              </div>
+            )}
 
             <div className="flex gap-3">
               <button onClick={closeEditModal} className="btn btn-outline flex-1">
