@@ -18,6 +18,8 @@ export interface Product {
   price_lista1_caja: number | null
   price_lista1_funda: number | null
   price_lista1_litro: number | null
+  product_code: string | null
+  gallery: string[]
 }
 
 export interface Employee {
