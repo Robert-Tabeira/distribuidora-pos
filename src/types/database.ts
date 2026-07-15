@@ -20,6 +20,7 @@ export interface Product {
   price_lista1_litro: number | null
   product_code: string | null
   gallery: string[]
+  description: string | null
 }
 
 export interface Employee {
