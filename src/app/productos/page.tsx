@@ -3,14 +3,12 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import type { Product, Category, Employee } from '@/types/database'
+import type { Employee, Product } from '@/types/database'
 
 export default function ProductosPage() {
   const router = useRouter()
   const [employee, setEmployee] = useState<Employee | null>(null)
   const [products, setProducts] = useState<Product[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [locations, setLocations] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'pending' | 'complete'>('pending')
   
@@ -20,23 +18,19 @@ export default function ProductosPage() {
   const [editUnits, setEditUnits] = useState<string[]>(['unidad'])
   const [editCategory, setEditCategory] = useState<string | null>(null)
   const [editLocation, setEditLocation] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editProductCode, setEditProductCode] = useState('')
   const [showLocationDropdown, setShowLocationDropdown] = useState(false)
   const [saving, setSaving] = useState(false)
-  
-  // Precios Lista 1
-  const [editPrices, setEditPrices] = useState<{
-    kg: string
-    unidad: string
-    caja: string
-    funda: string
-    litro: string
-  }>({
-    kg: '',
-    unidad: '',
-    caja: '',
-    funda: '',
-    litro: ''
-  })
+
+  // Imágenes
+  const [editGallery, setEditGallery] = useState<string[]>([])
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+
+  // Categorías y ubicaciones
+  const [categories, setCategories] = useState<any[]>([])
+  const [locations, setLocations] = useState<string[]>([])
 
   // Modal de coincidencias
   const [similarProducts, setSimilarProducts] = useState<Product[]>([])
@@ -49,7 +43,6 @@ export default function ProductosPage() {
       return
     }
     const emp = JSON.parse(stored)
-    // Solo Admin puede acceder a esta página
     if (emp.role !== 'admin') {
       router.push('/mostrador')
       return
@@ -66,7 +59,6 @@ export default function ProductosPage() {
 
     if (productsRes.data) {
       setProducts(productsRes.data)
-      // Extraer ubicaciones únicas
       const uniqueLocations = [...new Set(
         productsRes.data
           .map(p => p.location)
@@ -92,26 +84,20 @@ export default function ProductosPage() {
     setEditUnits(units.length > 0 ? units : ['unidad'])
     setEditCategory(product.category_id)
     setEditLocation(product.location || '')
+    setEditDescription(product.description || '')
+    setEditProductCode(product.product_code || '')
+    setEditGallery(product.gallery || [])
     setShowLocationDropdown(false)
-    
-    // Cargar precios existentes
-    setEditPrices({
-      kg: product.price_lista1_kg?.toString() || '',
-      unidad: product.price_lista1_unidad?.toString() || '',
-      caja: product.price_lista1_caja?.toString() || '',
-      funda: product.price_lista1_funda?.toString() || '',
-      litro: product.price_lista1_litro?.toString() || ''
-    })
+    setImagePreview(null)
   }
 
   function closeEditModal() {
     setEditingProduct(null)
-    setShowLocationDropdown(false)
+    setImagePreview(null)
   }
 
   function toggleUnit(unit: string) {
     if (editUnits.includes(unit)) {
-      // No permitir quitar si es el único
       if (editUnits.length > 1) {
         setEditUnits(editUnits.filter(u => u !== unit))
       }
@@ -120,12 +106,86 @@ export default function ProductosPage() {
     }
   }
 
-  // Buscar productos similares basándose en palabras compartidas
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !editingProduct) return
+
+    setUploadingImage(true)
+
+    try {
+      // Validar tamaño (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('La imagen no puede pesar más de 5MB')
+        return
+      }
+
+      // Crear nombre de archivo
+      const fileName = `${editingProduct.id}/${Date.now()}_${file.name.replace(/\s+/g, '_')}`
+      
+      // Subir a Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(fileName, file)
+
+      if (uploadError) throw uploadError
+
+      // Obtener URL pública
+      const { data: publicData } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(fileName)
+
+      if (publicData?.publicUrl) {
+        setEditGallery([...editGallery, publicData.publicUrl])
+      }
+
+      // Limpiar
+      setImagePreview(null)
+      if (e.target) e.target.value = ''
+
+      if (navigator.vibrate) navigator.vibrate(50)
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      alert('Error al subir la imagen')
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
+  function handleImagePreview(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      setImagePreview(reader.result as string)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  async function deleteImage(imageUrl: string) {
+    try {
+      const pathMatch = imageUrl.match(/product-images\/(.+)$/)
+      if (!pathMatch) throw new Error('Invalid image URL')
+
+      const filePath = pathMatch[1]
+
+      const { error } = await supabase.storage
+        .from('product-images')
+        .remove([filePath])
+
+      if (error) throw error
+
+      setEditGallery(editGallery.filter(img => img !== imageUrl))
+      if (navigator.vibrate) navigator.vibrate(50)
+    } catch (error) {
+      console.error('Error deleting image:', error)
+      alert('Error al eliminar la imagen')
+    }
+  }
+
   function findSimilarProducts(name: string, currentProductId: string): Product[] {
-    // Palabras a ignorar
     const stopWords = ['de', 'del', 'la', 'el', 'los', 'las', 'y', 'con', 'sin', 'a', 'en']
     
-    // Extraer palabras significativas (mínimo 3 caracteres)
     const words = name
       .toLowerCase()
       .split(/\s+/)
@@ -133,21 +193,18 @@ export default function ProductosPage() {
     
     if (words.length === 0) return []
 
-    // Buscar productos que compartan al menos 1 palabra - SOLO en productos complete
     const similar = products.filter(p => {
       if (p.id === currentProductId) return false
-      if (p.status !== 'complete') return false // Solo comparar con productos ya agregados
+      if (p.status !== 'complete') return false
       
       const productWords = p.name
         .toLowerCase()
         .split(/\s+/)
         .filter(word => word.length >= 3 && !stopWords.includes(word))
       
-      // Verificar si comparten al menos 1 palabra
       return words.some(word => productWords.includes(word))
     })
 
-    // Ordenar por cantidad de palabras compartidas (más coincidencias primero)
     return similar
       .map(p => {
         const productWords = p.name.toLowerCase().split(/\s+/)
@@ -155,14 +212,13 @@ export default function ProductosPage() {
         return { product: p, sharedCount }
       })
       .sort((a, b) => b.sharedCount - a.sharedCount)
-      .slice(0, 4) // Máximo 4 coincidencias
+      .slice(0, 4)
       .map(item => item.product)
   }
 
   async function saveProduct() {
     if (!editingProduct || !editName.trim() || editUnits.length === 0) return
 
-    // Buscar coincidencias antes de guardar
     const similar = findSimilarProducts(editName.trim(), editingProduct.id)
     
     if (similar.length > 0) {
@@ -171,7 +227,6 @@ export default function ProductosPage() {
       return
     }
 
-    // Si no hay coincidencias, guardar directamente
     await performSave()
   }
 
@@ -190,18 +245,15 @@ export default function ProductosPage() {
           unit: editUnits,
           category_id: editCategory,
           location: newLocation,
+          description: editDescription.trim() || null,
+          product_code: editProductCode.trim() || null,
+          gallery: editGallery,
           status: 'complete',
-          price_lista1_kg: editPrices.kg ? parseFloat(editPrices.kg) : null,
-          price_lista1_unidad: editPrices.unidad ? parseFloat(editPrices.unidad) : null,
-          price_lista1_caja: editPrices.caja ? parseFloat(editPrices.caja) : null,
-          price_lista1_funda: editPrices.funda ? parseFloat(editPrices.funda) : null,
-          price_lista1_litro: editPrices.litro ? parseFloat(editPrices.litro) : null,
         })
         .eq('id', editingProduct.id)
 
       if (error) throw error
 
-      // Actualizar lista local
       setProducts(products.map(p => 
         p.id === editingProduct.id 
           ? { 
@@ -209,18 +261,15 @@ export default function ProductosPage() {
               name: editName.trim(), 
               unit: editUnits, 
               category_id: editCategory, 
-              location: newLocation, 
-              status: 'complete' as const,
-              price_lista1_kg: editPrices.kg ? parseFloat(editPrices.kg) : null,
-              price_lista1_unidad: editPrices.unidad ? parseFloat(editPrices.unidad) : null,
-              price_lista1_caja: editPrices.caja ? parseFloat(editPrices.caja) : null,
-              price_lista1_funda: editPrices.funda ? parseFloat(editPrices.funda) : null,
-              price_lista1_litro: editPrices.litro ? parseFloat(editPrices.litro) : null,
+              location: newLocation,
+              description: editDescription.trim() || null,
+              product_code: editProductCode.trim() || null,
+              gallery: editGallery,
+              status: 'complete' as const
             }
           : p
       ))
 
-      // Agregar ubicación a la lista si es nueva
       if (newLocation && !locations.includes(newLocation)) {
         setLocations([...locations, newLocation].sort())
       }
@@ -254,16 +303,6 @@ export default function ProductosPage() {
     } catch (error) {
       console.error('Error al eliminar:', error)
       alert('Error al eliminar el producto')
-    }
-  }
-
-  const getUnitIcon = (unit: string) => {
-    switch (unit) {
-      case 'kg': return '⚖️'
-      case 'litro': return '💧'
-      case 'caja': return '📦'
-      case 'funda': return '🛍️'
-      default: return '🔢'
     }
   }
 
@@ -348,7 +387,6 @@ export default function ProductosPage() {
       {/* Contenido */}
       <div className="flex-1 px-4 pb-4">
         {activeTab === 'pending' ? (
-          /* Sin agregar */
           pendingProducts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-text-muted">
               <div className="w-16 h-16 rounded-2xl bg-surface flex items-center justify-center mb-4">
@@ -400,7 +438,6 @@ export default function ProductosPage() {
             </div>
           )
         ) : (
-          /* Productos completos */
           completeProducts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-text-muted">
               <div className="w-16 h-16 rounded-2xl bg-surface flex items-center justify-center mb-4">
@@ -419,13 +456,16 @@ export default function ProductosPage() {
                     idx !== completeProducts.length - 1 ? 'border-b border-border-light' : ''
                   }`}
                 >
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center text-2xl">
-                    {(() => {
-                      const units = Array.isArray(product.unit) ? product.unit : [product.unit]
-                      return units.length > 1 
-                        ? units.map(u => getUnitIcon(u)).join('')
-                        : getUnitIcon(units[0])
-                    })()}
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
+                    {product.gallery && product.gallery.length > 0 ? (
+                      <img
+                        src={product.gallery[0]}
+                        alt={product.name}
+                        className="w-full h-full object-cover rounded-xl"
+                      />
+                    ) : (
+                      <span className="text-lg">📦</span>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-text truncate">{product.name}</div>
@@ -476,6 +516,30 @@ export default function ProductosPage() {
                 onChange={(e) => setEditName(e.target.value)}
                 placeholder="Nombre del producto"
                 className="input"
+              />
+            </div>
+
+            {/* Código */}
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-text-muted mb-2">Código (ej: Q1, F2)</label>
+              <input
+                type="text"
+                value={editProductCode}
+                onChange={(e) => setEditProductCode(e.target.value)}
+                placeholder="Ej: Q1"
+                className="input"
+              />
+            </div>
+
+            {/* Descripción */}
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-text-muted mb-2">Descripción</label>
+              <textarea
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Describe el producto en detalle..."
+                rows={3}
+                className="input resize-none"
               />
             </div>
 
@@ -555,7 +619,7 @@ export default function ProductosPage() {
             </div>
 
             {/* Ubicación */}
-            <div className="mb-6 relative">
+            <div className="mb-4 relative">
               <label className="block text-sm font-semibold text-text-muted mb-2">
                 Ubicación <span className="text-text-light">(opcional)</span>
               </label>
@@ -606,87 +670,143 @@ export default function ProductosPage() {
               )}
             </div>
 
-            {/* Precios Lista 1 (solo para productos pendientes) */}
-            {editingProduct?.status === 'pending' && (
-              <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200">
-                <div className="flex items-center gap-2 mb-3">
-                  <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            {/* Galería de imágenes + Vista Previa */}
+            <div className="mb-6 grid md:grid-cols-2 gap-4">
+              {/* Sección de carga */}
+              <div className="p-4 rounded-xl bg-primary/10 border border-primary/20">
+                <h4 className="font-semibold mb-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  <span className="font-semibold text-emerald-900">Precios Lista 1 (con IVA)</span>
+                  Galería de Imágenes
+                </h4>
+
+                {/* Preview antes de subir */}
+                {imagePreview && (
+                  <div className="mb-4 relative">
+                    <img src={imagePreview} alt="Preview" className="w-full max-h-48 object-cover rounded-lg" />
+                    <button
+                      onClick={() => setImagePreview(null)}
+                      className="absolute top-2 right-2 w-8 h-8 bg-danger text-white rounded-full flex items-center justify-center"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+
+                {/* Input de archivo */}
+                <div className="mb-4">
+                  <label className="block">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        handleImagePreview(e)
+                        handleImageUpload(e)
+                      }}
+                      disabled={uploadingImage}
+                      className="hidden"
+                    />
+                    <span className="block px-4 py-3 bg-primary text-white rounded-lg text-center font-medium cursor-pointer hover:bg-primary/90 transition-colors disabled:opacity-50">
+                      {uploadingImage ? '⏳ Subiendo...' : '📸 Seleccionar imagen'}
+                    </span>
+                  </label>
                 </div>
-                <p className="text-sm text-emerald-700 mb-4">Ingresá los precios para las unidades seleccionadas</p>
-                
-                <div className="space-y-3">
-                  {editUnits.includes('kg') && (
-                    <div>
-                      <label className="block text-sm font-medium text-emerald-900 mb-1">Precio por Kilo ($)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={editPrices.kg}
-                        onChange={(e) => setEditPrices({...editPrices, kg: e.target.value})}
-                        placeholder="Ej: 150.00"
-                        className="input bg-white"
-                      />
+
+                {/* Imágenes subidas */}
+                {editGallery.length > 0 && (
+                  <div>
+                    <p className="text-sm text-text-muted mb-2">Imágenes ({editGallery.length})</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {editGallery.map((image, idx) => (
+                        <div key={idx} className="relative group">
+                          <img
+                            src={image}
+                            alt={`Galería ${idx}`}
+                            className="w-full h-20 object-cover rounded-lg"
+                          />
+                          <button
+                            onClick={() => deleteImage(image)}
+                            className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-lg transition-opacity"
+                          >
+                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                          {idx === 0 && (
+                            <span className="absolute top-1 left-1 bg-primary text-white text-xs px-2 py-1 rounded">
+                              Principal
+                            </span>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                  )}
-                  {editUnits.includes('unidad') && (
-                    <div>
-                      <label className="block text-sm font-medium text-emerald-900 mb-1">Precio por Unidad ($)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={editPrices.unidad}
-                        onChange={(e) => setEditPrices({...editPrices, unidad: e.target.value})}
-                        placeholder="Ej: 50.00"
-                        className="input bg-white"
-                      />
-                    </div>
-                  )}
-                  {editUnits.includes('caja') && (
-                    <div>
-                      <label className="block text-sm font-medium text-emerald-900 mb-1">Precio por Caja ($)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={editPrices.caja}
-                        onChange={(e) => setEditPrices({...editPrices, caja: e.target.value})}
-                        placeholder="Ej: 500.00"
-                        className="input bg-white"
-                      />
-                    </div>
-                  )}
-                  {editUnits.includes('funda') && (
-                    <div>
-                      <label className="block text-sm font-medium text-emerald-900 mb-1">Precio por Funda ($)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={editPrices.funda}
-                        onChange={(e) => setEditPrices({...editPrices, funda: e.target.value})}
-                        placeholder="Ej: 300.00"
-                        className="input bg-white"
-                      />
-                    </div>
-                  )}
-                  {editUnits.includes('litro') && (
-                    <div>
-                      <label className="block text-sm font-medium text-emerald-900 mb-1">Precio por Litro ($)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={editPrices.litro}
-                        onChange={(e) => setEditPrices({...editPrices, litro: e.target.value})}
-                        placeholder="Ej: 80.00"
-                        className="input bg-white"
-                      />
-                    </div>
-                  )}
-                </div>
-                <p className="text-xs text-emerald-600 mt-3">💡 La Lista 5 se calcula automáticamente quitando el IVA (22%)</p>
+                  </div>
+                )}
+
+                <p className="text-xs text-text-muted mt-3">
+                  💡 Máx 5MB por imagen. Formatos: JPG, PNG, WebP
+                </p>
               </div>
-            )}
+
+              {/* Vista previa tipo card */}
+              <div className="p-4 rounded-xl bg-surface border border-border-light">
+                <h4 className="font-semibold mb-4">Vista Previa</h4>
+                <div className="bg-white rounded-xl overflow-hidden shadow-lg border border-gray-200">
+                  {/* Imagen de preview */}
+                  <div className="relative h-40 bg-gradient-to-br from-blue-100 to-gray-100 overflow-hidden">
+                    {editGallery.length > 0 ? (
+                      <img
+                        src={editGallery[0]}
+                        alt={editName}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-4xl">
+                        📦
+                      </div>
+                    )}
+                    {editProductCode && (
+                      <div className="absolute top-2 right-2 bg-blue-900 text-white px-2 py-1 rounded text-xs font-bold">
+                        #{editProductCode}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Contenido del card */}
+                  <div className="p-4">
+                    <h3 className="text-sm font-bold text-gray-900 mb-2 truncate">
+                      {editName || 'Nombre del producto'}
+                    </h3>
+                    
+                    {editDescription && (
+                      <p className="text-xs text-gray-600 mb-2 line-clamp-2 leading-snug">
+                        {editDescription}
+                      </p>
+                    )}
+
+                    {editLocation && (
+                      <p className="text-xs text-gray-500 mb-3">📍 {editLocation}</p>
+                    )}
+
+                    <div className="flex gap-2">
+                      <button className="flex-1 py-1.5 px-3 bg-gray-100 text-blue-900 rounded text-xs font-semibold cursor-not-allowed opacity-70">
+                        Ver Detalles
+                      </button>
+                      <button className="flex-1 py-1.5 px-3 bg-blue-900 text-white rounded text-xs font-semibold cursor-not-allowed opacity-70">
+                        🛒 Agregar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {editGallery.length === 0 && (
+                  <p className="text-xs text-text-muted mt-4 text-center">
+                    Sube imágenes para ver preview
+                  </p>
+                )}
+              </div>
+            </div>
 
             <div className="flex gap-3">
               <button onClick={closeEditModal} className="btn btn-outline flex-1">

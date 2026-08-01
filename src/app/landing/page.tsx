@@ -105,10 +105,10 @@ export default function SarubbiLandingPage() {
       <nav className="fixed top-0 w-full z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
-            <div className="flex items-center gap-3">
-              <div className="text-3xl font-black text-blue-900">Sarubbi</div>
+            <div className="flex items-center gap-4">
+              <div className="text-3xl font-black text-blue-900">Los Primos</div>
               <div className="h-8 w-px bg-gray-300"></div>
-              <div className="text-sm text-gray-600 font-medium">Distribuidora Oficial</div>
+              <div className="text-sm text-gray-600 font-medium">Distribuidora Oficial de Sarubbi</div>
             </div>
             
             <div className="hidden md:flex items-center gap-8">
@@ -149,18 +149,17 @@ export default function SarubbiLandingPage() {
             {/* Texto */}
             <div className="space-y-8">
               <div>
-                <h1 className="text-6xl md:text-7xl font-black mb-6 leading-tight">
-                  Sarubbi
-                  <span className="block text-blue-300">En tu puerta</span>
+                <h1 className="text-5xl md:text-6xl font-black mb-6 leading-tight">
+                  Los mejores productos de la línea Sarubbi y más
                 </h1>
                 <p className="text-xl text-blue-100 mb-8 leading-relaxed">
-                  Distribuidor oficial de Sarubbi en Uruguay. Los mejores productos de la marca, con entregas rápidas y atención personalizada.
+                  Distribuidora oficial de Sarubbi en Uruguay. Entregas rápidas, precios mayoristas y atención personalizada 24/7.
                 </p>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <a href="#productos" className="px-8 py-4 bg-white text-blue-900 rounded-xl font-bold text-lg hover:bg-gray-100 transition-all transform hover:scale-105 text-center shadow-lg">
-                  Explorar Catálogo
+                  Ver todos los productos
                 </a>
                 <a href="https://wa.me/598" target="_blank" rel="noopener noreferrer" className="px-8 py-4 bg-green-500 text-white rounded-xl font-bold text-lg hover:bg-green-600 transition-all transform hover:scale-105 flex items-center justify-center gap-2 shadow-lg">
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -443,7 +442,7 @@ export default function SarubbiLandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             <div>
-              <h3 className="text-white font-black text-2xl mb-3">Sarubbi</h3>
+              <h3 className="text-white font-black text-2xl mb-3">Los Primos</h3>
               <p className="text-sm text-gray-500">Distribuidora oficial de Sarubbi en Uruguay con más de 20 años de experiencia.</p>
             </div>
             <div>
@@ -469,7 +468,7 @@ export default function SarubbiLandingPage() {
           
           <div className="border-t border-gray-800 pt-8">
             <p className="text-center text-sm text-gray-500">
-              © 2024 Distribuidora de Sarubbi. Todos los derechos reservados.
+              © 2024 Distribuidora Los Primos. Todos los derechos reservados.
             </p>
           </div>
         </div>
