@@ -23,6 +23,33 @@ export interface Product {
   description: string | null
 }
 
+export interface Discount {
+  id: string
+  name: string
+  description: string | null
+  percentage: number
+  color: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ProductDiscount {
+  id: string
+  product_id: string
+  discount_id: string
+  created_at: string
+}
+
+export interface HeroSettings {
+  id: string
+  hero_image_url: string | null
+  show_category_buttons: boolean
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
 export interface Employee {
   id: string
   name: string
