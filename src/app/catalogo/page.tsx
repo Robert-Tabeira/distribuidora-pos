@@ -296,15 +296,16 @@ export default function CatalogPage() {
                 {filteredProducts.map(product => (
                   <div
                     key={product.id}
-                    className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all"
+                    className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col h-full cursor-pointer group"
+                    onClick={() => addToCart(product.id)}
                   >
                     {/* Imagen */}
-                    <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200">
+                    <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
                       {product.gallery?.[0] ? (
                         <img
                           src={product.gallery[0]}
                           alt={product.name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-5xl">📦</div>
@@ -316,32 +317,21 @@ export default function CatalogPage() {
                       )}
                     </div>
 
-                    {/* Info */}
-                    <div className="p-4">
-                      <h3 className="font-bold text-gray-900 line-clamp-2 mb-2">{product.name}</h3>
-
+                    {/* Info - Altura fija */}
+                    <div className="p-4 flex flex-col flex-1">
                       {product.product_code && (
-                        <p className="text-xs text-blue-600 font-semibold mb-2">#{product.product_code}</p>
+                        <p className="text-xs text-blue-600 font-semibold mb-1">#{product.product_code}</p>
                       )}
+
+                      <h3 className="font-bold text-gray-900 line-clamp-2 mb-2 flex-1">{product.name}</h3>
 
                       {product.description && (
-                        <p className="text-xs text-gray-600 line-clamp-2 mb-3">{product.description}</p>
-                      )}
-
-                      {product.location && (
-                        <p className="text-xs text-gray-500 mb-3">📍 {product.location}</p>
+                        <p className="text-xs text-gray-600 line-clamp-2 mb-2">{product.description}</p>
                       )}
 
                       {product.discount && (
-                        <p className="text-xs text-red-600 font-semibold mb-3">🎁 {product.discount.name}</p>
+                        <p className="text-xs text-red-600 font-semibold">🎁 {product.discount.name}</p>
                       )}
-
-                      <button
-                        onClick={() => addToCart(product.id)}
-                        className="w-full py-2.5 bg-blue-900 text-white rounded-lg font-bold hover:bg-blue-800 transition-all text-sm"
-                      >
-                        🛒 Agregar
-                      </button>
                     </div>
                   </div>
                 ))}
