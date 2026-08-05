@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { SimpleHero } from '@/components/simple-hero'
+import { HeroSlider } from '@/components/hero-slider'
 import { supabase } from '@/lib/supabase'
 import type { Product, Discount } from '@/types/database'
 
@@ -116,7 +116,7 @@ export default function LandingPage() {
       </header>
 
       {/* HERO SLIDER */}
-      <SimpleHero />
+      <HeroSlider />
 
       {/* OFERTAS DESTACADAS */}
       {productsWithDiscount.length > 0 && (
