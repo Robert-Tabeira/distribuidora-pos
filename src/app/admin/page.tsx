@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 
 export default function AdminDashboard() {
   const router = useRouter()
-  const [admin, setAdmin] = useState(null)
+  const [admin, setAdmin] = useState<any>(null)
 
   useEffect(() => {
     const stored = localStorage.getItem('employee')
