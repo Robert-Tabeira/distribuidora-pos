@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { HeroSlider } from '@/components/hero-slider'
+import { SimpleHero } from '@/components/simple-hero'
 import { supabase } from '@/lib/supabase'
 import type { Product, Discount } from '@/types/database'
 
@@ -10,48 +10,11 @@ interface ProductWithDiscount extends Product {
   discount?: Discount
 }
 
-interface HeroImage {
-  id: number
-  url: string
-  title: string
-  description: string
-  cta_text: string
-  cta_url: string
-}
-
-const DEFAULT_HERO_IMAGES: HeroImage[] = [
-  {
-    id: 1,
-    url: 'https://images.unsplash.com/photo-1488459716781-6bffb9a4c200?w=1200&h=600&fit=crop',
-    title: 'Los mejores productos de la línea Sarubbi y más',
-    description: 'Distribuidora oficial de Sarubbi. Entregas rápidas, precios mayoristas y atención personalizada 24/7.',
-    cta_text: 'Ver Catálogo',
-    cta_url: '/catalogo'
-  },
-  {
-    id: 2,
-    url: 'https://images.unsplash.com/photo-1460066672867-888db8d37e39?w=1200&h=600&fit=crop',
-    title: 'Productos Frescos y de Calidad',
-    description: 'Seleccionamos cuidadosamente cada producto para garantizar la mejor experiencia.',
-    cta_text: 'Explorar',
-    cta_url: '/catalogo'
-  },
-  {
-    id: 3,
-    url: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&h=600&fit=crop',
-    title: 'Ofertas Especiales Disponibles',
-    description: 'Descuentos hasta el 50% en productos seleccionados. ¡Aprovecha ahora!',
-    cta_text: 'Ver Ofertas',
-    cta_url: '/catalogo'
-  }
-]
-
 export default function LandingPage() {
   const router = useRouter()
   const [products, setProducts] = useState<ProductWithDiscount[]>([])
   const [loading, setLoading] = useState(true)
   const [cartTotal, setCartTotal] = useState(0)
-  const [heroImages, setHeroImages] = useState<HeroImage[]>(DEFAULT_HERO_IMAGES)
 
   useEffect(() => {
     loadData()
@@ -153,7 +116,7 @@ export default function LandingPage() {
       </header>
 
       {/* HERO SLIDER */}
-      <HeroSlider images={heroImages} />
+      <SimpleHero />
 
       {/* OFERTAS DESTACADAS */}
       {productsWithDiscount.length > 0 && (
