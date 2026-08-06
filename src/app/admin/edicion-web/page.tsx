@@ -44,6 +44,7 @@ export default function WebsiteEditionPage() {
   const [settings, setSettings] = useState<WebsiteSettings | null>(null)
   const [settingsForm, setSettingsForm] = useState({ phone_number: '', email: '', address: '', business_hours: '' })
   const [savingSettings, setSavingSettings] = useState(false)
+  const [settingsMessage, setSettingsMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   // Hero Slides
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([])
@@ -107,53 +108,105 @@ export default function WebsiteEditionPage() {
 
   // ===== SETTINGS =====
   async function saveSettings() {
+    // Limpiar mensajes previos
+    setSettingsMessage(null)
+
+    // Validaciones frontend
     if (!settingsForm.phone_number.trim()) {
-      alert('El teléfono es requerido')
+      setSettingsMessage({ 
+        type: 'error', 
+        text: '⚠️ El teléfono WhatsApp es obligatorio. Por favor ingresa un número.' 
+      })
+      return
+    }
+
+    if (settingsForm.phone_number.trim().length < 5) {
+      setSettingsMessage({ 
+        type: 'error', 
+        text: '⚠️ El teléfono debe tener al menos 5 caracteres (ej: +598 99 123 4567)' 
+      })
       return
     }
 
     setSavingSettings(true)
     try {
+      const dataToSave = {
+        phone_number: settingsForm.phone_number.trim(),
+        email: settingsForm.email.trim() || null,
+        address: settingsForm.address.trim() || null,
+        business_hours: settingsForm.business_hours.trim() || null,
+        updated_at: new Date().toISOString()
+      }
+
       if (settings) {
         const { error } = await supabase
           .from('website_settings')
-          .update({
-            phone_number: settingsForm.phone_number.trim(),
-            email: settingsForm.email.trim() || null,
-            address: settingsForm.address.trim() || null,
-            business_hours: settingsForm.business_hours.trim() || null,
-            updated_at: new Date().toISOString()
-          })
+          .update(dataToSave)
           .eq('id', settings.id)
 
-        if (error) throw error
+        if (error) {
+          if (error.message.includes('not-null')) {
+            setSettingsMessage({ 
+              type: 'error', 
+              text: '❌ El teléfono es obligatorio y no puede estar vacío' 
+            })
+          } else if (error.message.includes('violates')) {
+            setSettingsMessage({ 
+              type: 'error', 
+              text: '❌ Verifica los datos ingresados. Algunos campos pueden tener formato incorrecto.' 
+            })
+          } else {
+            setSettingsMessage({ 
+              type: 'error', 
+              text: `❌ Error: ${error.message}` 
+            })
+          }
+          throw error
+        }
 
         setSettings({
           ...settings,
-          phone_number: settingsForm.phone_number.trim(),
-          email: settingsForm.email.trim() || null,
-          address: settingsForm.address.trim() || null,
-          business_hours: settingsForm.business_hours.trim() || null
+          ...dataToSave
+        })
+        setSettingsMessage({ 
+          type: 'success', 
+          text: '✅ Configuración guardada correctamente' 
         })
       } else {
         const { data, error } = await supabase
           .from('website_settings')
-          .insert([{
-            phone_number: settingsForm.phone_number.trim(),
-            email: settingsForm.email.trim() || null,
-            address: settingsForm.address.trim() || null,
-            business_hours: settingsForm.business_hours.trim() || null
-          }])
+          .insert([dataToSave])
           .select()
 
-        if (error) throw error
-        if (data) setSettings(data[0] as WebsiteSettings)
+        if (error) {
+          if (error.message.includes('not-null')) {
+            setSettingsMessage({ 
+              type: 'error', 
+              text: '❌ El teléfono es obligatorio' 
+            })
+          } else if (error.message.includes('violates')) {
+            setSettingsMessage({ 
+              type: 'error', 
+              text: '❌ Verifica los datos ingresados' 
+            })
+          } else {
+            setSettingsMessage({ 
+              type: 'error', 
+              text: `❌ Error: ${error.message}` 
+            })
+          }
+          throw error
+        }
+        if (data) {
+          setSettings(data[0] as WebsiteSettings)
+          setSettingsMessage({ 
+            type: 'success', 
+            text: '✅ Configuración creada correctamente' 
+          })
+        }
       }
-
-      alert('✅ Configuración guardada')
     } catch (error) {
       console.error('Error saving settings:', error)
-      alert('Error al guardar')
     } finally {
       setSavingSettings(false)
     }
@@ -219,7 +272,7 @@ export default function WebsiteEditionPage() {
       alert('✅ Slide guardado')
     } catch (error) {
       console.error('Error saving hero:', error)
-      alert('Error al guardar')
+      alert('❌ Error al guardar')
     } finally {
       setSavingHero(false)
     }
@@ -394,9 +447,20 @@ export default function WebsiteEditionPage() {
           <div className="card max-w-2xl">
             <h3 className="font-bold text-xl mb-6">Datos del Negocio</h3>
 
+            {/* Mensaje de estado */}
+            {settingsMessage && (
+              <div className={`mb-6 p-4 rounded-lg ${
+                settingsMessage.type === 'success'
+                  ? 'bg-green-50 border border-green-200 text-green-800'
+                  : 'bg-red-50 border border-red-200 text-red-800'
+              }`}>
+                {settingsMessage.text}
+              </div>
+            )}
+
             <div className="space-y-4 mb-6">
               <div>
-                <label className="block text-sm font-semibold text-text-muted mb-2">Teléfono WhatsApp *</label>
+                <label className="block text-sm font-semibold text-text-muted mb-2">Teléfono WhatsApp * <span className="text-red-500">(obligatorio)</span></label>
                 <input
                   type="tel"
                   value={settingsForm.phone_number}
