@@ -12,6 +12,10 @@ interface WebsiteSettings {
   email: string | null
   address: string | null
   business_hours: string | null
+  show_phone?: boolean
+  show_email?: boolean
+  show_address?: boolean
+  show_business_hours?: boolean
 }
 
 interface HeroSlide {
@@ -44,7 +48,16 @@ export default function WebsiteEditionPage() {
 
   // Settings
   const [settings, setSettings] = useState<WebsiteSettings | null>(null)
-  const [settingsForm, setSettingsForm] = useState({ phone_number: '', email: '', address: '', business_hours: '' })
+  const [settingsForm, setSettingsForm] = useState({ 
+    phone_number: '', 
+    email: '', 
+    address: '', 
+    business_hours: '',
+    show_phone: true,
+    show_email: true,
+    show_address: true,
+    show_business_hours: true
+  })
   const [savingSettings, setSavingSettings] = useState(false)
   const [settingsMessage, setSettingsMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
@@ -93,7 +106,11 @@ export default function WebsiteEditionPage() {
           phone_number: settingsRes.data.phone_number || '',
           email: settingsRes.data.email || '',
           address: settingsRes.data.address || '',
-          business_hours: settingsRes.data.business_hours || ''
+          business_hours: settingsRes.data.business_hours || '',
+          show_phone: settingsRes.data.show_phone !== false,
+          show_email: settingsRes.data.show_email !== false,
+          show_address: settingsRes.data.show_address !== false,
+          show_business_hours: settingsRes.data.show_business_hours !== false
         })
       }
 
@@ -137,6 +154,10 @@ export default function WebsiteEditionPage() {
         email: settingsForm.email.trim() || null,
         address: settingsForm.address.trim() || null,
         business_hours: settingsForm.business_hours.trim() || null,
+        show_phone: settingsForm.show_phone,
+        show_email: settingsForm.show_email,
+        show_address: settingsForm.show_address,
+        show_business_hours: settingsForm.show_business_hours,
         updated_at: new Date().toISOString()
       }
 
@@ -535,10 +556,57 @@ export default function WebsiteEditionPage() {
               </div>
             </div>
 
+            {/* Visibilidad de Datos */}
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <h4 className="font-bold text-lg mb-4">¿Qué datos mostrar en el Header?</h4>
+              
+              <div className="space-y-3">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settingsForm.show_phone || false}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, show_phone: e.target.checked })}
+                    className="w-5 h-5 rounded border-gray-300"
+                  />
+                  <span className="font-semibold text-gray-700">📱 Mostrar Teléfono</span>
+                </label>
+
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settingsForm.show_business_hours || false}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, show_business_hours: e.target.checked })}
+                    className="w-5 h-5 rounded border-gray-300"
+                  />
+                  <span className="font-semibold text-gray-700">🕐 Mostrar Horarios</span>
+                </label>
+
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settingsForm.show_address || false}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, show_address: e.target.checked })}
+                    className="w-5 h-5 rounded border-gray-300"
+                  />
+                  <span className="font-semibold text-gray-700">📍 Mostrar Dirección</span>
+                </label>
+
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settingsForm.show_email || false}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, show_email: e.target.checked })}
+                    className="w-5 h-5 rounded border-gray-300"
+                  />
+                  <span className="font-semibold text-gray-700">📧 Mostrar Email</span>
+                </label>
+              </div>
+            </div>
+
             <button
               onClick={saveSettings}
               disabled={savingSettings}
-              className="btn btn-primary w-full"
+              className="btn btn-primary w-full mt-6"
             >
               {savingSettings ? 'Guardando...' : 'Guardar Configuración'}
             </button>
