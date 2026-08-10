@@ -61,6 +61,13 @@ export function HeroSlider() {
 
   useEffect(() => {
     loadSlides()
+    
+    // Recargar cada 5 segundos para ver cambios en tiempo real
+    const interval = setInterval(() => {
+      loadSlides()
+    }, 5000)
+
+    return () => clearInterval(interval)
   }, [])
 
   async function loadSlides() {
@@ -71,11 +78,14 @@ export function HeroSlider() {
         .eq('is_active', true)
         .order('order_position')
 
-      if (error) throw error
-
-      if (data && data.length > 0) {
+      if (error) {
+        console.error('Error loading slides:', error)
+        setSlides(DEFAULT_SLIDES)
+      } else if (data && data.length > 0) {
+        console.log('Slides cargados:', data)
         setSlides(data as HeroSlide[])
       } else {
+        console.log('No slides found, usando defaults')
         setSlides(DEFAULT_SLIDES)
       }
     } catch (error) {
