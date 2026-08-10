@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { uploadImageToSupabase } from '@/lib/image-upload-helper'
 import type { Employee } from '@/types/database'
 
 interface WebsiteSettings {
@@ -36,6 +37,7 @@ interface LandingSection {
 
 export default function WebsiteEditionPage() {
   const router = useRouter()
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [employee, setEmployee] = useState<Employee | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'settings' | 'hero' | 'sections'>('settings')
@@ -52,6 +54,8 @@ export default function WebsiteEditionPage() {
   const [heroForm, setHeroForm] = useState({ title: '', description: '', cta_text: '', cta_url: '', image_url: '' })
   const [savingHero, setSavingHero] = useState(false)
   const [showHeroModal, setShowHeroModal] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [imagePreview, setImagePreview] = useState('')
 
   // Landing Sections
   const [sections, setSections] = useState<LandingSection[]>([])
@@ -108,10 +112,8 @@ export default function WebsiteEditionPage() {
 
   // ===== SETTINGS =====
   async function saveSettings() {
-    // Limpiar mensajes previos
     setSettingsMessage(null)
 
-    // Validaciones frontend
     if (!settingsForm.phone_number.trim()) {
       setSettingsMessage({ 
         type: 'error', 
@@ -212,10 +214,37 @@ export default function WebsiteEditionPage() {
     }
   }
 
+  // ===== IMAGE UPLOAD =====
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingImage(true)
+    const { url, error } = await uploadImageToSupabase(file, 'hero-images')
+
+    if (error) {
+      alert(`❌ Error al subir imagen: ${error}`)
+    } else {
+      setHeroForm({ ...heroForm, image_url: url })
+      setImagePreview(url)
+      alert('✅ Imagen subida correctamente')
+    }
+
+    setUploadingImage(false)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
   // ===== HERO SLIDES =====
   async function saveHeroSlide() {
-    if (!heroForm.title.trim() || !heroForm.image_url.trim()) {
-      alert('Título e imagen son requeridos')
+    if (!heroForm.title.trim()) {
+      alert('⚠️ El título es obligatorio')
+      return
+    }
+
+    if (!heroForm.image_url.trim()) {
+      alert('⚠️ La imagen es obligatoria. Sube una foto.')
       return
     }
 
@@ -269,7 +298,8 @@ export default function WebsiteEditionPage() {
       }
 
       setShowHeroModal(false)
-      alert('✅ Slide guardado')
+      setImagePreview('')
+      alert('✅ Slide guardado correctamente')
     } catch (error) {
       console.error('Error saving hero:', error)
       alert('❌ Error al guardar')
@@ -301,9 +331,11 @@ export default function WebsiteEditionPage() {
         cta_url: hero.cta_url || '',
         image_url: hero.image_url
       })
+      setImagePreview(hero.image_url)
     } else {
       setEditingHero(null)
       setHeroForm({ title: '', description: '', cta_text: '', cta_url: '', image_url: '' })
+      setImagePreview('')
     }
     setShowHeroModal(true)
   }
@@ -447,7 +479,6 @@ export default function WebsiteEditionPage() {
           <div className="card max-w-2xl">
             <h3 className="font-bold text-xl mb-6">Datos del Negocio</h3>
 
-            {/* Mensaje de estado */}
             {settingsMessage && (
               <div className={`mb-6 p-4 rounded-lg ${
                 settingsMessage.type === 'success'
@@ -536,11 +567,14 @@ export default function WebsiteEditionPage() {
                         src={hero.image_url}
                         alt={hero.title}
                         className="w-24 h-24 rounded-lg object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Crect fill="%23ddd" width="100" height="100"/%3E%3Ctext x="50" y="50" font-size="12" fill="%23999" text-anchor="middle" dominant-baseline="central"%3EError%3C/text%3E%3C/svg%3E'
+                        }}
                       />
                     )}
                     <div className="flex-1">
                       <h4 className="font-bold text-text">{hero.title}</h4>
-                      <p className="text-sm text-text-muted">{hero.description}</p>
+                      <p className="text-sm text-text-muted line-clamp-2">{hero.description}</p>
                       <p className="text-xs text-primary mt-2">{hero.cta_text}</p>
                     </div>
                     <div className="flex gap-2">
@@ -552,7 +586,7 @@ export default function WebsiteEditionPage() {
                       </button>
                       <button
                         onClick={() => deleteHeroSlide(hero.id)}
-                        className="px-4 py-2 bg-danger/10 text-danger rounded-lg font-semibold hover:bg-danger/20"
+                        className="px-4 py-2 bg-red-100 text-red-600 rounded-lg font-semibold hover:bg-red-200"
                       >
                         Eliminar
                       </button>
@@ -576,7 +610,7 @@ export default function WebsiteEditionPage() {
                     <div className="flex-1">
                       <h4 className="font-bold text-text">{section.section_name}</h4>
                       <p className="text-sm text-text-muted">{section.title}</p>
-                      <p className="text-xs text-gray-600 mt-2">{section.description}</p>
+                      <p className="text-xs text-gray-600 mt-2 line-clamp-2">{section.description}</p>
                     </div>
                     <button
                       onClick={() => openSectionModal(section)}
@@ -604,23 +638,54 @@ export default function WebsiteEditionPage() {
 
             <div className="space-y-4 mb-6">
               <div>
+                <label className="block text-sm font-semibold text-text-muted mb-2">Imagen * (Sube desde tu ordenador)</label>
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-primary/30 rounded-lg p-6 text-center cursor-pointer hover:border-primary/60 transition-all"
+                >
+                  {imagePreview ? (
+                    <div className="space-y-3">
+                      <img 
+                        src={imagePreview} 
+                        alt="Preview" 
+                        className="w-full max-h-48 object-cover rounded-lg mx-auto"
+                        onError={(e) => {
+                          e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Crect fill="%23ddd" width="100" height="100"/%3E%3C/svg%3E'
+                        }}
+                      />
+                      <button 
+                        type="button"
+                        className="text-sm text-primary font-semibold"
+                      >
+                        Cambiar imagen
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="text-4xl">📸</div>
+                      <div className="text-sm font-semibold text-text">Haz clic para subir una imagen</div>
+                      <div className="text-xs text-text-muted">JPG, PNG, WebP (máx 5MB)</div>
+                    </div>
+                  )}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  disabled={uploadingImage}
+                />
+              </div>
+
+              <div>
                 <label className="block text-sm font-semibold text-text-muted mb-2">Título *</label>
                 <input
                   type="text"
                   value={heroForm.title}
                   onChange={(e) => setHeroForm({ ...heroForm, title: e.target.value })}
                   className="input"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-text-muted mb-2">URL Imagen *</label>
-                <input
-                  type="url"
-                  value={heroForm.image_url}
-                  onChange={(e) => setHeroForm({ ...heroForm, image_url: e.target.value })}
-                  placeholder="https://..."
-                  className="input"
+                  placeholder="Ej: Los mejores productos"
                 />
               </div>
 
@@ -630,11 +695,12 @@ export default function WebsiteEditionPage() {
                   value={heroForm.description}
                   onChange={(e) => setHeroForm({ ...heroForm, description: e.target.value })}
                   className="input min-h-24"
+                  placeholder="Describe el contenido del slide"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-text-muted mb-2">CTA Texto</label>
+                <label className="block text-sm font-semibold text-text-muted mb-2">Botón - Texto</label>
                 <input
                   type="text"
                   value={heroForm.cta_text}
@@ -645,9 +711,9 @@ export default function WebsiteEditionPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-text-muted mb-2">CTA URL</label>
+                <label className="block text-sm font-semibold text-text-muted mb-2">Botón - URL</label>
                 <input
-                  type="url"
+                  type="text"
                   value={heroForm.cta_url}
                   onChange={(e) => setHeroForm({ ...heroForm, cta_url: e.target.value })}
                   placeholder="/catalogo"
@@ -660,8 +726,12 @@ export default function WebsiteEditionPage() {
               <button onClick={() => setShowHeroModal(false)} className="btn btn-outline flex-1">
                 Cancelar
               </button>
-              <button onClick={saveHeroSlide} disabled={savingHero} className="btn btn-primary flex-1">
-                {savingHero ? 'Guardando...' : 'Guardar'}
+              <button 
+                onClick={saveHeroSlide} 
+                disabled={savingHero || uploadingImage} 
+                className="btn btn-primary flex-1"
+              >
+                {savingHero ? 'Guardando...' : uploadingImage ? 'Subiendo...' : 'Guardar'}
               </button>
             </div>
           </div>
