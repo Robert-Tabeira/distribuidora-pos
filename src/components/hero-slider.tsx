@@ -12,6 +12,7 @@ interface HeroSlide {
   cta_url: string | null
   is_active: boolean
   order_position: number
+  image_url: string
 }
 
 const DEFAULT_SLIDES: HeroSlide[] = [
@@ -22,7 +23,8 @@ const DEFAULT_SLIDES: HeroSlide[] = [
     cta_text: 'Ver Catálogo',
     cta_url: '/catalogo',
     is_active: true,
-    order_position: 0
+    order_position: 0,
+    image_url: 'https://images.unsplash.com/photo-1488459716781-6bffb9a4c200?w=1200&h=600&fit=crop'
   },
   {
     id: '2',
@@ -31,7 +33,8 @@ const DEFAULT_SLIDES: HeroSlide[] = [
     cta_text: 'Explorar',
     cta_url: '/catalogo',
     is_active: true,
-    order_position: 1
+    order_position: 1,
+    image_url: 'https://images.unsplash.com/photo-1460066672867-888db8d37e39?w=1200&h=600&fit=crop'
   },
   {
     id: '3',
@@ -40,16 +43,9 @@ const DEFAULT_SLIDES: HeroSlide[] = [
     cta_text: 'Ver Ofertas',
     cta_url: '/catalogo',
     is_active: true,
-    order_position: 2
+    order_position: 2,
+    image_url: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&h=600&fit=crop'
   }
-]
-
-const GRADIENT_COLORS = [
-  'from-blue-900 via-blue-800 to-blue-900',
-  'from-indigo-900 via-purple-800 to-indigo-900',
-  'from-red-900 via-orange-800 to-red-900',
-  'from-emerald-900 via-green-800 to-emerald-900',
-  'from-slate-900 via-gray-800 to-slate-900'
 ]
 
 export function HeroSlider() {
@@ -132,26 +128,35 @@ export function HeroSlider() {
   }
 
   const currentSlideData = slides[currentSlide]
-  const bgColor = GRADIENT_COLORS[currentSlide % GRADIENT_COLORS.length]
 
   return (
-    <div className={`relative w-full h-screen bg-gradient-to-br ${bgColor} overflow-hidden group transition-all duration-1000`}>
+    <div 
+      className="relative w-full h-screen overflow-hidden group transition-all duration-1000 bg-cover bg-center"
+      style={{
+        backgroundImage: `url('${currentSlideData.image_url}')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      }}
+    >
+      {/* Dark overlay para que el texto sea legible */}
+      <div className="absolute inset-0 bg-black/40" />
+
       {/* Content */}
       <div className="absolute inset-0 flex items-center justify-start pointer-events-none">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
           <div className="max-w-2xl">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-6 animate-fade-in">
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-6 animate-fade-in drop-shadow-lg">
               {currentSlideData.title}
             </h1>
             {currentSlideData.description && (
-              <p className="text-xl md:text-2xl text-white/90 mb-8 leading-relaxed animate-fade-in-delay">
+              <p className="text-xl md:text-2xl text-white/95 mb-8 leading-relaxed animate-fade-in-delay drop-shadow-md">
                 {currentSlideData.description}
               </p>
             )}
             {currentSlideData.cta_text && currentSlideData.cta_url && (
               <button
                 onClick={() => router.push(currentSlideData.cta_url!)}
-                className="pointer-events-auto inline-block px-8 py-4 bg-white text-blue-900 rounded-xl font-bold hover:bg-gray-100 transition-all text-lg animate-fade-in-delay-2"
+                className="pointer-events-auto inline-block px-8 py-4 bg-white text-blue-900 rounded-xl font-bold hover:bg-gray-100 transition-all text-lg animate-fade-in-delay-2 shadow-lg"
               >
                 {currentSlideData.cta_text}
               </button>
