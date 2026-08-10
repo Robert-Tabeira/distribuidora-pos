@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Header } from '@/components/header'
 import { useRouter } from 'next/navigation'
 import { HeroSlider } from '@/components/hero-slider'
 import { supabase } from '@/lib/supabase'
@@ -84,36 +85,8 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* HEADER */}
-      <header className="absolute top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/50 to-transparent">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="text-3xl font-black text-white">Los Primos</div>
-            </div>
-
-            <button
-              onClick={() => router.push('/catalogo')}
-              className="px-6 py-2.5 bg-blue-900 text-white rounded-lg font-bold hover:bg-blue-800 transition-all"
-            >
-              📦 Ver Catálogo
-            </button>
-
-            <button
-              onClick={() => router.push('/catalogo')}
-              className="relative flex items-center justify-center w-11 h-11 rounded-full bg-blue-900 text-white hover:bg-blue-800 transition-all"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-              </svg>
-              {cartTotal > 0 && (
-                <span className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                  {cartTotal}
-                </span>
-              )}
-            </button>
-          </div>
-        </div>
-      </header>
+      
+      <Header />
 
       {/* HERO SLIDER */}
       <HeroSlider />
