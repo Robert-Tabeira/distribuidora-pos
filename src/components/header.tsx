@@ -154,7 +154,9 @@ export function Header() {
                       </svg>
                       <div>
                         <p className="text-sm text-gray-600">Dirección</p>
-                        <p className="font-semibold text-gray-900">{settings.address}</p>
+                        <a href={`https://www.google.com/maps/place/Los+Primos/@-34.7641828,-55.7477291,758m/data=!3m2!1e3!4b1!4m6!3m5!1s0x959ff53fa68babfb:0xaa210ac7416011d2!8m2!3d-34.7641828!4d-55.7477291!16s%2Fg%2F11f06n4mrp?entry=ttu&g_ep=EgoyMDI2MDgwNS4xIKXMDSoASAFQAw%3D%3D${settings.address.replace(/\D/g, '')}`} className="font-semibold text-gray-900 hover:text-blue-600 transition-all">
+                          {settings.address}
+                        </a>
                       </div>
                     </div>
                   )}
