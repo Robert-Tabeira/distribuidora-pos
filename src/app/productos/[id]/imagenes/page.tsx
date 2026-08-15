@@ -324,22 +324,22 @@ export default function ProductImagesPage() {
             <h3 className="font-bold text-lg mb-6">Editor de Imagen</h3>
 
             <div className="grid md:grid-cols-2 gap-8 mb-6">
-              {/* Preview con ajustador visual */}
+              {/* Preview con ajustador visual - GRANDE para editar cómodamente */}
               <div>
-                <h4 className="font-bold text-sm mb-4 text-gray-700">Vista Previa (Tamaño Real - 192px)</h4>
+                <h4 className="font-bold text-sm mb-4 text-gray-700">Vista Previa Editable (Escala Aumentada)</h4>
                 
-                {/* Grid de ajuste - Tamaño real del card */}
-                <div className="relative bg-gray-100 rounded-lg p-4 border-2 border-gray-300 w-48 h-48 mx-auto flex items-center justify-center overflow-hidden">
+                {/* Grid de ajuste - GRANDE para editar */}
+                <div className="relative bg-gray-100 rounded-lg p-4 border-2 border-gray-300 w-96 h-96 mx-auto flex items-center justify-center overflow-hidden">
                   {/* Cuadrícula de fondo */}
-                  <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-0 pointer-events-none opacity-30">
+                  <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-0 pointer-events-none opacity-20">
                     {[...Array(9)].map((_, i) => (
                       <div key={i} className="border border-gray-400" />
                     ))}
                   </div>
 
-                  {/* Área segura (naranja) */}
-                  <div className="absolute w-3/4 h-3/4 border-2 border-orange-500 rounded pointer-events-none">
-                    <div className="absolute inset-0 bg-orange-500 opacity-5" />
+                  {/* Área segura (naranja) - representa el área visible */}
+                  <div className="absolute w-3/4 h-3/4 border-3 border-orange-500 rounded pointer-events-none shadow-lg">
+                    <div className="absolute inset-0 bg-orange-500 opacity-10" />
                   </div>
 
                   {/* Imagen ajustable */}
@@ -354,14 +354,15 @@ export default function ProductImagesPage() {
                     <img
                       src={editingImage.preview}
                       alt="Preview"
-                      className="max-w-xs max-h-xs object-contain"
+                      className="max-w-sm max-h-sm object-contain"
                       draggable={false}
                     />
                   </div>
                 </div>
 
-                <p className="text-xs text-gray-600 mt-3 text-center">
-                  ✅ Esto es exactamente cómo se verá en el catálogo (192x192px)
+                <p className="text-xs text-gray-600 mt-4 text-center font-semibold">
+                  ✅ <span className="text-green-600">Editor a escala ampliada</span><br/>
+                  <span className="text-gray-500">Se guardará a 192x192px (tamaño real del catálogo)</span>
                 </p>
               </div>
 
@@ -407,8 +408,8 @@ export default function ProductImagesPage() {
                   <div className="space-y-2">
                     <input
                       type="range"
-                      min="-50"
-                      max="50"
+                      min="-100"
+                      max="100"
                       step="5"
                       value={editingImage.offsetX}
                       onChange={(e) => updateOffset(parseFloat(e.target.value), editingImage.offsetY)}
@@ -423,8 +424,8 @@ export default function ProductImagesPage() {
                   <div className="space-y-2">
                     <input
                       type="range"
-                      min="-50"
-                      max="50"
+                      min="-100"
+                      max="100"
                       step="5"
                       value={editingImage.offsetY}
                       onChange={(e) => updateOffset(editingImage.offsetX, parseFloat(e.target.value))}
