@@ -339,7 +339,7 @@ export default function ProductImagesPage() {
 
                   {/* Área segura (naranja) - representa el área visible */}
                   <div className="absolute w-3/4 h-3/4 border-3 border-orange-500 rounded pointer-events-none shadow-lg">
-                    <div className="absolute inset-0 bg-orange-500 opacity-10" />
+                    <div className="absolute inset-0 bg-orange-500 opacity-20" />
                   </div>
 
                   {/* Imagen ajustable */}
