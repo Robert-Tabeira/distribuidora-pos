@@ -10,15 +10,15 @@ interface EditingImage {
   originalFile: File
   preview: string
   rotation: number
-  isCropping: boolean
-  cropData?: { x: number; y: number; width: number; height: number }
+  scale: number
+  offsetX: number
+  offsetY: number
 }
 
 export default function ProductImagesPage() {
   const router = useRouter()
   const params = useParams()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
   const productId = params.id as string
 
   const [product, setProduct] = useState<Product | null>(null)
@@ -29,7 +29,6 @@ export default function ProductImagesPage() {
 
   // Editor
   const [editingImage, setEditingImage] = useState<EditingImage | null>(null)
-  const [previewScale, setPreviewScale] = useState(1)
 
   useEffect(() => {
     loadProduct()
@@ -67,7 +66,6 @@ export default function ProductImagesPage() {
           const canvas = document.createElement('canvas')
           let { width, height } = img
 
-          // Reducir tamaño si es muy grande
           const maxWidth = 1920
           const maxHeight = 1920
 
@@ -82,7 +80,6 @@ export default function ProductImagesPage() {
           const ctx = canvas.getContext('2d')!
           ctx.drawImage(img, 0, 0, width, height)
 
-          // Comprimir a WebP con calidad 0.8
           canvas.toBlob(
             (blob) => {
               const compressedFile = new File([blob!], file.name.replace(/\.[^/.]+$/, '.webp'), {
@@ -107,16 +104,13 @@ export default function ProductImagesPage() {
     setUploading(true)
 
     try {
-      // Validar tamaño (máx 10MB antes de comprimir)
       if (file.size > 10 * 1024 * 1024) {
         alert('La imagen no puede pesar más de 10MB')
         return
       }
 
-      // Comprimir automáticamente
       const compressedFile = await compressImage(file)
 
-      // Crear preview
       const reader = new FileReader()
       reader.onload = (event) => {
         setEditingImage({
@@ -124,7 +118,9 @@ export default function ProductImagesPage() {
           originalFile: compressedFile,
           preview: event.target?.result as string,
           rotation: 0,
-          isCropping: false
+          scale: 1,
+          offsetX: 0,
+          offsetY: 0
         })
       }
       reader.readAsDataURL(compressedFile)
@@ -147,47 +143,66 @@ export default function ProductImagesPage() {
     })
   }
 
+  function updateScale(newScale: number) {
+    if (!editingImage) return
+    setEditingImage({
+      ...editingImage,
+      scale: Math.max(0.5, Math.min(3, newScale))
+    })
+  }
+
+  function updateOffset(x: number, y: number) {
+    if (!editingImage) return
+    setEditingImage({
+      ...editingImage,
+      offsetX: x,
+      offsetY: y
+    })
+  }
+
   async function saveEditedImage() {
     if (!editingImage) return
 
     try {
       setUploading(true)
 
-      // Si hay rotación, aplicarla al canvas
-      let imageToUpload = editingImage.originalFile
+      const img = new Image()
+      img.src = editingImage.preview
 
-      if (editingImage.rotation !== 0) {
-        const img = new Image()
-        img.src = editingImage.preview
+      img.onload = async () => {
+        const canvas = document.createElement('canvas')
+        const containerSize = 300 // Tamaño de la vista previa
 
-        img.onload = async () => {
-          const canvas = document.createElement('canvas')
+        canvas.width = containerSize
+        canvas.height = containerSize
 
-          // Calcular dimensiones después de rotación
-          const rad = (editingImage.rotation * Math.PI) / 180
-          const cos = Math.cos(rad)
-          const sin = Math.sin(rad)
-          const newWidth = Math.abs(img.width * cos) + Math.abs(img.height * sin)
-          const newHeight = Math.abs(img.width * sin) + Math.abs(img.height * cos)
+        const ctx = canvas.getContext('2d')!
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, containerSize, containerSize)
 
-          canvas.width = newWidth
-          canvas.height = newHeight
+        // Aplicar transformaciones
+        ctx.save()
+        ctx.translate(containerSize / 2, containerSize / 2)
+        ctx.rotate((editingImage.rotation * Math.PI) / 180)
+        ctx.scale(editingImage.scale, editingImage.scale)
 
-          const ctx = canvas.getContext('2d')!
-          ctx.translate(newWidth / 2, newHeight / 2)
-          ctx.rotate(rad)
-          ctx.drawImage(img, -img.width / 2, -img.height / 2)
+        const scaledWidth = (img.width * containerSize) / 300
+        const scaledHeight = (img.height * containerSize) / 300
 
-          canvas.toBlob(async (blob) => {
-            imageToUpload = new File([blob!], editingImage.originalFile.name, {
-              type: 'image/webp'
-            })
+        ctx.drawImage(
+          img,
+          -scaledWidth / 2 + (editingImage.offsetX / 100) * (containerSize / 2),
+          -scaledHeight / 2 + (editingImage.offsetY / 100) * (containerSize / 2)
+        )
+        ctx.restore()
 
-            await uploadToSupabase(imageToUpload)
-          }, 'image/webp', 0.9)
-        }
-      } else {
-        await uploadToSupabase(imageToUpload)
+        canvas.toBlob(async (blob) => {
+          const finalFile = new File([blob!], editingImage.originalFile.name, {
+            type: 'image/webp'
+          })
+
+          await uploadToSupabase(finalFile)
+        }, 'image/webp', 0.9)
       }
     } catch (error) {
       console.error('Error saving image:', error)
@@ -308,16 +323,46 @@ export default function ProductImagesPage() {
           <div className="card">
             <h3 className="font-bold text-lg mb-6">Editor de Imagen</h3>
 
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
-              {/* Preview con edición */}
-              <div className="bg-gray-100 rounded-lg p-4 flex items-center justify-center min-h-96">
-                <div style={{ transform: `rotate(${editingImage.rotation}deg)`, transition: 'transform 0.2s' }}>
-                  <img
-                    src={editingImage.preview}
-                    alt="Preview"
-                    className="max-h-80 max-w-sm object-contain"
-                  />
+            <div className="grid md:grid-cols-2 gap-8 mb-6">
+              {/* Preview con ajustador visual */}
+              <div>
+                <h4 className="font-bold text-sm mb-4 text-gray-700">Vista Previa (Cómo se verá en el catálogo)</h4>
+                
+                {/* Grid de ajuste */}
+                <div className="relative bg-gray-100 rounded-lg p-4 border-2 border-gray-300 aspect-square flex items-center justify-center overflow-hidden">
+                  {/* Cuadrícula de fondo */}
+                  <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-0 pointer-events-none opacity-30">
+                    {[...Array(9)].map((_, i) => (
+                      <div key={i} className="border border-gray-400" />
+                    ))}
+                  </div>
+
+                  {/* Área segura (naranja) */}
+                  <div className="absolute w-3/4 h-3/4 border-2 border-orange-500 rounded pointer-events-none">
+                    <div className="absolute inset-0 bg-orange-500 opacity-5" />
+                  </div>
+
+                  {/* Imagen ajustable */}
+                  <div
+                    style={{
+                      transform: `rotate(${editingImage.rotation}deg) scale(${editingImage.scale}) translate(${editingImage.offsetX}px, ${editingImage.offsetY}px)`,
+                      transition: 'transform 0.2s',
+                      cursor: 'grab'
+                    }}
+                    className="max-w-full max-h-full relative"
+                  >
+                    <img
+                      src={editingImage.preview}
+                      alt="Preview"
+                      className="max-w-xs max-h-xs object-contain"
+                      draggable={false}
+                    />
+                  </div>
                 </div>
+
+                <p className="text-xs text-gray-600 mt-3 text-center">
+                  La imagen debe encajar en el rectángulo naranja para verse uniforme en el catálogo
+                </p>
               </div>
 
               {/* Herramientas */}
@@ -338,15 +383,63 @@ export default function ProductImagesPage() {
                       ⟳ +90°
                     </button>
                   </div>
-                  <p className="text-xs text-gray-600 mt-2">Rotación actual: {editingImage.rotation}°</p>
+                  <p className="text-xs text-gray-600 mt-2">Rotación: {editingImage.rotation}°</p>
                 </div>
 
                 <div className="border-t pt-4">
-                  <h4 className="font-bold mb-3">📊 Información</h4>
+                  <h4 className="font-bold mb-3">🔍 Zoom</h4>
+                  <div className="space-y-2">
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="3"
+                      step="0.1"
+                      value={editingImage.scale}
+                      onChange={(e) => updateScale(parseFloat(e.target.value))}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-gray-600">Tamaño: {(editingImage.scale * 100).toFixed(0)}%</p>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <h4 className="font-bold mb-3">↔️ Posición X</h4>
+                  <div className="space-y-2">
+                    <input
+                      type="range"
+                      min="-50"
+                      max="50"
+                      step="5"
+                      value={editingImage.offsetX}
+                      onChange={(e) => updateOffset(parseFloat(e.target.value), editingImage.offsetY)}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-gray-600">Horizontal: {editingImage.offsetX}px</p>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <h4 className="font-bold mb-3">↕️ Posición Y</h4>
+                  <div className="space-y-2">
+                    <input
+                      type="range"
+                      min="-50"
+                      max="50"
+                      step="5"
+                      value={editingImage.offsetY}
+                      onChange={(e) => updateOffset(editingImage.offsetX, parseFloat(e.target.value))}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-gray-600">Vertical: {editingImage.offsetY}px</p>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <h4 className="font-bold mb-3">📊 Info</h4>
                   <div className="bg-blue-50 rounded-lg p-3 text-sm space-y-1">
                     <p><strong>Formato:</strong> {editingImage.originalFile.type}</p>
                     <p><strong>Tamaño:</strong> {(editingImage.originalFile.size / 1024).toFixed(2)} KB</p>
-                    <p className="text-xs text-gray-600 mt-2">✅ Imagen comprimida automáticamente</p>
+                    <p className="text-xs text-gray-600 mt-2">✅ Comprimida automáticamente</p>
                   </div>
                 </div>
 
@@ -362,7 +455,7 @@ export default function ProductImagesPage() {
                     disabled={uploading}
                     className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 font-semibold transition-all"
                   >
-                    {uploading ? '⏳ Guardando...' : '✅ Guardar Imagen'}
+                    {uploading ? '⏳ Guardando...' : '✅ Guardar'}
                   </button>
                 </div>
               </div>
@@ -459,8 +552,6 @@ export default function ProductImagesPage() {
           </>
         )}
       </main>
-
-      <canvas ref={canvasRef} className="hidden" />
     </div>
   )
 }
