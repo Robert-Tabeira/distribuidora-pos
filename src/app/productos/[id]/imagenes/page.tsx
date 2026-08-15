@@ -171,28 +171,28 @@ export default function ProductImagesPage() {
 
       img.onload = async () => {
         const canvas = document.createElement('canvas')
-        const containerSize = 300 // Tamaño de la vista previa
+        const cardSize = 192 // Tamaño real del card en el catálogo (h-48 = 192px)
 
-        canvas.width = containerSize
-        canvas.height = containerSize
+        canvas.width = cardSize
+        canvas.height = cardSize
 
         const ctx = canvas.getContext('2d')!
         ctx.fillStyle = '#ffffff'
-        ctx.fillRect(0, 0, containerSize, containerSize)
+        ctx.fillRect(0, 0, cardSize, cardSize)
 
         // Aplicar transformaciones
         ctx.save()
-        ctx.translate(containerSize / 2, containerSize / 2)
+        ctx.translate(cardSize / 2, cardSize / 2)
         ctx.rotate((editingImage.rotation * Math.PI) / 180)
         ctx.scale(editingImage.scale, editingImage.scale)
 
-        const scaledWidth = (img.width * containerSize) / 300
-        const scaledHeight = (img.height * containerSize) / 300
+        const scaledWidth = img.width
+        const scaledHeight = img.height
 
         ctx.drawImage(
           img,
-          -scaledWidth / 2 + (editingImage.offsetX / 100) * (containerSize / 2),
-          -scaledHeight / 2 + (editingImage.offsetY / 100) * (containerSize / 2)
+          -scaledWidth / 2 + editingImage.offsetX,
+          -scaledHeight / 2 + editingImage.offsetY
         )
         ctx.restore()
 
@@ -202,7 +202,7 @@ export default function ProductImagesPage() {
           })
 
           await uploadToSupabase(finalFile)
-        }, 'image/webp', 0.9)
+        }, 'image/webp', 0.85)
       }
     } catch (error) {
       console.error('Error saving image:', error)
@@ -326,10 +326,10 @@ export default function ProductImagesPage() {
             <div className="grid md:grid-cols-2 gap-8 mb-6">
               {/* Preview con ajustador visual */}
               <div>
-                <h4 className="font-bold text-sm mb-4 text-gray-700">Vista Previa (Cómo se verá en el catálogo)</h4>
+                <h4 className="font-bold text-sm mb-4 text-gray-700">Vista Previa (Tamaño Real - 192px)</h4>
                 
-                {/* Grid de ajuste */}
-                <div className="relative bg-gray-100 rounded-lg p-4 border-2 border-gray-300 aspect-square flex items-center justify-center overflow-hidden">
+                {/* Grid de ajuste - Tamaño real del card */}
+                <div className="relative bg-gray-100 rounded-lg p-4 border-2 border-gray-300 w-48 h-48 mx-auto flex items-center justify-center overflow-hidden">
                   {/* Cuadrícula de fondo */}
                   <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-0 pointer-events-none opacity-30">
                     {[...Array(9)].map((_, i) => (
@@ -361,7 +361,7 @@ export default function ProductImagesPage() {
                 </div>
 
                 <p className="text-xs text-gray-600 mt-3 text-center">
-                  La imagen debe encajar en el rectángulo naranja para verse uniforme en el catálogo
+                  ✅ Esto es exactamente cómo se verá en el catálogo (192x192px)
                 </p>
               </div>
 
