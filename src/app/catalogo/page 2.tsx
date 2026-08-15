@@ -150,12 +150,11 @@ export default function CatalogPage() {
               <h3 className="font-black text-lg text-gray-900 mb-6">Filtros</h3>
 
               {/* Limpiar Filtros */}
-              {(selectedCategories.length > 0 || showOnlyDiscounts || searchQuery.trim()) && (
+              {(selectedCategories.length > 0 || showOnlyDiscounts) && (
                 <button
                   onClick={() => {
                     setSelectedCategories([])
                     setShowOnlyDiscounts(false)
-                    setSearchQuery('')
                   }}
                   className="w-full mb-6 py-2 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all text-sm font-semibold"
                 >
@@ -203,41 +202,13 @@ export default function CatalogPage() {
 
           {/* GRID PRODUCTOS */}
           <div className="md:col-span-3">
-            {/* Info y Búsqueda */}
-            <div className="mb-6">
-              <div className="mb-4">
+            {/* Info */}
+            <div className="mb-6 flex items-center justify-between">
+              <div>
                 <h2 className="text-3xl font-black text-gray-900">Productos</h2>
                 <p className="text-sm text-gray-600 mt-1">
                   {filteredProducts.length} producto{filteredProducts.length !== 1 ? 's' : ''} disponible{filteredProducts.length !== 1 ? 's' : ''}
                 </p>
-              </div>
-
-              {/* Buscador */}
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-
-                <input
-                  type="text"
-                  placeholder="Buscar por nombre, código o descripción..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-900 focus:border-transparent transition-all"
-                />
-
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                )}
               </div>
             </div>
 
@@ -251,21 +222,7 @@ export default function CatalogPage() {
               <div className="text-center py-20 bg-white rounded-2xl">
                 <div className="text-5xl mb-4">🔍</div>
                 <p className="text-lg text-gray-600 font-medium">No se encontraron productos</p>
-                <p className="text-sm text-gray-500 mt-2">
-                  {searchQuery && `No coinciden con: "${searchQuery}"`}
-                  {selectedCategories.length > 0 && ` en las categorías seleccionadas`}
-                  {showOnlyDiscounts && ` con descuento`}
-                </p>
-                <button
-                  onClick={() => {
-                    setSearchQuery('')
-                    setSelectedCategories([])
-                    setShowOnlyDiscounts(false)
-                  }}
-                  className="mt-4 px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition-all text-sm font-semibold"
-                >
-                  Limpiar Filtros
-                </button>
+                <p className="text-sm text-gray-500 mt-1">Intenta con otros filtros o búsqueda</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
