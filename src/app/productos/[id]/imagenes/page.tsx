@@ -171,7 +171,7 @@ export default function ProductImagesPage() {
 
       img.onload = async () => {
         const canvas = document.createElement('canvas')
-        const cardSize = 192 // Tamaño real del card en el catálogo (h-48 = 192px)
+        const cardSize = 192 // Tamaño real del card en el catálogo
 
         canvas.width = cardSize
         canvas.height = cardSize
@@ -180,19 +180,20 @@ export default function ProductImagesPage() {
         ctx.fillStyle = '#ffffff'
         ctx.fillRect(0, 0, cardSize, cardSize)
 
-        // Aplicar transformaciones
+        // Aplicar transformaciones con escala proporcional
         ctx.save()
         ctx.translate(cardSize / 2, cardSize / 2)
         ctx.rotate((editingImage.rotation * Math.PI) / 180)
         ctx.scale(editingImage.scale, editingImage.scale)
 
-        const scaledWidth = img.width
-        const scaledHeight = img.height
+        // Offsets proporcionalmente escalados (192/384 = 0.5)
+        const scaledOffsetX = (editingImage.offsetX * cardSize) / 384
+        const scaledOffsetY = (editingImage.offsetY * cardSize) / 384
 
         ctx.drawImage(
           img,
-          -scaledWidth / 2 + editingImage.offsetX,
-          -scaledHeight / 2 + editingImage.offsetY
+          -img.width / 2 + scaledOffsetX,
+          -img.height / 2 + scaledOffsetY
         )
         ctx.restore()
 
@@ -323,26 +324,54 @@ export default function ProductImagesPage() {
           <div className="card">
             <h3 className="font-bold text-lg mb-6">Editor de Imagen</h3>
 
-            <div className="grid md:grid-cols-2 gap-8 mb-6">
-              {/* Preview con ajustador visual - GRANDE para editar cómodamente */}
+            <div className="grid md:grid-cols-3 gap-8 mb-6">
+              {/* Preview PEQUEÑO - Lo que se verá en catálogo */}
               <div>
-                <h4 className="font-bold text-sm mb-4 text-gray-700">Vista Previa Editable (Escala Aumentada)</h4>
+                <h4 className="font-bold text-sm mb-4 text-gray-700">Resultado Final (192x192px)</h4>
                 
-                {/* Grid de ajuste - GRANDE para editar */}
-                <div className="relative bg-gray-100 rounded-lg p-4 border-2 border-gray-300 w-96 h-96 mx-auto flex items-center justify-center overflow-hidden">
-                  {/* Cuadrícula de fondo */}
+                <div className="relative bg-gray-100 rounded-lg p-4 border-2 border-green-500 w-48 h-48 mx-auto flex items-center justify-center overflow-hidden">
                   <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-0 pointer-events-none opacity-20">
                     {[...Array(9)].map((_, i) => (
                       <div key={i} className="border border-gray-400" />
                     ))}
                   </div>
 
-                  {/* Área segura (naranja) - representa el área visible */}
-                  <div className="absolute w-3/4 h-3/4 border-3 border-orange-500 rounded pointer-events-none shadow-lg">
-                    <div className="absolute inset-0 bg-orange-500 opacity-20" />
+                  <div
+                    style={{
+                      transform: `rotate(${editingImage.rotation}deg) scale(${editingImage.scale}) translate(${(editingImage.offsetX * 192) / 384}px, ${(editingImage.offsetY * 192) / 384}px)`,
+                      transition: 'transform 0.2s'
+                    }}
+                    className="max-w-full max-h-full relative"
+                  >
+                    <img
+                      src={editingImage.preview}
+                      alt="Final"
+                      className="w-32 h-32 object-contain"
+                      draggable={false}
+                    />
+                  </div>
+                </div>
+
+                <p className="text-xs text-green-600 mt-3 text-center font-bold">
+                  ✅ Esto es exactamente lo que se verá en el catálogo
+                </p>
+              </div>
+
+              {/* Preview GRANDE - Para editar */}
+              <div className="md:col-span-2">
+                <h4 className="font-bold text-sm mb-4 text-gray-700">Editor (Escala Ampliada para Ajustar)</h4>
+                
+                <div className="relative bg-gray-100 rounded-lg p-4 border-2 border-blue-500 w-96 h-96 mx-auto flex items-center justify-center overflow-hidden">
+                  <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-0 pointer-events-none opacity-20">
+                    {[...Array(9)].map((_, i) => (
+                      <div key={i} className="border border-gray-400" />
+                    ))}
                   </div>
 
-                  {/* Imagen ajustable */}
+                  <div className="absolute w-3/4 h-3/4 border-3 border-orange-500 rounded pointer-events-none shadow-lg">
+                    <div className="absolute inset-0 bg-orange-500 opacity-10" />
+                  </div>
+
                   <div
                     style={{
                       transform: `rotate(${editingImage.rotation}deg) scale(${editingImage.scale}) translate(${editingImage.offsetX}px, ${editingImage.offsetY}px)`,
@@ -360,9 +389,8 @@ export default function ProductImagesPage() {
                   </div>
                 </div>
 
-                <p className="text-xs text-gray-600 mt-4 text-center font-semibold">
-                  ✅ <span className="text-green-600">Editor a escala ampliada</span><br/>
-                  <span className="text-gray-500">Se guardará a 192x192px (tamaño real del catálogo)</span>
+                <p className="text-xs text-blue-600 mt-3 text-center font-semibold">
+                  Ajusta aquí - Mira el resultado a la izquierda
                 </p>
               </div>
 
