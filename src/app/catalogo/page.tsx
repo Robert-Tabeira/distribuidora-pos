@@ -281,7 +281,7 @@ export default function CatalogPage() {
                         <img
                           src={product.gallery[0]}
                           alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          className="w-full h-full object-contain group-hover:opacity-90 transition-opacity"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-5xl">📦</div>
