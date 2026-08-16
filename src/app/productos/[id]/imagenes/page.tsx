@@ -175,38 +175,70 @@ export default function ProductImagesPage() {
     try {
       setUploading(true)
 
+      // Crear un canvas del tamaño de la vista ampliada (384px)
+      const previewCanvas = document.createElement('canvas')
+      const previewSize = 384
+
+      previewCanvas.width = previewSize
+      previewCanvas.height = previewSize
+
+      const previewCtx = previewCanvas.getContext('2d')!
+      previewCtx.fillStyle = '#f3f4f6'
+      previewCtx.fillRect(0, 0, previewSize, previewSize)
+
       const img = new Image()
-      img.src = editingImage.preview
-
       img.onload = async () => {
-        const canvas = document.createElement('canvas')
-        const cardSize = 192 // Tamaño real del card en el catálogo
+        // Dibujar imagen con transformaciones
+        previewCtx.save()
+        previewCtx.translate(previewSize / 2, previewSize / 2)
+        previewCtx.rotate((editingImage.rotation * Math.PI) / 180)
+        previewCtx.scale(editingImage.scale, editingImage.scale)
+        previewCtx.translate(editingImage.offsetX, editingImage.offsetY)
+        
+        previewCtx.drawImage(img, -img.width / 2, -img.height / 2)
+        previewCtx.restore()
 
-        canvas.width = cardSize
-        canvas.height = cardSize
+        // Ahora recortar solo el área naranja (75% del centro)
+        const safePadding = (previewSize * 0.25) / 2 // 25% fuera, 75% dentro
+        const safeSize = previewSize * 0.75
 
-        const ctx = canvas.getContext('2d')!
-        ctx.fillStyle = '#ffffff'
-        ctx.fillRect(0, 0, cardSize, cardSize)
-
-        // Aplicar transformaciones con escala proporcional
-        ctx.save()
-        ctx.translate(cardSize / 2, cardSize / 2)
-        ctx.rotate((editingImage.rotation * Math.PI) / 180)
-        ctx.scale(editingImage.scale, editingImage.scale)
-
-        // Offsets proporcionalmente escalados (192/384 = 0.5)
-        const scaledOffsetX = (editingImage.offsetX * cardSize) / 384
-        const scaledOffsetY = (editingImage.offsetY * cardSize) / 384
-
-        ctx.drawImage(
-          img,
-          -img.width / 2 + scaledOffsetX,
-          -img.height / 2 + scaledOffsetY
+        const imageData = previewCtx.getImageData(
+          safePadding,
+          safePadding,
+          safeSize,
+          safeSize
         )
-        ctx.restore()
 
-        canvas.toBlob(async (blob) => {
+        // Canvas final (192px)
+        const finalCanvas = document.createElement('canvas')
+        const finalSize = 192
+
+        finalCanvas.width = finalSize
+        finalCanvas.height = finalSize
+
+        const finalCtx = finalCanvas.getContext('2d')!
+        finalCtx.fillStyle = '#ffffff'
+        finalCtx.fillRect(0, 0, finalSize, finalSize)
+
+        // Redimensionar imagen recortada a 192px
+        finalCtx.putImageData(
+          imageData,
+          0,
+          0
+        )
+
+        // Ahora redimensionar el canvas completo a 192px (sin distorsión)
+        const resizeCanvas = document.createElement('canvas')
+        resizeCanvas.width = finalSize
+        resizeCanvas.height = finalSize
+
+        const resizeCtx = resizeCanvas.getContext('2d')!
+        resizeCtx.fillStyle = '#ffffff'
+        resizeCtx.fillRect(0, 0, finalSize, finalSize)
+        
+        resizeCtx.drawImage(finalCanvas, 0, 0, finalSize, finalSize)
+
+        resizeCanvas.toBlob(async (blob) => {
           const finalFile = new File([blob!], editingImage.originalFile.name, {
             type: 'image/webp'
           })
@@ -214,6 +246,8 @@ export default function ProductImagesPage() {
           await uploadToSupabase(finalFile)
         }, 'image/webp', 0.85)
       }
+
+      img.src = editingImage.preview
     } catch (error) {
       console.error('Error saving image:', error)
       alert('Error al guardar la imagen')
