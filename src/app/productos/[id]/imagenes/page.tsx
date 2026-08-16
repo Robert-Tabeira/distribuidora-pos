@@ -113,15 +113,24 @@ export default function ProductImagesPage() {
 
       const reader = new FileReader()
       reader.onload = (event) => {
-        setEditingImage({
-          id: Date.now().toString(),
-          originalFile: compressedFile,
-          preview: event.target?.result as string,
-          rotation: 0,
-          scale: 1,
-          offsetX: 0,
-          offsetY: 0
-        })
+        const img = new Image()
+        img.onload = () => {
+          // Calcular escala inicial para que quepa en el contenedor (384px)
+          const maxDimension = Math.max(img.width, img.height)
+          const containerSize = 384
+          const initialScale = Math.min(1, (containerSize * 0.7) / maxDimension) // 70% del contenedor
+
+          setEditingImage({
+            id: Date.now().toString(),
+            originalFile: compressedFile,
+            preview: event.target?.result as string,
+            rotation: 0,
+            scale: initialScale,
+            offsetX: 0,
+            offsetY: 0
+          })
+        }
+        img.src = event.target?.result as string
       }
       reader.readAsDataURL(compressedFile)
     } catch (error) {
@@ -147,7 +156,7 @@ export default function ProductImagesPage() {
     if (!editingImage) return
     setEditingImage({
       ...editingImage,
-      scale: Math.max(0.5, Math.min(3, newScale))
+      scale: Math.max(0.3, Math.min(2, newScale))
     })
   }
 
@@ -341,12 +350,12 @@ export default function ProductImagesPage() {
                       transform: `rotate(${editingImage.rotation}deg) scale(${editingImage.scale}) translate(${(editingImage.offsetX * 192) / 384}px, ${(editingImage.offsetY * 192) / 384}px)`,
                       transition: 'transform 0.2s'
                     }}
-                    className="max-w-full max-h-full relative"
+                    className="flex items-center justify-center"
                   >
                     <img
                       src={editingImage.preview}
                       alt="Final"
-                      className="w-32 h-32 object-contain"
+                      className="max-w-full max-h-full object-contain"
                       draggable={false}
                     />
                   </div>
@@ -378,12 +387,12 @@ export default function ProductImagesPage() {
                       transition: 'transform 0.2s',
                       cursor: 'grab'
                     }}
-                    className="max-w-full max-h-full relative"
+                    className="flex items-center justify-center"
                   >
                     <img
                       src={editingImage.preview}
                       alt="Preview"
-                      className="max-w-sm max-h-sm object-contain"
+                      className="max-w-full max-h-full object-contain"
                       draggable={false}
                     />
                   </div>
@@ -420,8 +429,8 @@ export default function ProductImagesPage() {
                   <div className="space-y-2">
                     <input
                       type="range"
-                      min="0.5"
-                      max="3"
+                      min="0.3"
+                      max="2"
                       step="0.1"
                       value={editingImage.scale}
                       onChange={(e) => updateScale(parseFloat(e.target.value))}
