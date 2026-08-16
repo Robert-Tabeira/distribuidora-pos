@@ -175,70 +175,37 @@ export default function ProductImagesPage() {
     try {
       setUploading(true)
 
-      // Crear un canvas del tamaño de la vista ampliada (384px)
-      const previewCanvas = document.createElement('canvas')
-      const previewSize = 384
-
-      previewCanvas.width = previewSize
-      previewCanvas.height = previewSize
-
-      const previewCtx = previewCanvas.getContext('2d')!
-      previewCtx.fillStyle = '#f3f4f6'
-      previewCtx.fillRect(0, 0, previewSize, previewSize)
-
       const img = new Image()
       img.onload = async () => {
-        // Dibujar imagen con transformaciones
-        previewCtx.save()
-        previewCtx.translate(previewSize / 2, previewSize / 2)
-        previewCtx.rotate((editingImage.rotation * Math.PI) / 180)
-        previewCtx.scale(editingImage.scale, editingImage.scale)
-        previewCtx.translate(editingImage.offsetX, editingImage.offsetY)
-        
-        previewCtx.drawImage(img, -img.width / 2, -img.height / 2)
-        previewCtx.restore()
-
-        // Ahora recortar solo el área naranja (75% del centro)
-        const safePadding = (previewSize * 0.25) / 2 // 25% fuera, 75% dentro
-        const safeSize = previewSize * 0.75
-
-        const imageData = previewCtx.getImageData(
-          safePadding,
-          safePadding,
-          safeSize,
-          safeSize
-        )
-
-        // Canvas final (192px)
-        const finalCanvas = document.createElement('canvas')
+        // Crear canvas de 192px - EXACTAMENTE como se ve en el preview pequeño
+        const canvas = document.createElement('canvas')
         const finalSize = 192
 
-        finalCanvas.width = finalSize
-        finalCanvas.height = finalSize
+        canvas.width = finalSize
+        canvas.height = finalSize
 
-        const finalCtx = finalCanvas.getContext('2d')!
-        finalCtx.fillStyle = '#ffffff'
-        finalCtx.fillRect(0, 0, finalSize, finalSize)
+        const ctx = canvas.getContext('2d')!
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, finalSize, finalSize)
 
-        // Redimensionar imagen recortada a 192px
-        finalCtx.putImageData(
-          imageData,
-          0,
-          0
+        // Aplicar las MISMAS transformaciones que en el preview pequeño
+        ctx.save()
+        ctx.translate(finalSize / 2, finalSize / 2)
+        ctx.rotate((editingImage.rotation * Math.PI) / 180)
+        ctx.scale(editingImage.scale, editingImage.scale)
+
+        // Convertir offsets del editor (384px) al tamaño final (192px)
+        const scaledOffsetX = (editingImage.offsetX * finalSize) / 384
+        const scaledOffsetY = (editingImage.offsetY * finalSize) / 384
+
+        ctx.drawImage(
+          img,
+          -img.width / 2 + scaledOffsetX,
+          -img.height / 2 + scaledOffsetY
         )
+        ctx.restore()
 
-        // Ahora redimensionar el canvas completo a 192px (sin distorsión)
-        const resizeCanvas = document.createElement('canvas')
-        resizeCanvas.width = finalSize
-        resizeCanvas.height = finalSize
-
-        const resizeCtx = resizeCanvas.getContext('2d')!
-        resizeCtx.fillStyle = '#ffffff'
-        resizeCtx.fillRect(0, 0, finalSize, finalSize)
-        
-        resizeCtx.drawImage(finalCanvas, 0, 0, finalSize, finalSize)
-
-        resizeCanvas.toBlob(async (blob) => {
+        canvas.toBlob(async (blob) => {
           const finalFile = new File([blob!], editingImage.originalFile.name, {
             type: 'image/webp'
           })
