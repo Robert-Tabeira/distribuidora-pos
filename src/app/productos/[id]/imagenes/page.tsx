@@ -185,8 +185,8 @@ export default function ProductImagesPage() {
         largeCanvas.height = largeSize
 
         const largeCtx = largeCanvas.getContext('2d')!
-        largeCtx.fillStyle = '#f3f4f6'
-        largeCtx.fillRect(0, 0, largeSize, largeSize)
+        // Canvas queda transparente por defecto (no rellenamos fondo)
+        // para que el WebP final conserve el canal alpha
 
         // Dibujar exactamente como se ve en pantalla
         largeCtx.save()
@@ -226,8 +226,7 @@ export default function ProductImagesPage() {
         finalCanvas.height = finalSize
 
         const finalCtx = finalCanvas.getContext('2d')!
-        finalCtx.fillStyle = '#ffffff'
-        finalCtx.fillRect(0, 0, finalSize, finalSize)
+        // Sin fillRect: mantenemos transparencia (antes quedaba blanco sólido)
 
         // Dibujar imagen recortada redimensionada
         finalCtx.drawImage(croppedCanvas, 0, 0, finalSize, finalSize)
@@ -362,12 +361,15 @@ export default function ProductImagesPage() {
           <div className="card">
             <h3 className="font-bold text-lg mb-6">Editor de Imagen</h3>
 
-            <div className="grid md:grid-cols-3 gap-8 mb-6">
+            <div className="lg:grid lg:grid-cols-5 lg:gap-8 lg:items-start">
+            {/* Columna izquierda: previews, quedan fijos en pantalla mientras ajustás los controles */}
+            <div className="lg:col-span-3 sticky top-24 z-10 bg-gray-50/95 backdrop-blur-sm pb-4 -mx-1 px-1 rounded-lg">
+            <div className="grid sm:grid-cols-3 gap-6 mb-2">
               {/* Preview PEQUEÑO - Lo que se verá en catálogo */}
               <div>
                 <h4 className="font-bold text-sm mb-4 text-gray-700">Resultado Final (192x192px)</h4>
                 
-                <div className="relative bg-gray-100 rounded-lg p-4 border-2 border-green-500 w-48 h-48 mx-auto flex items-center justify-center overflow-hidden">
+                <div className="relative rounded-lg p-4 border-2 border-green-500 w-48 h-48 mx-auto flex items-center justify-center overflow-hidden" style={{ backgroundImage: 'repeating-conic-gradient(#e5e7eb 0% 25%, #ffffff 0% 50%)', backgroundSize: '16px 16px' }}>
                   <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-0 pointer-events-none opacity-20">
                     {[...Array(9)].map((_, i) => (
                       <div key={i} className="border border-gray-400" />
@@ -396,10 +398,10 @@ export default function ProductImagesPage() {
               </div>
 
               {/* Preview GRANDE - Para editar */}
-              <div className="md:col-span-2">
+              <div className="sm:col-span-2">
                 <h4 className="font-bold text-sm mb-4 text-gray-700">Editor (Escala Ampliada para Ajustar)</h4>
                 
-                <div className="relative bg-gray-100 rounded-lg p-4 border-2 border-blue-500 w-96 h-96 mx-auto flex items-center justify-center overflow-hidden">
+                <div className="relative rounded-lg p-4 border-2 border-blue-500 w-96 h-96 mx-auto flex items-center justify-center overflow-hidden" style={{ backgroundImage: 'repeating-conic-gradient(#e5e7eb 0% 25%, #ffffff 0% 50%)', backgroundSize: '16px 16px' }}>
                   <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-0 pointer-events-none opacity-20">
                     {[...Array(9)].map((_, i) => (
                       <div key={i} className="border border-gray-400" />
@@ -431,9 +433,11 @@ export default function ProductImagesPage() {
                   Ajusta aquí - Mira el resultado a la izquierda
                 </p>
               </div>
+            </div>
+            </div>
 
               {/* Herramientas */}
-              <div className="space-y-4">
+              <div className="lg:col-span-2 space-y-4 mt-8 lg:mt-0">
                 <div>
                   <h4 className="font-bold mb-3">🔄 Rotación</h4>
                   <div className="flex gap-2">
@@ -460,7 +464,7 @@ export default function ProductImagesPage() {
                       type="range"
                       min="0.3"
                       max="2"
-                      step="0.1"
+                      step="0.01"
                       value={editingImage.scale}
                       onChange={(e) => updateScale(parseFloat(e.target.value))}
                       className="w-full"
@@ -588,12 +592,13 @@ export default function ProductImagesPage() {
                   {images.map((url, index) => (
                     <div
                       key={index}
-                      className="relative bg-gray-100 rounded-lg overflow-hidden aspect-square group"
+                      className="relative rounded-lg overflow-hidden aspect-square group"
+                      style={{ backgroundImage: 'repeating-conic-gradient(#e5e7eb 0% 25%, #ffffff 0% 50%)', backgroundSize: '16px 16px' }}
                     >
                       <img
                         src={url}
                         alt={`Imagen ${index + 1}`}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain"
                         onError={(e) => {
                           e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Crect fill="%23ddd" width="100" height="100"/%3E%3C/svg%3E'
                         }}
