@@ -13,6 +13,22 @@ interface EditingImage {
   scale: number
   offsetX: number
   offsetY: number
+  naturalWidth: number
+  naturalHeight: number
+}
+
+// Calcula el tamaño (ancho/alto en px) al que una imagen de naturalWidth x
+// naturalHeight entra dentro de una caja de boxSize x boxSize, preservando
+// su relación de aspecto (equivalente a "object-fit: contain"), sin achicar
+// más de lo necesario. Se usa TANTO para el preview (vía estilo inline)
+// COMO para el guardado (canvas), así ambos coinciden siempre exactamente.
+function getFitSize(naturalWidth: number, naturalHeight: number, boxSize: number) {
+  const ratio = Math.min(boxSize / naturalWidth, boxSize / naturalHeight, 1)
+  return {
+    width: naturalWidth * ratio,
+    height: naturalHeight * ratio,
+    ratio
+  }
 }
 
 export default function ProductImagesPage() {
@@ -115,20 +131,16 @@ export default function ProductImagesPage() {
       reader.onload = (event) => {
         const img = new Image()
         img.onload = () => {
-          // Escala inicial: el navegador ya ajusta automáticamente la imagen
-          // al contenedor (via max-w-full/max-h-full), así que acá el 0.7
-          // representa "70% de ese tamaño ya ajustado" (deja margen visible),
-          // sin importar la resolución original de la foto.
-          const initialScale = 0.7
-
           setEditingImage({
             id: Date.now().toString(),
             originalFile: compressedFile,
             preview: event.target?.result as string,
             rotation: 0,
-            scale: initialScale,
+            scale: 0.7, // 70% del tamaño ya ajustado a la caja (deja margen visible)
             offsetX: 0,
-            offsetY: 0
+            offsetY: 0,
+            naturalWidth: img.width,
+            naturalHeight: img.height
           })
         }
         img.src = event.target?.result as string
@@ -180,21 +192,13 @@ export default function ProductImagesPage() {
       img.onload = async () => {
         // Step 1: Renderizar en canvas grande (384px) tal como se ve
 
-        // El navegador ajusta automáticamente la imagen para que quepa en el
-        // cuadro de 384px (vía max-w-full/max-h-full), y RECIÉN sobre ese
-        // tamaño ya ajustado se aplica el zoom del slider (editingImage.scale).
-        // El canvas NO hace ese ajuste automático, así que hay que calcularlo
-        // a mano para que el guardado coincida con lo que se ve en pantalla.
+        // Usamos la MISMA función (getFitSize) y el MISMO tamaño de caja (384)
+        // que usa el preview grande para posicionar la imagen en pantalla.
+        // Así el resultado guardado coincide siempre, sin depender de cómo
+        // el navegador decida (de forma ambigua) auto-ajustar el <img>.
         const largeSize = 384
-        const previewPadding = 16 // p-4
-        const previewBorder = 2 // border-2
-        const previewInner = largeSize - (previewPadding + previewBorder) * 2 // ~348px
-
-        const fitScale = Math.min(
-          1,
-          previewInner / img.width,
-          previewInner / img.height
-        )
+        const fit = getFitSize(editingImage.naturalWidth, editingImage.naturalHeight, largeSize)
+        const fitScale = fit.ratio
 
         const largeCanvas = document.createElement('canvas')
 
@@ -209,8 +213,8 @@ export default function ProductImagesPage() {
         // 1) rotar, 2) aplicar el zoom del usuario (igual que el CSS
         //    "scale(editingImage.scale)"), 3) mover según offset X/Y
         //    (en ese mismo espacio, igual que hace el navegador),
-        //    4) recién ahí aplicar el ajuste automático a tamaño real
-        //    (fitScale) solo para dibujar la imagen a su tamaño correcto.
+        //    4) recién ahí aplicar el ajuste a tamaño real (fitScale)
+        //    solo para dibujar la imagen a su tamaño correcto.
         largeCtx.save()
         largeCtx.translate(largeSize / 2, largeSize / 2)
         largeCtx.rotate((editingImage.rotation * Math.PI) / 180)
@@ -399,20 +403,25 @@ export default function ProductImagesPage() {
                     ))}
                   </div>
 
-                  <div
-                    style={{
-                      transform: `rotate(${editingImage.rotation}deg) scale(${editingImage.scale}) translate(${(editingImage.offsetX * 192) / 384}px, ${(editingImage.offsetY * 192) / 384}px)`,
-                      transition: 'transform 0.2s'
-                    }}
-                    className="flex items-center justify-center"
-                  >
-                    <img
-                      src={editingImage.preview}
-                      alt="Final"
-                      className="max-w-full max-h-full object-contain"
-                      draggable={false}
-                    />
-                  </div>
+                  {(() => {
+                    const smallFit = getFitSize(editingImage.naturalWidth, editingImage.naturalHeight, 192)
+                    return (
+                      <div
+                        style={{
+                          transform: `rotate(${editingImage.rotation}deg) scale(${editingImage.scale}) translate(${(editingImage.offsetX * 192) / 384}px, ${(editingImage.offsetY * 192) / 384}px)`,
+                          transition: 'transform 0.2s'
+                        }}
+                        className="flex items-center justify-center"
+                      >
+                        <img
+                          src={editingImage.preview}
+                          alt="Final"
+                          style={{ width: smallFit.width, height: smallFit.height }}
+                          draggable={false}
+                        />
+                      </div>
+                    )
+                  })()}
                 </div>
 
                 <p className="text-xs text-green-600 mt-3 text-center font-bold">
@@ -435,21 +444,26 @@ export default function ProductImagesPage() {
                     <div className="absolute inset-0 bg-orange-500 opacity-10" />
                   </div>
 
-                  <div
-                    style={{
-                      transform: `rotate(${editingImage.rotation}deg) scale(${editingImage.scale}) translate(${editingImage.offsetX}px, ${editingImage.offsetY}px)`,
-                      transition: 'transform 0.2s',
-                      cursor: 'grab'
-                    }}
-                    className="flex items-center justify-center"
-                  >
-                    <img
-                      src={editingImage.preview}
-                      alt="Preview"
-                      className="max-w-full max-h-full object-contain"
-                      draggable={false}
-                    />
-                  </div>
+                  {(() => {
+                    const bigFit = getFitSize(editingImage.naturalWidth, editingImage.naturalHeight, 384)
+                    return (
+                      <div
+                        style={{
+                          transform: `rotate(${editingImage.rotation}deg) scale(${editingImage.scale}) translate(${editingImage.offsetX}px, ${editingImage.offsetY}px)`,
+                          transition: 'transform 0.2s',
+                          cursor: 'grab'
+                        }}
+                        className="flex items-center justify-center"
+                      >
+                        <img
+                          src={editingImage.preview}
+                          alt="Preview"
+                          style={{ width: bigFit.width, height: bigFit.height }}
+                          draggable={false}
+                        />
+                      </div>
+                    )
+                  })()}
                 </div>
 
                 <p className="text-xs text-blue-600 mt-3 text-center font-semibold">
