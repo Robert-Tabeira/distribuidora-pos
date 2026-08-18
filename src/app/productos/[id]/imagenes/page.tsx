@@ -115,10 +115,11 @@ export default function ProductImagesPage() {
       reader.onload = (event) => {
         const img = new Image()
         img.onload = () => {
-          // Calcular escala inicial para que quepa en el contenedor (384px)
-          const maxDimension = Math.max(img.width, img.height)
-          const containerSize = 384
-          const initialScale = Math.min(1, (containerSize * 0.7) / maxDimension) // 70% del contenedor
+          // Escala inicial: el navegador ya ajusta automáticamente la imagen
+          // al contenedor (via max-w-full/max-h-full), así que acá el 0.7
+          // representa "70% de ese tamaño ya ajustado" (deja margen visible),
+          // sin importar la resolución original de la foto.
+          const initialScale = 0.7
 
           setEditingImage({
             id: Date.now().toString(),
@@ -178,8 +179,24 @@ export default function ProductImagesPage() {
       const img = new Image()
       img.onload = async () => {
         // Step 1: Renderizar en canvas grande (384px) tal como se ve
-        const largeCanvas = document.createElement('canvas')
+
+        // El navegador ajusta automáticamente la imagen para que quepa en el
+        // cuadro de 384px (vía max-w-full/max-h-full), y RECIÉN sobre ese
+        // tamaño ya ajustado se aplica el zoom del slider (editingImage.scale).
+        // El canvas NO hace ese ajuste automático, así que hay que calcularlo
+        // a mano para que el guardado coincida con lo que se ve en pantalla.
         const largeSize = 384
+        const previewPadding = 16 // p-4
+        const previewBorder = 2 // border-2
+        const previewInner = largeSize - (previewPadding + previewBorder) * 2 // ~348px
+
+        const fitScale = Math.min(
+          1,
+          previewInner / img.width,
+          previewInner / img.height
+        )
+
+        const largeCanvas = document.createElement('canvas')
 
         largeCanvas.width = largeSize
         largeCanvas.height = largeSize
@@ -188,12 +205,18 @@ export default function ProductImagesPage() {
         // Canvas queda transparente por defecto (no rellenamos fondo)
         // para que el WebP final conserve el canal alpha
 
-        // Dibujar exactamente como se ve en pantalla
+        // Dibujar exactamente como se ve en pantalla:
+        // 1) rotar, 2) aplicar el zoom del usuario (igual que el CSS
+        //    "scale(editingImage.scale)"), 3) mover según offset X/Y
+        //    (en ese mismo espacio, igual que hace el navegador),
+        //    4) recién ahí aplicar el ajuste automático a tamaño real
+        //    (fitScale) solo para dibujar la imagen a su tamaño correcto.
         largeCtx.save()
         largeCtx.translate(largeSize / 2, largeSize / 2)
         largeCtx.rotate((editingImage.rotation * Math.PI) / 180)
         largeCtx.scale(editingImage.scale, editingImage.scale)
         largeCtx.translate(editingImage.offsetX, editingImage.offsetY)
+        largeCtx.scale(fitScale, fitScale)
         largeCtx.drawImage(img, -img.width / 2, -img.height / 2)
         largeCtx.restore()
 
