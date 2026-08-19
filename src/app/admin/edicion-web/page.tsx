@@ -110,7 +110,44 @@ function shadeColor(hex: string, percent: number) {
   }
 }
 
-// Selector de color reutilizable: paleta global + color personalizado
+// Sección plegable reutilizable, para no mostrar todos los controles
+// de diseño a la vista al mismo tiempo (colores, tipografía, efectos, etc.)
+function CollapsibleCard({
+  icon,
+  title,
+  subtitle,
+  defaultOpen = false,
+  children
+}: {
+  icon: string
+  title: string
+  subtitle?: string
+  defaultOpen?: boolean
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+
+  return (
+    <div className="card mb-4 max-w-2xl !p-0 overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="text-xl">{icon}</span>
+          <div className="min-w-0">
+            <p className="font-bold text-text">{title}</p>
+            {subtitle && <p className="text-xs text-text-muted truncate">{subtitle}</p>}
+          </div>
+        </div>
+        <span className={`text-text-muted transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`}>▼</span>
+      </button>
+
+      {open && <div className="px-5 pb-5 pt-1 border-t border-border">{children}</div>}
+    </div>
+  )
+}
 function ColorPicker({
   label,
   value,
@@ -237,7 +274,8 @@ export default function WebsiteEditionPage() {
     site_name: 'Los Primos',
     site_tagline: 'Distribuidora Oficial Sarubbi',
     logo_url: '',
-    use_logo_image: false
+    use_logo_image: false,
+    logo_link_url: '/landing'
   })
   const [savingLogo, setSavingLogo] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
@@ -306,7 +344,8 @@ export default function WebsiteEditionPage() {
           site_name: settingsRes.data.site_name || 'Los Primos',
           site_tagline: settingsRes.data.site_tagline || 'Distribuidora Oficial Sarubbi',
           logo_url: settingsRes.data.logo_url || '',
-          use_logo_image: settingsRes.data.use_logo_image || false
+          use_logo_image: settingsRes.data.use_logo_image || false,
+          logo_link_url: settingsRes.data.logo_link_url || '/landing'
         })
       }
 
@@ -843,6 +882,7 @@ export default function WebsiteEditionPage() {
           site_tagline: logoForm.site_tagline.trim(),
           logo_url: logoForm.logo_url || null,
           use_logo_image: logoForm.use_logo_image,
+          logo_link_url: logoForm.logo_link_url.trim() || '/landing',
           updated_at: new Date().toISOString()
         })
         .eq('id', settings.id)
@@ -1082,7 +1122,7 @@ export default function WebsiteEditionPage() {
       </div>
 
       {/* Contenido */}
-      <div className="flex-1 px-4 pb-6">
+      <div className="flex-1 px-4 pb-6 max-w-3xl">
         {/* SETTINGS TAB */}
         {activeTab === 'settings' && (
           <div className="card max-w-2xl">
@@ -1328,10 +1368,10 @@ export default function WebsiteEditionPage() {
             })()}
 
             {/* Panel de Diseño */}
-            <div className="card mb-6">
-              <h4 className="font-bold text-lg mb-5">🎨 Diseño de la barra</h4>
+            <p className="text-xs font-semibold text-text-muted mb-2 mt-2">DISEÑO DE LA BARRA</p>
 
-              <div className="grid sm:grid-cols-2 gap-5 mb-5">
+            <CollapsibleCard icon="🎨" title="Colores" subtitle="Fondo y texto">
+              <div className="grid sm:grid-cols-2 gap-5">
                 <ColorPicker
                   label="Color de fondo"
                   value={barForm.bg_color}
@@ -1345,7 +1385,9 @@ export default function WebsiteEditionPage() {
                   palette={palette}
                 />
               </div>
+            </CollapsibleCard>
 
+            <CollapsibleCard icon="🔤" title="Tipografía" subtitle="Fuente, tamaño y grosor">
               <div className="grid sm:grid-cols-2 gap-5 mb-5">
                 <div>
                   <label className="block text-sm font-semibold text-text-muted mb-2">Tipografía</label>
@@ -1375,7 +1417,7 @@ export default function WebsiteEditionPage() {
                 </div>
               </div>
 
-              <div className="grid sm:grid-cols-2 gap-5 mb-5">
+              <div className="grid sm:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-sm font-semibold text-text-muted mb-2">
                     Tamaño de letra <span className="text-text-light font-normal">({barForm.font_size})</span>
@@ -1403,50 +1445,49 @@ export default function WebsiteEditionPage() {
                   </select>
                 </div>
               </div>
+            </CollapsibleCard>
 
-              <div className="mb-6">
-                <label className="block text-sm font-semibold text-text-muted mb-2">Efecto visual</label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {[
-                    { value: 'none', label: 'Ninguno' },
-                    { value: 'pulse', label: 'Pulso suave' },
-                    { value: 'shimmer', label: 'Brillo deslizante' },
-                    { value: 'bounce-icon', label: 'Ícono rebotando' },
-                    { value: 'gradient', label: 'Fondo animado' }
-                  ].map(opt => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => setBarForm({ ...barForm, animation: opt.value })}
-                      className={`px-3 py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
-                        barForm.animation === opt.value
-                          ? 'border-primary bg-primary/10 text-primary'
-                          : 'border-border text-text-muted'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
+            <CollapsibleCard icon="✨" title="Efecto visual" subtitle={barForm.animation === 'none' ? 'Ninguno' : barForm.animation}>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {[
+                  { value: 'none', label: 'Ninguno' },
+                  { value: 'pulse', label: 'Pulso suave' },
+                  { value: 'shimmer', label: 'Brillo deslizante' },
+                  { value: 'bounce-icon', label: 'Ícono rebotando' },
+                  { value: 'gradient', label: 'Fondo animado' }
+                ].map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setBarForm({ ...barForm, animation: opt.value })}
+                    className={`px-3 py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
+                      barForm.animation === opt.value
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border text-text-muted'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
               </div>
+            </CollapsibleCard>
 
-              <button
-                onClick={saveBarSettings}
-                disabled={savingBarSettings}
-                className="btn btn-primary w-full"
-              >
-                {savingBarSettings ? 'Guardando...' : 'Guardar Diseño'}
-              </button>
-            </div>
+            <button
+              onClick={saveBarSettings}
+              disabled={savingBarSettings}
+              className="btn btn-primary w-full max-w-2xl mb-8"
+            >
+              {savingBarSettings ? 'Guardando...' : 'Guardar Diseño'}
+            </button>
 
             {announcements.length === 0 ? (
-              <div className="card text-center py-12 text-text-muted">
+              <div className="card text-center py-12 text-text-muted max-w-2xl">
                 <div className="text-4xl mb-3">📢</div>
                 <p className="font-medium">Todavía no hay mensajes</p>
                 <p className="text-sm mt-1">Creá el primero para que aparezca arriba del header</p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-3 max-w-2xl">
                 {[...announcements].sort((a, b) => a.order_position - b.order_position).map((item, idx, arr) => (
                   <div key={item.id} className={`card flex items-center gap-4 ${!item.is_active ? 'opacity-50' : ''}`}>
                     <div className="flex flex-col gap-1">
@@ -1538,9 +1579,7 @@ export default function WebsiteEditionPage() {
               </div>
 
               {/* LOGO Y NOMBRE */}
-              <div className="card mb-6">
-                <h4 className="font-bold text-lg mb-5">🖼️ Logo y Nombre</h4>
-
+              <CollapsibleCard icon="🖼️" title="Logo y Nombre" subtitle={logoForm.use_logo_image ? 'Imagen' : logoForm.site_name}>
                 <div className="flex gap-2 mb-5 p-1 bg-gray-100 rounded-xl w-fit">
                   <button
                     onClick={() => setLogoForm({ ...logoForm, use_logo_image: false })}
@@ -1590,13 +1629,26 @@ export default function WebsiteEditionPage() {
                   </div>
                 )}
 
+                <div className="mb-5">
+                  <label className="block text-sm font-semibold text-text-muted mb-2">
+                    Link del logo <span className="text-text-light font-normal">(a dónde va al hacer clic)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={logoForm.logo_link_url}
+                    onChange={(e) => setLogoForm({ ...logoForm, logo_link_url: e.target.value })}
+                    placeholder="/landing"
+                    className="input"
+                  />
+                </div>
+
                 <button onClick={saveLogo} disabled={savingLogo} className="btn btn-primary w-full">
                   {savingLogo ? 'Guardando...' : 'Guardar Logo y Nombre'}
                 </button>
-              </div>
+              </CollapsibleCard>
 
               {/* ENLACES DE MENÚ */}
-              <div className="card mb-6">
+              <div className="card mb-4 max-w-2xl">
                 <div className="flex justify-between items-center mb-5">
                   <h4 className="font-bold text-lg">🔗 Enlaces de Menú</h4>
                   <button
@@ -1636,9 +1688,7 @@ export default function WebsiteEditionPage() {
               </div>
 
               {/* ESTILO */}
-              <div className="card mb-6">
-                <h4 className="font-bold text-lg mb-5">🎨 Estilo del Header</h4>
-
+              <CollapsibleCard icon="🎨" title="Estilo del Header" subtitle="Colores y comportamiento">
                 <div className="grid sm:grid-cols-3 gap-5 mb-5">
                   <ColorPicker label="Color de fondo" value={headerForm.bg_color} onChange={(hex) => setHeaderForm({ ...headerForm, bg_color: hex })} palette={palette} />
                   <ColorPicker label="Color de texto" value={headerForm.text_color} onChange={(hex) => setHeaderForm({ ...headerForm, text_color: hex })} palette={palette} />
@@ -1659,7 +1709,7 @@ export default function WebsiteEditionPage() {
                 <button onClick={saveHeaderSettings} disabled={savingHeaderSettings} className="btn btn-primary w-full">
                   {savingHeaderSettings ? 'Guardando...' : 'Guardar Estilo'}
                 </button>
-              </div>
+              </CollapsibleCard>
             </div>
           )
         })()}

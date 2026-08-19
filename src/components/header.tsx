@@ -18,6 +18,7 @@ interface WebsiteSettings {
   site_tagline: string
   logo_url: string | null
   use_logo_image: boolean
+  logo_link_url: string
 }
 
 interface MenuLink {
@@ -101,7 +102,7 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 min-w-0">
+          <Link href={settings?.logo_link_url || '/landing'} className="flex items-center gap-3 min-w-0">
             {settings?.use_logo_image && settings?.logo_url ? (
               <img
                 src={settings.logo_url}
