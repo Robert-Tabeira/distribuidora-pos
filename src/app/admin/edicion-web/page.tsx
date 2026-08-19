@@ -22,6 +22,27 @@ interface WebsiteSettings {
   show_address?: boolean
   show_business_hours?: boolean
   color_palette?: ColorSwatch[]
+  site_name?: string
+  site_tagline?: string
+  logo_url?: string | null
+  use_logo_image?: boolean
+}
+
+interface MenuLink {
+  id: string
+  label: string
+  url: string
+  order_position: number
+  is_active: boolean
+}
+
+interface HeaderSettings {
+  id: string
+  bg_color: string
+  text_color: string
+  active_color: string
+  sticky: boolean
+  shadow: boolean
 }
 
 interface HeroSlide {
@@ -211,6 +232,34 @@ export default function WebsiteEditionPage() {
   })
   const [savingBarSettings, setSavingBarSettings] = useState(false)
 
+  // Header: Logo y Nombre
+  const [logoForm, setLogoForm] = useState({
+    site_name: 'Los Primos',
+    site_tagline: 'Distribuidora Oficial Sarubbi',
+    logo_url: '',
+    use_logo_image: false
+  })
+  const [savingLogo, setSavingLogo] = useState(false)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+
+  // Header: Enlaces de Menú
+  const [menuLinks, setMenuLinks] = useState<MenuLink[]>([])
+  const [editingMenuLink, setEditingMenuLink] = useState<MenuLink | null>(null)
+  const [menuLinkForm, setMenuLinkForm] = useState({ label: '', url: '', is_active: true })
+  const [savingMenuLink, setSavingMenuLink] = useState(false)
+  const [showMenuLinkModal, setShowMenuLinkModal] = useState(false)
+
+  // Header: Estilo
+  const [headerSettings, setHeaderSettings] = useState<HeaderSettings | null>(null)
+  const [headerForm, setHeaderForm] = useState({
+    bg_color: '#ffffff',
+    text_color: '#374151',
+    active_color: '#2563eb',
+    sticky: true,
+    shadow: true
+  })
+  const [savingHeaderSettings, setSavingHeaderSettings] = useState(false)
+
   useEffect(() => {
     const stored = localStorage.getItem('employee')
     if (!stored) {
@@ -228,12 +277,14 @@ export default function WebsiteEditionPage() {
 
   async function loadData() {
     try {
-      const [settingsRes, heroRes, sectionsRes, announcementsRes, barSettingsRes] = await Promise.all([
+      const [settingsRes, heroRes, sectionsRes, announcementsRes, barSettingsRes, menuLinksRes, headerSettingsRes] = await Promise.all([
         supabase.from('website_settings').select('*').single(),
         supabase.from('hero_slides').select('*').order('order_position'),
         supabase.from('landing_sections').select('*').order('section_name'),
         supabase.from('announcement_messages').select('*').order('order_position'),
-        supabase.from('announcement_bar_settings').select('*').single()
+        supabase.from('announcement_bar_settings').select('*').single(),
+        supabase.from('menu_links').select('*').order('order_position'),
+        supabase.from('header_settings').select('*').single()
       ])
 
       if (settingsRes.data) {
@@ -251,11 +302,29 @@ export default function WebsiteEditionPage() {
         if (settingsRes.data.color_palette && settingsRes.data.color_palette.length > 0) {
           setPalette(settingsRes.data.color_palette as ColorSwatch[])
         }
+        setLogoForm({
+          site_name: settingsRes.data.site_name || 'Los Primos',
+          site_tagline: settingsRes.data.site_tagline || 'Distribuidora Oficial Sarubbi',
+          logo_url: settingsRes.data.logo_url || '',
+          use_logo_image: settingsRes.data.use_logo_image || false
+        })
       }
 
       if (heroRes.data) setHeroSlides(heroRes.data as HeroSlide[])
       if (sectionsRes.data) setSections(sectionsRes.data as LandingSection[])
       if (announcementsRes.data) setAnnouncements(announcementsRes.data as AnnouncementMessage[])
+      if (menuLinksRes.data) setMenuLinks(menuLinksRes.data as MenuLink[])
+      if (headerSettingsRes.data) {
+        const h = headerSettingsRes.data as HeaderSettings
+        setHeaderSettings(h)
+        setHeaderForm({
+          bg_color: h.bg_color,
+          text_color: h.text_color,
+          active_color: h.active_color,
+          sticky: h.sticky,
+          shadow: h.shadow
+        })
+      }
       if (barSettingsRes.data) {
         const b = barSettingsRes.data as BarSettings
         setBarSettings(b)
@@ -747,7 +816,165 @@ export default function WebsiteEditionPage() {
     }
   }
 
-  // ===== DISEÑO DE LA BARRA DE ANUNCIOS =====
+  // ===== HEADER: LOGO Y NOMBRE =====
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingLogo(true)
+    const { url, error } = await uploadImageToSupabase(file, 'logo')
+
+    if (error) {
+      alert(`❌ Error al subir el logo: ${error}`)
+    } else {
+      setLogoForm({ ...logoForm, logo_url: url })
+    }
+    setUploadingLogo(false)
+  }
+
+  async function saveLogo() {
+    if (!settings) return
+    setSavingLogo(true)
+    try {
+      const { error } = await supabase
+        .from('website_settings')
+        .update({
+          site_name: logoForm.site_name.trim() || 'Los Primos',
+          site_tagline: logoForm.site_tagline.trim(),
+          logo_url: logoForm.logo_url || null,
+          use_logo_image: logoForm.use_logo_image,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', settings.id)
+
+      if (error) throw error
+      alert('✅ Logo y nombre guardados correctamente')
+    } catch (error) {
+      console.error('Error saving logo:', error)
+      alert('❌ Error al guardar')
+    } finally {
+      setSavingLogo(false)
+    }
+  }
+
+  // ===== HEADER: ENLACES DE MENÚ =====
+  function openMenuLinkModal(link?: MenuLink) {
+    if (link) {
+      setEditingMenuLink(link)
+      setMenuLinkForm({ label: link.label, url: link.url, is_active: link.is_active })
+    } else {
+      setEditingMenuLink(null)
+      setMenuLinkForm({ label: '', url: '', is_active: true })
+    }
+    setShowMenuLinkModal(true)
+  }
+
+  async function saveMenuLink() {
+    if (!menuLinkForm.label.trim() || !menuLinkForm.url.trim()) {
+      alert('⚠️ El texto y la URL son obligatorios')
+      return
+    }
+
+    setSavingMenuLink(true)
+    try {
+      if (editingMenuLink) {
+        const { error } = await supabase
+          .from('menu_links')
+          .update({ label: menuLinkForm.label.trim(), url: menuLinkForm.url.trim(), is_active: menuLinkForm.is_active })
+          .eq('id', editingMenuLink.id)
+
+        if (error) throw error
+        setMenuLinks(menuLinks.map(l => l.id === editingMenuLink.id ? { ...l, ...menuLinkForm } : l))
+      } else {
+        const maxOrder = menuLinks.length > 0 ? Math.max(...menuLinks.map(l => l.order_position)) : 0
+        const { data, error } = await supabase
+          .from('menu_links')
+          .insert([{ ...menuLinkForm, label: menuLinkForm.label.trim(), url: menuLinkForm.url.trim(), order_position: maxOrder + 1 }])
+          .select()
+
+        if (error) throw error
+        if (data) setMenuLinks([...menuLinks, data[0] as MenuLink])
+      }
+
+      setShowMenuLinkModal(false)
+      alert('✅ Enlace guardado correctamente')
+    } catch (error) {
+      console.error('Error saving menu link:', error)
+      alert('❌ Error al guardar. Verificá que la tabla "menu_links" ya exista en Supabase.')
+    } finally {
+      setSavingMenuLink(false)
+    }
+  }
+
+  async function deleteMenuLink(id: string) {
+    if (!confirm('¿Eliminar este enlace del menú?')) return
+    try {
+      const { error } = await supabase.from('menu_links').delete().eq('id', id)
+      if (error) throw error
+      setMenuLinks(menuLinks.filter(l => l.id !== id))
+    } catch (error) {
+      console.error('Error deleting menu link:', error)
+      alert('❌ Error al eliminar')
+    }
+  }
+
+  async function toggleMenuLinkActive(link: MenuLink) {
+    try {
+      const { error } = await supabase.from('menu_links').update({ is_active: !link.is_active }).eq('id', link.id)
+      if (error) throw error
+      setMenuLinks(menuLinks.map(l => l.id === link.id ? { ...l, is_active: !l.is_active } : l))
+    } catch (error) {
+      console.error('Error toggling menu link:', error)
+      alert('❌ Error al actualizar')
+    }
+  }
+
+  async function moveMenuLink(id: string, direction: 'up' | 'down') {
+    const sorted = [...menuLinks].sort((a, b) => a.order_position - b.order_position)
+    const idx = sorted.findIndex(l => l.id === id)
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1
+    if (swapIdx < 0 || swapIdx >= sorted.length) return
+
+    const current = sorted[idx]
+    const swapWith = sorted[swapIdx]
+
+    try {
+      await Promise.all([
+        supabase.from('menu_links').update({ order_position: swapWith.order_position }).eq('id', current.id),
+        supabase.from('menu_links').update({ order_position: current.order_position }).eq('id', swapWith.id)
+      ])
+
+      setMenuLinks(menuLinks.map(l => {
+        if (l.id === current.id) return { ...l, order_position: swapWith.order_position }
+        if (l.id === swapWith.id) return { ...l, order_position: current.order_position }
+        return l
+      }))
+    } catch (error) {
+      console.error('Error reordering menu links:', error)
+      alert('❌ Error al reordenar')
+    }
+  }
+
+  // ===== HEADER: ESTILO =====
+  async function saveHeaderSettings() {
+    if (!headerSettings) return
+    setSavingHeaderSettings(true)
+    try {
+      const { error } = await supabase
+        .from('header_settings')
+        .update({ ...headerForm, updated_at: new Date().toISOString() })
+        .eq('id', headerSettings.id)
+
+      if (error) throw error
+      setHeaderSettings({ ...headerSettings, ...headerForm })
+      alert('✅ Estilo guardado correctamente')
+    } catch (error) {
+      console.error('Error saving header settings:', error)
+      alert('❌ Error al guardar. Verificá que la tabla "header_settings" ya exista en Supabase.')
+    } finally {
+      setSavingHeaderSettings(false)
+    }
+  }
   async function saveBarSettings() {
     if (!barSettings) return
     setSavingBarSettings(true)
@@ -1274,14 +1501,168 @@ export default function WebsiteEditionPage() {
           </div>
         )}
 
-        {/* HEADER / MENÚ (próximamente) */}
-        {activeTab === 'sections' && sectionView === 'header' && (
-          <div className="card text-center py-16 text-text-muted">
-            <div className="text-4xl mb-3">🧭</div>
-            <p className="font-semibold text-text">Header / Menú</p>
-            <p className="text-sm mt-1">Próximamente vas a poder editar el menú y el estilo del header desde acá</p>
-          </div>
-        )}
+        {/* HEADER / MENÚ */}
+        {activeTab === 'sections' && sectionView === 'header' && (() => {
+          const sortedLinks = [...menuLinks].sort((a, b) => a.order_position - b.order_position)
+          const activePreviewLinks = sortedLinks.filter(l => l.is_active)
+
+          return (
+            <div>
+              <h3 className="font-bold text-xl mb-1">Header / Menú</h3>
+              <p className="text-sm text-text-muted mb-6">Logo, enlaces de navegación y estilo del encabezado del sitio</p>
+
+              {/* Vista previa en vivo */}
+              <div className="mb-6">
+                <p className="text-xs font-semibold text-text-muted mb-2">VISTA PREVIA</p>
+                <div
+                  className={`rounded-lg border border-gray-200 px-4 py-3 flex items-center justify-between ${headerForm.shadow ? 'shadow-md' : ''}`}
+                  style={{ backgroundColor: headerForm.bg_color }}
+                >
+                  {logoForm.use_logo_image && logoForm.logo_url ? (
+                    <img src={logoForm.logo_url} alt={logoForm.site_name} className="h-8 object-contain" />
+                  ) : (
+                    <div>
+                      <p className="font-black text-lg" style={{ color: headerForm.text_color }}>{logoForm.site_name}</p>
+                      <p className="text-[10px] font-semibold" style={{ color: headerForm.text_color, opacity: 0.7 }}>{logoForm.site_tagline}</p>
+                    </div>
+                  )}
+                  <div className="hidden sm:flex gap-5">
+                    {activePreviewLinks.map((link, idx) => (
+                      <span key={link.id} className="font-semibold text-sm" style={{ color: idx === 0 ? headerForm.active_color : headerForm.text_color }}>
+                        {link.label}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-xs">ℹ️</div>
+                </div>
+              </div>
+
+              {/* LOGO Y NOMBRE */}
+              <div className="card mb-6">
+                <h4 className="font-bold text-lg mb-5">🖼️ Logo y Nombre</h4>
+
+                <div className="flex gap-2 mb-5 p-1 bg-gray-100 rounded-xl w-fit">
+                  <button
+                    onClick={() => setLogoForm({ ...logoForm, use_logo_image: false })}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${!logoForm.use_logo_image ? 'bg-white shadow text-text' : 'text-text-muted'}`}
+                  >
+                    Texto
+                  </button>
+                  <button
+                    onClick={() => setLogoForm({ ...logoForm, use_logo_image: true })}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${logoForm.use_logo_image ? 'bg-white shadow text-text' : 'text-text-muted'}`}
+                  >
+                    Imagen
+                  </button>
+                </div>
+
+                {logoForm.use_logo_image ? (
+                  <div className="mb-5">
+                    <label className="block text-sm font-semibold text-text-muted mb-2">Logo (imagen)</label>
+                    {logoForm.logo_url && (
+                      <div className="mb-3 p-4 bg-gray-50 rounded-lg inline-block">
+                        <img src={logoForm.logo_url} alt="Logo" className="h-12 object-contain" />
+                      </div>
+                    )}
+                    <input type="file" accept="image/*" onChange={handleLogoUpload} disabled={uploadingLogo} className="input" />
+                    {uploadingLogo && <p className="text-xs text-text-muted mt-2">Subiendo...</p>}
+                  </div>
+                ) : (
+                  <div className="grid sm:grid-cols-2 gap-5 mb-5">
+                    <div>
+                      <label className="block text-sm font-semibold text-text-muted mb-2">Nombre del sitio</label>
+                      <input
+                        type="text"
+                        value={logoForm.site_name}
+                        onChange={(e) => setLogoForm({ ...logoForm, site_name: e.target.value })}
+                        className="input"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-text-muted mb-2">Tagline</label>
+                      <input
+                        type="text"
+                        value={logoForm.site_tagline}
+                        onChange={(e) => setLogoForm({ ...logoForm, site_tagline: e.target.value })}
+                        className="input"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <button onClick={saveLogo} disabled={savingLogo} className="btn btn-primary w-full">
+                  {savingLogo ? 'Guardando...' : 'Guardar Logo y Nombre'}
+                </button>
+              </div>
+
+              {/* ENLACES DE MENÚ */}
+              <div className="card mb-6">
+                <div className="flex justify-between items-center mb-5">
+                  <h4 className="font-bold text-lg">🔗 Enlaces de Menú</h4>
+                  <button
+                    onClick={() => openMenuLinkModal()}
+                    className="px-4 py-2 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 text-sm whitespace-nowrap"
+                  >
+                    + Nuevo Enlace
+                  </button>
+                </div>
+
+                {sortedLinks.length === 0 ? (
+                  <p className="text-sm text-text-muted text-center py-6">Todavía no hay enlaces configurados</p>
+                ) : (
+                  <div className="space-y-3">
+                    {sortedLinks.map((link, idx) => (
+                      <div key={link.id} className={`flex items-center gap-3 p-3 rounded-lg border border-border ${!link.is_active ? 'opacity-50' : ''}`}>
+                        <div className="flex flex-col gap-1">
+                          <button onClick={() => moveMenuLink(link.id, 'up')} disabled={idx === 0} className="w-6 h-6 flex items-center justify-center rounded bg-gray-100 disabled:opacity-30 hover:bg-gray-200">▲</button>
+                          <button onClick={() => moveMenuLink(link.id, 'down')} disabled={idx === sortedLinks.length - 1} className="w-6 h-6 flex items-center justify-center rounded bg-gray-100 disabled:opacity-30 hover:bg-gray-200">▼</button>
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-text truncate">{link.label}</p>
+                          <p className="text-xs text-text-muted truncate">{link.url}</p>
+                        </div>
+
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={link.is_active} onChange={() => toggleMenuLinkActive(link)} className="w-5 h-5 rounded border-gray-300" />
+                        </label>
+
+                        <button onClick={() => openMenuLinkModal(link)} className="px-3 py-2 bg-primary/10 text-primary rounded-lg font-semibold hover:bg-primary/20 text-sm">Editar</button>
+                        <button onClick={() => deleteMenuLink(link.id)} className="px-3 py-2 bg-red-100 text-red-600 rounded-lg font-semibold hover:bg-red-200 text-sm">Eliminar</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* ESTILO */}
+              <div className="card mb-6">
+                <h4 className="font-bold text-lg mb-5">🎨 Estilo del Header</h4>
+
+                <div className="grid sm:grid-cols-3 gap-5 mb-5">
+                  <ColorPicker label="Color de fondo" value={headerForm.bg_color} onChange={(hex) => setHeaderForm({ ...headerForm, bg_color: hex })} palette={palette} />
+                  <ColorPicker label="Color de texto" value={headerForm.text_color} onChange={(hex) => setHeaderForm({ ...headerForm, text_color: hex })} palette={palette} />
+                  <ColorPicker label="Color de enlace activo" value={headerForm.active_color} onChange={(hex) => setHeaderForm({ ...headerForm, active_color: hex })} palette={palette} />
+                </div>
+
+                <div className="flex flex-wrap gap-6 mb-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={headerForm.sticky} onChange={(e) => setHeaderForm({ ...headerForm, sticky: e.target.checked })} className="w-5 h-5 rounded border-gray-300" />
+                    <span className="font-semibold text-sm">Header fijo al hacer scroll (sticky)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={headerForm.shadow} onChange={(e) => setHeaderForm({ ...headerForm, shadow: e.target.checked })} className="w-5 h-5 rounded border-gray-300" />
+                    <span className="font-semibold text-sm">Sombra debajo del header</span>
+                  </label>
+                </div>
+
+                <button onClick={saveHeaderSettings} disabled={savingHeaderSettings} className="btn btn-primary w-full">
+                  {savingHeaderSettings ? 'Guardando...' : 'Guardar Estilo'}
+                </button>
+              </div>
+            </div>
+          )
+        })()}
         {activeTab === 'sections' && sectionView === 'hero' && (
           <div>
             <div className="flex justify-between items-center mb-6">
@@ -1548,6 +1929,58 @@ export default function WebsiteEditionPage() {
               </button>
               <button onClick={saveSection} disabled={savingSection} className="btn btn-primary flex-1">
                 {savingSection ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Menu Link Modal */}
+      {showMenuLinkModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50" onClick={() => setShowMenuLinkModal(false)}>
+          <div className="bg-surface w-full max-w-lg rounded-t-3xl p-6 animate-slide-up max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
+            <div className="w-12 h-1.5 bg-border rounded-full mx-auto mb-6" />
+
+            <h3 className="font-bold text-xl mb-6">{editingMenuLink ? 'Editar Enlace' : 'Nuevo Enlace'}</h3>
+
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-semibold text-text-muted mb-2">Texto *</label>
+                <input
+                  type="text"
+                  value={menuLinkForm.label}
+                  onChange={(e) => setMenuLinkForm({ ...menuLinkForm, label: e.target.value })}
+                  placeholder="Ej: Ofertas"
+                  className="input"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-text-muted mb-2">URL *</label>
+                <input
+                  type="text"
+                  value={menuLinkForm.url}
+                  onChange={(e) => setMenuLinkForm({ ...menuLinkForm, url: e.target.value })}
+                  placeholder="/descuentos"
+                  className="input"
+                />
+              </div>
+
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={menuLinkForm.is_active}
+                  onChange={(e) => setMenuLinkForm({ ...menuLinkForm, is_active: e.target.checked })}
+                  className="w-5 h-5 rounded border-gray-300"
+                />
+                <span className="font-semibold text-gray-700">Enlace activo</span>
+              </label>
+            </div>
+
+            <div className="flex gap-3">
+              <button onClick={() => setShowMenuLinkModal(false)} className="btn btn-outline flex-1">Cancelar</button>
+              <button onClick={saveMenuLink} disabled={savingMenuLink} className="btn btn-primary flex-1">
+                {savingMenuLink ? 'Guardando...' : 'Guardar'}
               </button>
             </div>
           </div>
