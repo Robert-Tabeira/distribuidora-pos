@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { PublicLayout } from '@/components/public-layout'
+import { Header } from '@/components/header'
 import { useRouter } from 'next/navigation'
 import { HeroSlider } from '@/components/hero-slider'
 import { supabase } from '@/lib/supabase'
@@ -83,8 +83,11 @@ export default function LandingPage() {
   const topProducts = products.slice(0, 5)
 
   return (
-    <PublicLayout>
     <div className="min-h-screen bg-white">
+      {/* HEADER */}
+      
+      <Header />
+
       {/* HERO SLIDER */}
       <HeroSlider />
 
@@ -225,6 +228,5 @@ export default function LandingPage() {
         </div>
       </footer>
     </div>
-    </PublicLayout>
   )
 }

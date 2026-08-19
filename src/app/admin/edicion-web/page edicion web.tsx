@@ -39,23 +39,12 @@ interface LandingSection {
   is_visible: boolean
 }
 
-interface AnnouncementMessage {
-  id: string
-  message: string
-  icon: string | null
-  link_text: string | null
-  link_url: string | null
-  order_position: number
-  is_active: boolean
-}
-
 export default function WebsiteEditionPage() {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [employee, setEmployee] = useState<Employee | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'settings' | 'sections'>('settings')
-  const [sectionView, setSectionView] = useState<'announcement' | 'header' | 'hero' | 'landing' | 'popups' | 'footer'>('announcement')
+  const [activeTab, setActiveTab] = useState<'settings' | 'hero' | 'sections'>('settings')
 
   // Settings
   const [settings, setSettings] = useState<WebsiteSettings | null>(null)
@@ -88,13 +77,6 @@ export default function WebsiteEditionPage() {
   const [savingSection, setSavingSection] = useState(false)
   const [showSectionModal, setShowSectionModal] = useState(false)
 
-  // Announcement Bar
-  const [announcements, setAnnouncements] = useState<AnnouncementMessage[]>([])
-  const [editingAnnouncement, setEditingAnnouncement] = useState<AnnouncementMessage | null>(null)
-  const [announcementForm, setAnnouncementForm] = useState({ message: '', icon: '', link_text: '', link_url: '', is_active: true })
-  const [savingAnnouncement, setSavingAnnouncement] = useState(false)
-  const [showAnnouncementModal, setShowAnnouncementModal] = useState(false)
-
   useEffect(() => {
     const stored = localStorage.getItem('employee')
     if (!stored) {
@@ -112,11 +94,10 @@ export default function WebsiteEditionPage() {
 
   async function loadData() {
     try {
-      const [settingsRes, heroRes, sectionsRes, announcementsRes] = await Promise.all([
+      const [settingsRes, heroRes, sectionsRes] = await Promise.all([
         supabase.from('website_settings').select('*').single(),
         supabase.from('hero_slides').select('*').order('order_position'),
-        supabase.from('landing_sections').select('*').order('section_name'),
-        supabase.from('announcement_messages').select('*').order('order_position')
+        supabase.from('landing_sections').select('*').order('section_name')
       ])
 
       if (settingsRes.data) {
@@ -135,7 +116,6 @@ export default function WebsiteEditionPage() {
 
       if (heroRes.data) setHeroSlides(heroRes.data as HeroSlide[])
       if (sectionsRes.data) setSections(sectionsRes.data as LandingSection[])
-      if (announcementsRes.data) setAnnouncements(announcementsRes.data as AnnouncementMessage[])
     } catch (error) {
       console.error('Error loading data:', error)
     } finally {
@@ -443,145 +423,6 @@ export default function WebsiteEditionPage() {
     setShowSectionModal(true)
   }
 
-  // ===== ANNOUNCEMENT BAR =====
-  async function saveAnnouncement() {
-    if (!announcementForm.message.trim()) {
-      alert('⚠️ El mensaje es obligatorio')
-      return
-    }
-
-    setSavingAnnouncement(true)
-    try {
-      if (editingAnnouncement) {
-        const { error } = await supabase
-          .from('announcement_messages')
-          .update({
-            message: announcementForm.message.trim(),
-            icon: announcementForm.icon.trim() || null,
-            link_text: announcementForm.link_text.trim() || null,
-            link_url: announcementForm.link_url.trim() || null,
-            is_active: announcementForm.is_active,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', editingAnnouncement.id)
-
-        if (error) throw error
-
-        setAnnouncements(announcements.map(a =>
-          a.id === editingAnnouncement.id
-            ? {
-                ...a,
-                message: announcementForm.message.trim(),
-                icon: announcementForm.icon.trim() || null,
-                link_text: announcementForm.link_text.trim() || null,
-                link_url: announcementForm.link_url.trim() || null,
-                is_active: announcementForm.is_active
-              }
-            : a
-        ))
-      } else {
-        const maxOrder = announcements.length > 0 ? Math.max(...announcements.map(a => a.order_position)) : 0
-
-        const { data, error } = await supabase
-          .from('announcement_messages')
-          .insert([{
-            message: announcementForm.message.trim(),
-            icon: announcementForm.icon.trim() || null,
-            link_text: announcementForm.link_text.trim() || null,
-            link_url: announcementForm.link_url.trim() || null,
-            is_active: announcementForm.is_active,
-            order_position: maxOrder + 1
-          }])
-          .select()
-
-        if (error) throw error
-        if (data) setAnnouncements([...announcements, data[0] as AnnouncementMessage])
-      }
-
-      setShowAnnouncementModal(false)
-      alert('✅ Mensaje guardado correctamente')
-    } catch (error) {
-      console.error('Error saving announcement:', error)
-      alert('❌ Error al guardar. Verificá que la tabla "announcement_messages" ya exista en Supabase.')
-    } finally {
-      setSavingAnnouncement(false)
-    }
-  }
-
-  async function deleteAnnouncement(id: string) {
-    if (!confirm('¿Eliminar este mensaje?')) return
-
-    try {
-      const { error } = await supabase.from('announcement_messages').delete().eq('id', id)
-      if (error) throw error
-      setAnnouncements(announcements.filter(a => a.id !== id))
-    } catch (error) {
-      console.error('Error deleting announcement:', error)
-      alert('❌ Error al eliminar')
-    }
-  }
-
-  async function toggleAnnouncementActive(announcement: AnnouncementMessage) {
-    try {
-      const { error } = await supabase
-        .from('announcement_messages')
-        .update({ is_active: !announcement.is_active })
-        .eq('id', announcement.id)
-
-      if (error) throw error
-
-      setAnnouncements(announcements.map(a =>
-        a.id === announcement.id ? { ...a, is_active: !a.is_active } : a
-      ))
-    } catch (error) {
-      console.error('Error toggling announcement:', error)
-      alert('❌ Error al actualizar')
-    }
-  }
-
-  async function moveAnnouncement(id: string, direction: 'up' | 'down') {
-    const sorted = [...announcements].sort((a, b) => a.order_position - b.order_position)
-    const idx = sorted.findIndex(a => a.id === id)
-    const swapIdx = direction === 'up' ? idx - 1 : idx + 1
-    if (swapIdx < 0 || swapIdx >= sorted.length) return
-
-    const current = sorted[idx]
-    const swapWith = sorted[swapIdx]
-
-    try {
-      await Promise.all([
-        supabase.from('announcement_messages').update({ order_position: swapWith.order_position }).eq('id', current.id),
-        supabase.from('announcement_messages').update({ order_position: current.order_position }).eq('id', swapWith.id)
-      ])
-
-      setAnnouncements(announcements.map(a => {
-        if (a.id === current.id) return { ...a, order_position: swapWith.order_position }
-        if (a.id === swapWith.id) return { ...a, order_position: current.order_position }
-        return a
-      }))
-    } catch (error) {
-      console.error('Error reordering:', error)
-      alert('❌ Error al reordenar')
-    }
-  }
-
-  function openAnnouncementModal(announcement?: AnnouncementMessage) {
-    if (announcement) {
-      setEditingAnnouncement(announcement)
-      setAnnouncementForm({
-        message: announcement.message,
-        icon: announcement.icon || '',
-        link_text: announcement.link_text || '',
-        link_url: announcement.link_url || '',
-        is_active: announcement.is_active
-      })
-    } else {
-      setEditingAnnouncement(null)
-      setAnnouncementForm({ message: '', icon: '', link_text: '', link_url: '', is_active: true })
-    }
-    setShowAnnouncementModal(true)
-  }
-
   if (loading) {
     return (
       <div className="min-h-[100dvh] flex items-center justify-center bg-bg">
@@ -630,6 +471,16 @@ export default function WebsiteEditionPage() {
             ⚙️ Configuración
           </button>
           <button
+            onClick={() => setActiveTab('hero')}
+            className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
+              activeTab === 'hero'
+                ? 'bg-primary text-white shadow-lg'
+                : 'text-text-muted'
+            }`}
+          >
+            🎨 Hero
+          </button>
+          <button
             onClick={() => setActiveTab('sections')}
             className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
               activeTab === 'sections'
@@ -637,35 +488,9 @@ export default function WebsiteEditionPage() {
                 : 'text-text-muted'
             }`}
           >
-            🧩 Secciones
+            📄 Secciones
           </button>
         </div>
-
-        {/* Sub-navegación de Secciones */}
-        {activeTab === 'sections' && (
-          <div className="flex gap-2 mt-3 overflow-x-auto pb-1 -mx-1 px-1">
-            {[
-              { key: 'announcement', label: '📢 Barra de anuncios' },
-              { key: 'header', label: '🧭 Header / Menú' },
-              { key: 'hero', label: '🎨 Hero' },
-              { key: 'landing', label: '📄 Bloques de Landing' },
-              { key: 'popups', label: '💬 Pop-ups' },
-              { key: 'footer', label: '🦶 Footer' },
-            ].map(item => (
-              <button
-                key={item.key}
-                onClick={() => setSectionView(item.key as typeof sectionView)}
-                className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all ${
-                  sectionView === item.key
-                    ? 'bg-primary text-white border-primary'
-                    : 'bg-white text-text-muted border-border'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Contenido */}
@@ -788,107 +613,8 @@ export default function WebsiteEditionPage() {
           </div>
         )}
 
-        {/* BARRA DE ANUNCIOS */}
-        {activeTab === 'sections' && sectionView === 'announcement' && (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h3 className="font-bold text-xl">Barra de Anuncios</h3>
-                <p className="text-sm text-text-muted">Mensajes que aparecen arriba del header (envíos, descuentos, etc.)</p>
-              </div>
-              <button
-                onClick={() => openAnnouncementModal()}
-                className="px-4 py-2 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 transition-all whitespace-nowrap"
-              >
-                + Nuevo Mensaje
-              </button>
-            </div>
-
-            {/* Vista previa en vivo */}
-            {announcements.filter(a => a.is_active).length > 0 && (
-              <div className="mb-6">
-                <p className="text-xs font-semibold text-text-muted mb-2">VISTA PREVIA</p>
-                <div className="bg-gray-900 text-white text-sm py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 text-center">
-                  <span>{announcements.filter(a => a.is_active).sort((a, b) => a.order_position - b.order_position)[0].icon}</span>
-                  <span>{announcements.filter(a => a.is_active).sort((a, b) => a.order_position - b.order_position)[0].message}</span>
-                  {announcements.filter(a => a.is_active)[0].link_text && (
-                    <span className="underline font-semibold ml-1">{announcements.filter(a => a.is_active)[0].link_text}</span>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {announcements.length === 0 ? (
-              <div className="card text-center py-12 text-text-muted">
-                <div className="text-4xl mb-3">📢</div>
-                <p className="font-medium">Todavía no hay mensajes</p>
-                <p className="text-sm mt-1">Creá el primero para que aparezca arriba del header</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {[...announcements].sort((a, b) => a.order_position - b.order_position).map((item, idx, arr) => (
-                  <div key={item.id} className={`card flex items-center gap-4 ${!item.is_active ? 'opacity-50' : ''}`}>
-                    <div className="flex flex-col gap-1">
-                      <button
-                        onClick={() => moveAnnouncement(item.id, 'up')}
-                        disabled={idx === 0}
-                        className="w-6 h-6 flex items-center justify-center rounded bg-gray-100 disabled:opacity-30 hover:bg-gray-200"
-                      >▲</button>
-                      <button
-                        onClick={() => moveAnnouncement(item.id, 'down')}
-                        disabled={idx === arr.length - 1}
-                        className="w-6 h-6 flex items-center justify-center rounded bg-gray-100 disabled:opacity-30 hover:bg-gray-200"
-                      >▼</button>
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-text truncate">
-                        {item.icon && <span className="mr-1">{item.icon}</span>}
-                        {item.message}
-                      </p>
-                      {item.link_text && (
-                        <p className="text-xs text-primary mt-1">{item.link_text} → {item.link_url}</p>
-                      )}
-                    </div>
-
-                    <label className="flex items-center gap-2 cursor-pointer whitespace-nowrap">
-                      <input
-                        type="checkbox"
-                        checked={item.is_active}
-                        onChange={() => toggleAnnouncementActive(item)}
-                        className="w-5 h-5 rounded border-gray-300"
-                      />
-                      <span className="text-xs font-semibold text-text-muted hidden sm:inline">Activo</span>
-                    </label>
-
-                    <button
-                      onClick={() => openAnnouncementModal(item)}
-                      className="px-3 py-2 bg-primary/10 text-primary rounded-lg font-semibold hover:bg-primary/20 text-sm"
-                    >
-                      Editar
-                    </button>
-                    <button
-                      onClick={() => deleteAnnouncement(item.id)}
-                      className="px-3 py-2 bg-red-100 text-red-600 rounded-lg font-semibold hover:bg-red-200 text-sm"
-                    >
-                      Eliminar
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* HEADER / MENÚ (próximamente) */}
-        {activeTab === 'sections' && sectionView === 'header' && (
-          <div className="card text-center py-16 text-text-muted">
-            <div className="text-4xl mb-3">🧭</div>
-            <p className="font-semibold text-text">Header / Menú</p>
-            <p className="text-sm mt-1">Próximamente vas a poder editar el menú y el estilo del header desde acá</p>
-          </div>
-        )}
-        {activeTab === 'sections' && sectionView === 'hero' && (
+        {/* HERO TAB */}
+        {activeTab === 'hero' && (
           <div>
             <div className="flex justify-between items-center mb-6">
               <h3 className="font-bold text-xl">Hero Slider</h3>
@@ -940,10 +666,10 @@ export default function WebsiteEditionPage() {
           </div>
         )}
 
-        {/* BLOQUES DE LANDING */}
-        {activeTab === 'sections' && sectionView === 'landing' && (
+        {/* SECTIONS TAB */}
+        {activeTab === 'sections' && (
           <div>
-            <h3 className="font-bold text-xl mb-6">Bloques de Landing</h3>
+            <h3 className="font-bold text-xl mb-6">Secciones de Landing</h3>
 
             <div className="space-y-4">
               {sections.map(section => (
@@ -964,24 +690,6 @@ export default function WebsiteEditionPage() {
                 </div>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* POP-UPS (próximamente) */}
-        {activeTab === 'sections' && sectionView === 'popups' && (
-          <div className="card text-center py-16 text-text-muted">
-            <div className="text-4xl mb-3">💬</div>
-            <p className="font-semibold text-text">Pop-ups</p>
-            <p className="text-sm mt-1">Próximamente vas a poder crear pop-ups (newsletter, promociones, etc.) desde acá</p>
-          </div>
-        )}
-
-        {/* FOOTER (próximamente) */}
-        {activeTab === 'sections' && sectionView === 'footer' && (
-          <div className="card text-center py-16 text-text-muted">
-            <div className="text-4xl mb-3">🦶</div>
-            <p className="font-semibold text-text">Footer</p>
-            <p className="text-sm mt-1">Próximamente vas a poder editar el pie de página desde acá</p>
           </div>
         )}
       </div>
@@ -1154,84 +862,6 @@ export default function WebsiteEditionPage() {
               </button>
               <button onClick={saveSection} disabled={savingSection} className="btn btn-primary flex-1">
                 {savingSection ? 'Guardando...' : 'Guardar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Announcement Modal */}
-      {showAnnouncementModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50" onClick={() => setShowAnnouncementModal(false)}>
-          <div className="bg-surface w-full max-w-lg rounded-t-3xl p-6 animate-slide-up max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
-            <div className="w-12 h-1.5 bg-border rounded-full mx-auto mb-6" />
-
-            <h3 className="font-bold text-xl mb-6">{editingAnnouncement ? 'Editar Mensaje' : 'Nuevo Mensaje'}</h3>
-
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="block text-sm font-semibold text-text-muted mb-2">Mensaje *</label>
-                <input
-                  type="text"
-                  value={announcementForm.message}
-                  onChange={(e) => setAnnouncementForm({ ...announcementForm, message: e.target.value })}
-                  placeholder="Ej: Envío gratis en compras mayores a $2000"
-                  className="input"
-                  maxLength={120}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-text-muted mb-2">Icono (emoji, opcional)</label>
-                <input
-                  type="text"
-                  value={announcementForm.icon}
-                  onChange={(e) => setAnnouncementForm({ ...announcementForm, icon: e.target.value })}
-                  placeholder="🚚"
-                  className="input"
-                  maxLength={4}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-text-muted mb-2">Texto del botón (opcional)</label>
-                <input
-                  type="text"
-                  value={announcementForm.link_text}
-                  onChange={(e) => setAnnouncementForm({ ...announcementForm, link_text: e.target.value })}
-                  placeholder="Ver más"
-                  className="input"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-text-muted mb-2">URL del botón (opcional)</label>
-                <input
-                  type="text"
-                  value={announcementForm.link_url}
-                  onChange={(e) => setAnnouncementForm({ ...announcementForm, link_url: e.target.value })}
-                  placeholder="/catalogo"
-                  className="input"
-                />
-              </div>
-
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={announcementForm.is_active}
-                  onChange={(e) => setAnnouncementForm({ ...announcementForm, is_active: e.target.checked })}
-                  className="w-5 h-5 rounded border-gray-300"
-                />
-                <span className="font-semibold text-gray-700">Mensaje activo</span>
-              </label>
-            </div>
-
-            <div className="flex gap-3">
-              <button onClick={() => setShowAnnouncementModal(false)} className="btn btn-outline flex-1">
-                Cancelar
-              </button>
-              <button onClick={saveAnnouncement} disabled={savingAnnouncement} className="btn btn-primary flex-1">
-                {savingAnnouncement ? 'Guardando...' : 'Guardar'}
               </button>
             </div>
           </div>
