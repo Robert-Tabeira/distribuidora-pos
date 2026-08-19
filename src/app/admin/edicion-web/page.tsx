@@ -6,6 +6,11 @@ import { supabase } from '@/lib/supabase'
 import { uploadImageToSupabase } from '@/lib/image-upload-helper'
 import type { Employee } from '@/types/database'
 
+interface ColorSwatch {
+  name: string
+  hex: string
+}
+
 interface WebsiteSettings {
   id: string
   phone_number: string | null
@@ -16,6 +21,7 @@ interface WebsiteSettings {
   show_email?: boolean
   show_address?: boolean
   show_business_hours?: boolean
+  color_palette?: ColorSwatch[]
 }
 
 interface HeroSlide {
@@ -47,6 +53,99 @@ interface AnnouncementMessage {
   link_url: string | null
   order_position: number
   is_active: boolean
+}
+
+interface BarSettings {
+  id: string
+  bg_color: string
+  text_color: string
+  font_family: string
+  font_size: string
+  font_weight: string
+  letter_spacing: string
+  animation: string
+}
+
+const DEFAULT_PALETTE: ColorSwatch[] = [
+  { name: 'Primario', hex: '#1d4ed8' },
+  { name: 'Secundario', hex: '#0891b2' },
+  { name: 'Acento', hex: '#f59e0b' },
+  { name: 'Oscuro', hex: '#111827' },
+  { name: 'Claro', hex: '#ffffff' },
+  { name: 'Éxito', hex: '#16a34a' },
+  { name: 'Alerta', hex: '#dc2626' }
+]
+
+// Genera una versión más clara/oscura de un color hex (para previews de degradado)
+function shadeColor(hex: string, percent: number) {
+  try {
+    const num = parseInt(hex.replace('#', ''), 16)
+    const r = Math.min(255, Math.max(0, (num >> 16) + percent))
+    const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00ff) + percent))
+    const b = Math.min(255, Math.max(0, (num & 0x0000ff) + percent))
+    return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
+  } catch {
+    return hex
+  }
+}
+
+// Selector de color reutilizable: paleta global + color personalizado
+function ColorPicker({
+  label,
+  value,
+  onChange,
+  palette
+}: {
+  label: string
+  value: string
+  onChange: (hex: string) => void
+  palette: ColorSwatch[]
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-text-muted mb-2">{label}</label>
+      <div className="flex flex-wrap items-center gap-2">
+        {palette.map((swatch) => (
+          <button
+            key={swatch.hex}
+            type="button"
+            title={swatch.name}
+            onClick={() => onChange(swatch.hex)}
+            className={`w-8 h-8 rounded-full border-2 transition-all ${
+              value.toLowerCase() === swatch.hex.toLowerCase()
+                ? 'border-primary scale-110 shadow-md'
+                : 'border-white shadow'
+            }`}
+            style={{ backgroundColor: swatch.hex }}
+          />
+        ))}
+
+        {/* Custom */}
+        <div className="relative w-8 h-8">
+          <input
+            type="color"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            title="Color personalizado"
+          />
+          <div
+            className="w-8 h-8 rounded-full border-2 border-dashed border-gray-400 flex items-center justify-center text-xs pointer-events-none"
+            style={{ backgroundColor: !palette.some(s => s.hex.toLowerCase() === value.toLowerCase()) ? value : undefined }}
+          >
+            {palette.some(s => s.hex.toLowerCase() === value.toLowerCase()) && '🎨'}
+          </div>
+        </div>
+
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="input !w-28 !py-1.5 text-xs font-mono"
+        />
+      </div>
+    </div>
+  )
 }
 
 export default function WebsiteEditionPage() {
@@ -95,6 +194,23 @@ export default function WebsiteEditionPage() {
   const [savingAnnouncement, setSavingAnnouncement] = useState(false)
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false)
 
+  // Paleta de colores global
+  const [palette, setPalette] = useState<ColorSwatch[]>(DEFAULT_PALETTE)
+  const [savingPalette, setSavingPalette] = useState(false)
+
+  // Diseño de la barra de anuncios
+  const [barSettings, setBarSettings] = useState<BarSettings | null>(null)
+  const [barForm, setBarForm] = useState({
+    bg_color: '#111827',
+    text_color: '#ffffff',
+    font_family: 'default',
+    font_size: '14px',
+    font_weight: '500',
+    letter_spacing: 'normal',
+    animation: 'none'
+  })
+  const [savingBarSettings, setSavingBarSettings] = useState(false)
+
   useEffect(() => {
     const stored = localStorage.getItem('employee')
     if (!stored) {
@@ -112,11 +228,12 @@ export default function WebsiteEditionPage() {
 
   async function loadData() {
     try {
-      const [settingsRes, heroRes, sectionsRes, announcementsRes] = await Promise.all([
+      const [settingsRes, heroRes, sectionsRes, announcementsRes, barSettingsRes] = await Promise.all([
         supabase.from('website_settings').select('*').single(),
         supabase.from('hero_slides').select('*').order('order_position'),
         supabase.from('landing_sections').select('*').order('section_name'),
-        supabase.from('announcement_messages').select('*').order('order_position')
+        supabase.from('announcement_messages').select('*').order('order_position'),
+        supabase.from('announcement_bar_settings').select('*').single()
       ])
 
       if (settingsRes.data) {
@@ -131,11 +248,27 @@ export default function WebsiteEditionPage() {
           show_address: settingsRes.data.show_address !== false,
           show_business_hours: settingsRes.data.show_business_hours !== false
         })
+        if (settingsRes.data.color_palette && settingsRes.data.color_palette.length > 0) {
+          setPalette(settingsRes.data.color_palette as ColorSwatch[])
+        }
       }
 
       if (heroRes.data) setHeroSlides(heroRes.data as HeroSlide[])
       if (sectionsRes.data) setSections(sectionsRes.data as LandingSection[])
       if (announcementsRes.data) setAnnouncements(announcementsRes.data as AnnouncementMessage[])
+      if (barSettingsRes.data) {
+        const b = barSettingsRes.data as BarSettings
+        setBarSettings(b)
+        setBarForm({
+          bg_color: b.bg_color,
+          text_color: b.text_color,
+          font_family: b.font_family,
+          font_size: b.font_size,
+          font_weight: b.font_weight,
+          letter_spacing: b.letter_spacing,
+          animation: b.animation
+        })
+      }
     } catch (error) {
       console.error('Error loading data:', error)
     } finally {
@@ -582,6 +715,59 @@ export default function WebsiteEditionPage() {
     setShowAnnouncementModal(true)
   }
 
+  // ===== PALETA DE COLORES =====
+  function updatePaletteColor(index: number, field: 'name' | 'hex', value: string) {
+    setPalette(palette.map((c, i) => (i === index ? { ...c, [field]: value } : c)))
+  }
+
+  function addPaletteColor() {
+    setPalette([...palette, { name: 'Nuevo color', hex: '#888888' }])
+  }
+
+  function removePaletteColor(index: number) {
+    setPalette(palette.filter((_, i) => i !== index))
+  }
+
+  async function savePalette() {
+    if (!settings) return
+    setSavingPalette(true)
+    try {
+      const { error } = await supabase
+        .from('website_settings')
+        .update({ color_palette: palette, updated_at: new Date().toISOString() })
+        .eq('id', settings.id)
+
+      if (error) throw error
+      alert('✅ Paleta guardada correctamente')
+    } catch (error) {
+      console.error('Error saving palette:', error)
+      alert('❌ Error al guardar la paleta')
+    } finally {
+      setSavingPalette(false)
+    }
+  }
+
+  // ===== DISEÑO DE LA BARRA DE ANUNCIOS =====
+  async function saveBarSettings() {
+    if (!barSettings) return
+    setSavingBarSettings(true)
+    try {
+      const { error } = await supabase
+        .from('announcement_bar_settings')
+        .update({ ...barForm, updated_at: new Date().toISOString() })
+        .eq('id', barSettings.id)
+
+      if (error) throw error
+      setBarSettings({ ...barSettings, ...barForm })
+      alert('✅ Diseño guardado correctamente')
+    } catch (error) {
+      console.error('Error saving bar settings:', error)
+      alert('❌ Error al guardar. Verificá que la tabla "announcement_bar_settings" ya exista en Supabase.')
+    } finally {
+      setSavingBarSettings(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-[100dvh] flex items-center justify-center bg-bg">
@@ -788,6 +974,66 @@ export default function WebsiteEditionPage() {
           </div>
         )}
 
+        {/* PALETA DE COLORES GLOBAL */}
+        {activeTab === 'settings' && (
+          <div className="card max-w-2xl mt-6">
+            <h3 className="font-bold text-xl mb-2">🎨 Paleta de Colores</h3>
+            <p className="text-sm text-text-muted mb-6">
+              Colores reutilizables en toda la web (barra de anuncios y futuras secciones).
+            </p>
+
+            <div className="space-y-3 mb-4">
+              {palette.map((swatch, idx) => (
+                <div key={idx} className="flex items-center gap-3">
+                  <div className="relative w-10 h-10 flex-shrink-0">
+                    <input
+                      type="color"
+                      value={swatch.hex}
+                      onChange={(e) => updatePaletteColor(idx, 'hex', e.target.value)}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    <div className="w-10 h-10 rounded-full border-2 border-white shadow pointer-events-none" style={{ backgroundColor: swatch.hex }} />
+                  </div>
+                  <input
+                    type="text"
+                    value={swatch.name}
+                    onChange={(e) => updatePaletteColor(idx, 'name', e.target.value)}
+                    className="input flex-1"
+                    placeholder="Nombre del color"
+                  />
+                  <input
+                    type="text"
+                    value={swatch.hex}
+                    onChange={(e) => updatePaletteColor(idx, 'hex', e.target.value)}
+                    className="input !w-28 font-mono text-xs"
+                  />
+                  <button
+                    onClick={() => removePaletteColor(idx)}
+                    className="w-9 h-9 flex items-center justify-center rounded-lg bg-red-100 text-red-600 hover:bg-red-200 flex-shrink-0"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={addPaletteColor}
+              className="text-sm font-semibold text-primary hover:underline mb-6"
+            >
+              + Agregar color
+            </button>
+
+            <button
+              onClick={savePalette}
+              disabled={savingPalette}
+              className="btn btn-primary w-full"
+            >
+              {savingPalette ? 'Guardando...' : 'Guardar Paleta'}
+            </button>
+          </div>
+        )}
+
         {/* BARRA DE ANUNCIOS */}
         {activeTab === 'sections' && sectionView === 'announcement' && (
           <div>
@@ -804,19 +1050,167 @@ export default function WebsiteEditionPage() {
               </button>
             </div>
 
-            {/* Vista previa en vivo */}
-            {announcements.filter(a => a.is_active).length > 0 && (
-              <div className="mb-6">
-                <p className="text-xs font-semibold text-text-muted mb-2">VISTA PREVIA</p>
-                <div className="bg-gray-900 text-white text-sm py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 text-center">
-                  <span>{announcements.filter(a => a.is_active).sort((a, b) => a.order_position - b.order_position)[0].icon}</span>
-                  <span>{announcements.filter(a => a.is_active).sort((a, b) => a.order_position - b.order_position)[0].message}</span>
-                  {announcements.filter(a => a.is_active)[0].link_text && (
-                    <span className="underline font-semibold ml-1">{announcements.filter(a => a.is_active)[0].link_text}</span>
-                  )}
+            {/* Vista previa en vivo (con el diseño aplicado) */}
+            {announcements.filter(a => a.is_active).length > 0 && (() => {
+              const preview = announcements.filter(a => a.is_active).sort((a, b) => a.order_position - b.order_position)[0]
+              const FONT_FAMILY_MAP: Record<string, string> = {
+                default: "'DM Sans', sans-serif",
+                serif: "Georgia, 'Times New Roman', serif",
+                mono: "'Courier New', monospace"
+              }
+              const LETTER_SPACING_MAP: Record<string, string> = { normal: 'normal', wide: '0.025em', wider: '0.05em' }
+              const isGradient = barForm.animation === 'gradient'
+              const animClass = barForm.animation !== 'none' ? `ann-preview-${barForm.animation}` : ''
+
+              return (
+                <div className="mb-6">
+                  <p className="text-xs font-semibold text-text-muted mb-2">VISTA PREVIA</p>
+                  <style>{`
+                    .ann-preview-pulse { animation: annPreviewPulse 2.4s ease-in-out infinite; }
+                    @keyframes annPreviewPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.75; } }
+                    .ann-preview-shimmer { position: relative; overflow: hidden; }
+                    .ann-preview-shimmer::after {
+                      content: ''; position: absolute; top: 0; left: -60%; width: 60%; height: 100%;
+                      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+                      animation: annPreviewShimmer 2.8s ease-in-out infinite;
+                    }
+                    @keyframes annPreviewShimmer { 0% { left: -60%; } 100% { left: 130%; } }
+                    .ann-preview-bounce-icon .ann-preview-icon { display: inline-block; animation: annPreviewBounce 1.2s ease-in-out infinite; }
+                    @keyframes annPreviewBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+                    .ann-preview-gradient { background-size: 200% 200%; animation: annPreviewGradient 6s ease infinite; }
+                    @keyframes annPreviewGradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+                  `}</style>
+                  <div
+                    className={`rounded-lg py-2.5 px-4 flex items-center justify-center gap-2 text-center ${animClass}`}
+                    style={{
+                      backgroundImage: isGradient ? `linear-gradient(270deg, ${barForm.bg_color}, ${shadeColor(barForm.bg_color, 45)}, ${barForm.bg_color})` : undefined,
+                      backgroundColor: isGradient ? undefined : barForm.bg_color,
+                      color: barForm.text_color,
+                      fontFamily: FONT_FAMILY_MAP[barForm.font_family],
+                      fontSize: barForm.font_size,
+                      fontWeight: barForm.font_weight,
+                      letterSpacing: LETTER_SPACING_MAP[barForm.letter_spacing]
+                    }}
+                  >
+                    {preview.icon && <span className="ann-preview-icon">{preview.icon}</span>}
+                    <span>{preview.message}</span>
+                    {preview.link_text && <span className="underline font-semibold ml-1">{preview.link_text}</span>}
+                  </div>
+                </div>
+              )
+            })()}
+
+            {/* Panel de Diseño */}
+            <div className="card mb-6">
+              <h4 className="font-bold text-lg mb-5">🎨 Diseño de la barra</h4>
+
+              <div className="grid sm:grid-cols-2 gap-5 mb-5">
+                <ColorPicker
+                  label="Color de fondo"
+                  value={barForm.bg_color}
+                  onChange={(hex) => setBarForm({ ...barForm, bg_color: hex })}
+                  palette={palette}
+                />
+                <ColorPicker
+                  label="Color de texto"
+                  value={barForm.text_color}
+                  onChange={(hex) => setBarForm({ ...barForm, text_color: hex })}
+                  palette={palette}
+                />
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-5 mb-5">
+                <div>
+                  <label className="block text-sm font-semibold text-text-muted mb-2">Tipografía</label>
+                  <select
+                    value={barForm.font_family}
+                    onChange={(e) => setBarForm({ ...barForm, font_family: e.target.value })}
+                    className="input"
+                  >
+                    <option value="default">Predeterminada (DM Sans)</option>
+                    <option value="serif">Serif</option>
+                    <option value="mono">Monoespaciada</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-text-muted mb-2">Grosor</label>
+                  <select
+                    value={barForm.font_weight}
+                    onChange={(e) => setBarForm({ ...barForm, font_weight: e.target.value })}
+                    className="input"
+                  >
+                    <option value="400">Normal</option>
+                    <option value="500">Medio</option>
+                    <option value="600">Semi-negrita</option>
+                    <option value="700">Negrita</option>
+                  </select>
                 </div>
               </div>
-            )}
+
+              <div className="grid sm:grid-cols-2 gap-5 mb-5">
+                <div>
+                  <label className="block text-sm font-semibold text-text-muted mb-2">
+                    Tamaño de letra <span className="text-text-light font-normal">({barForm.font_size})</span>
+                  </label>
+                  <input
+                    type="range"
+                    min={11}
+                    max={20}
+                    value={parseInt(barForm.font_size)}
+                    onChange={(e) => setBarForm({ ...barForm, font_size: `${e.target.value}px` })}
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-text-muted mb-2">Espaciado entre letras</label>
+                  <select
+                    value={barForm.letter_spacing}
+                    onChange={(e) => setBarForm({ ...barForm, letter_spacing: e.target.value })}
+                    className="input"
+                  >
+                    <option value="normal">Normal</option>
+                    <option value="wide">Amplio</option>
+                    <option value="wider">Muy amplio</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-text-muted mb-2">Efecto visual</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {[
+                    { value: 'none', label: 'Ninguno' },
+                    { value: 'pulse', label: 'Pulso suave' },
+                    { value: 'shimmer', label: 'Brillo deslizante' },
+                    { value: 'bounce-icon', label: 'Ícono rebotando' },
+                    { value: 'gradient', label: 'Fondo animado' }
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setBarForm({ ...barForm, animation: opt.value })}
+                      className={`px-3 py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
+                        barForm.animation === opt.value
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-border text-text-muted'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={saveBarSettings}
+                disabled={savingBarSettings}
+                className="btn btn-primary w-full"
+              >
+                {savingBarSettings ? 'Guardando...' : 'Guardar Diseño'}
+              </button>
+            </div>
 
             {announcements.length === 0 ? (
               <div className="card text-center py-12 text-text-muted">
