@@ -199,7 +199,7 @@ function SitePreviewPanel({
         {/* Barra de anuncios */}
         {activeAnnouncement && (
           <div
-            className={`transition-all ${highlight('announcement')}`}
+            className={`transition-all py-2 px-3 flex items-center justify-center gap-1.5 text-center ${highlight('announcement')}`}
             style={{
               backgroundImage: isGradient ? `linear-gradient(270deg, ${barForm.bg_color}, ${shadeColor(barForm.bg_color, 45)}, ${barForm.bg_color})` : undefined,
               backgroundColor: isGradient ? undefined : barForm.bg_color,
@@ -209,7 +209,6 @@ function SitePreviewPanel({
               fontWeight: barForm.font_weight,
               letterSpacing: LETTER_SPACING_MAP[barForm.letter_spacing]
             }}
-            className="py-2 px-3 flex items-center justify-center gap-1.5 text-center"
           >
             {activeAnnouncement.icon && <span>{activeAnnouncement.icon}</span>}
             <span className="truncate">{activeAnnouncement.message}</span>
