@@ -148,6 +148,116 @@ function CollapsibleCard({
     </div>
   )
 }
+
+// Panel de vista previa del sitio (solo desktop, aprovecha el espacio libre
+// a la derecha). Muestra barra de anuncios + header juntos, tal como se ven
+// en la web real, reflejando los valores actuales de los formularios.
+function SitePreviewPanel({
+  sectionView,
+  barForm,
+  announcements,
+  logoForm,
+  headerForm,
+  menuLinks
+}: {
+  sectionView: string | null
+  barForm: { bg_color: string; text_color: string; font_family: string; font_size: string; font_weight: string; letter_spacing: string; animation: string }
+  announcements: AnnouncementMessage[]
+  logoForm: { site_name: string; site_tagline: string; logo_url: string; use_logo_image: boolean }
+  headerForm: { bg_color: string; text_color: string; active_color: string; sticky: boolean; shadow: boolean }
+  menuLinks: MenuLink[]
+}) {
+  const FONT_FAMILY_MAP: Record<string, string> = {
+    default: "'DM Sans', sans-serif",
+    serif: "Georgia, 'Times New Roman', serif",
+    mono: "'Courier New', monospace"
+  }
+  const LETTER_SPACING_MAP: Record<string, string> = { normal: 'normal', wide: '0.025em', wider: '0.05em' }
+
+  const activeAnnouncement = announcements.filter(a => a.is_active).sort((a, b) => a.order_position - b.order_position)[0]
+  const isGradient = barForm.animation === 'gradient'
+  const sortedLinks = [...menuLinks].sort((a, b) => a.order_position - b.order_position).filter(l => l.is_active)
+
+  const highlight = (zone: 'announcement' | 'header') =>
+    sectionView === zone ? 'ring-2 ring-primary ring-offset-2 ring-offset-white' : ''
+
+  return (
+    <div>
+      <p className="text-xs font-semibold text-text-muted mb-2">VISTA PREVIA DEL SITIO</p>
+
+      <div className="rounded-2xl border border-border overflow-hidden shadow-sm bg-white">
+        {/* Barra tipo navegador */}
+        <div className="bg-gray-100 px-3 py-2 flex items-center gap-1.5 border-b border-border">
+          <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
+          <span className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
+          <span className="w-2.5 h-2.5 rounded-full bg-green-400" />
+          <div className="flex-1 mx-2 bg-white rounded px-2 py-0.5 text-[10px] text-text-light truncate">
+            losprimos.com
+          </div>
+        </div>
+
+        {/* Barra de anuncios */}
+        {activeAnnouncement && (
+          <div
+            className={`transition-all ${highlight('announcement')}`}
+            style={{
+              backgroundImage: isGradient ? `linear-gradient(270deg, ${barForm.bg_color}, ${shadeColor(barForm.bg_color, 45)}, ${barForm.bg_color})` : undefined,
+              backgroundColor: isGradient ? undefined : barForm.bg_color,
+              color: barForm.text_color,
+              fontFamily: FONT_FAMILY_MAP[barForm.font_family],
+              fontSize: `calc(${barForm.font_size} * 0.9)`,
+              fontWeight: barForm.font_weight,
+              letterSpacing: LETTER_SPACING_MAP[barForm.letter_spacing]
+            }}
+            className="py-2 px-3 flex items-center justify-center gap-1.5 text-center"
+          >
+            {activeAnnouncement.icon && <span>{activeAnnouncement.icon}</span>}
+            <span className="truncate">{activeAnnouncement.message}</span>
+          </div>
+        )}
+
+        {/* Header */}
+        <div
+          className={`px-3 py-2.5 flex items-center justify-between transition-all ${headerForm.shadow ? 'shadow-sm' : ''} ${highlight('header')}`}
+          style={{ backgroundColor: headerForm.bg_color }}
+        >
+          {logoForm.use_logo_image && logoForm.logo_url ? (
+            <img src={logoForm.logo_url} alt={logoForm.site_name} className="h-6 object-contain" />
+          ) : (
+            <div className="min-w-0">
+              <p className="font-black text-xs truncate" style={{ color: headerForm.text_color }}>{logoForm.site_name}</p>
+              <p className="text-[8px] font-semibold truncate" style={{ color: headerForm.text_color, opacity: 0.7 }}>{logoForm.site_tagline}</p>
+            </div>
+          )}
+          <div className="flex gap-2.5 flex-shrink-0">
+            {sortedLinks.slice(0, 3).map((link, idx) => (
+              <span key={link.id} className="text-[9px] font-semibold" style={{ color: idx === 0 ? headerForm.active_color : headerForm.text_color }}>
+                {link.label}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Placeholder del resto de la página */}
+        <div className="bg-gray-50 p-4 space-y-2">
+          <div className="h-16 bg-gray-200 rounded-lg animate-pulse" />
+          <div className="grid grid-cols-3 gap-2">
+            <div className="h-10 bg-gray-200 rounded" />
+            <div className="h-10 bg-gray-200 rounded" />
+            <div className="h-10 bg-gray-200 rounded" />
+          </div>
+        </div>
+      </div>
+
+      {sectionView && !['announcement', 'header'].includes(sectionView) && (
+        <p className="text-xs text-text-light mt-3 text-center">
+          Esta sección todavía no tiene vista previa propia — arriba se ve el resto del sitio (barra + header) mientras tanto.
+        </p>
+      )}
+    </div>
+  )
+}
+
 function ColorPicker({
   label,
   value,
@@ -1122,7 +1232,8 @@ export default function WebsiteEditionPage() {
       </div>
 
       {/* Contenido */}
-      <div className="flex-1 px-4 pb-6 max-w-3xl">
+      <div className="lg:grid lg:grid-cols-5 lg:gap-8 lg:items-start lg:px-4 lg:pb-6">
+      <div className="flex-1 px-4 pb-6 max-w-3xl lg:px-0 lg:pb-0 lg:col-span-3 lg:max-w-none">
         {/* SETTINGS TAB */}
         {activeTab === 'settings' && (
           <div className="card max-w-2xl">
@@ -1809,6 +1920,19 @@ export default function WebsiteEditionPage() {
             <p className="text-sm mt-1">Próximamente vas a poder editar el pie de página desde acá</p>
           </div>
         )}
+      </div>
+
+      {/* Panel de vista previa del sitio (solo desktop) */}
+      <div className="hidden lg:block lg:col-span-2 sticky top-24 self-start">
+        <SitePreviewPanel
+          sectionView={activeTab === 'sections' ? sectionView : null}
+          barForm={barForm}
+          announcements={announcements}
+          logoForm={logoForm}
+          headerForm={headerForm}
+          menuLinks={menuLinks}
+        />
+      </div>
       </div>
 
       {/* MODALS */}
