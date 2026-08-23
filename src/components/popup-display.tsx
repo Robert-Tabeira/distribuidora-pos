@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { PopupFrame, type PopupFrameStyle } from '@/components/popup-frame'
 
-interface Popup {
+interface Popup extends PopupFrameStyle {
   id: string
   name: string
   is_active: boolean
@@ -125,49 +126,51 @@ export default function PopupDisplay() {
         <div className="relative max-w-md w-full" onClick={e => e.stopPropagation()}>
           <button
             onClick={close}
-            className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-white shadow-lg flex items-center justify-center font-bold text-gray-700 hover:bg-gray-100 z-10"
+            className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-white shadow-lg flex items-center justify-center font-bold text-gray-700 hover:bg-gray-100 z-20"
           >
             ✕
           </button>
-          {activePopup.clickable_image_url && (
-            activePopup.clickable_image_link ? (
-              <a href={activePopup.clickable_image_link}>
-                <img src={activePopup.clickable_image_url} alt={activePopup.name} className="w-full h-auto rounded-xl" />
-              </a>
-            ) : (
-              <img src={activePopup.clickable_image_url} alt={activePopup.name} className="w-full h-auto rounded-xl" />
-            )
-          )}
+          <PopupFrame frame={activePopup} className="overflow-hidden">
+            {activePopup.clickable_image_url && (
+              activePopup.clickable_image_link ? (
+                <a href={activePopup.clickable_image_link}>
+                  <img src={activePopup.clickable_image_url} alt={activePopup.name} className="w-full h-auto block" />
+                </a>
+              ) : (
+                <img src={activePopup.clickable_image_url} alt={activePopup.name} className="w-full h-auto block" />
+              )
+            )}
+          </PopupFrame>
         </div>
       ) : (
-        <div
-          className="relative rounded-2xl p-8 max-w-md w-full text-center shadow-2xl"
-          style={{ backgroundColor: activePopup.bg_color, color: activePopup.text_color }}
-          onClick={e => e.stopPropagation()}
-        >
-          <button
-            onClick={close}
-            className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center font-bold hover:bg-black/10"
-            style={{ color: activePopup.text_color }}
-          >
-            ✕
-          </button>
-
-          {activePopup.image_url && (
-            <img src={activePopup.image_url} alt="" className="w-full h-auto rounded-lg mb-4" />
-          )}
-          {activePopup.title && <h3 className="text-2xl font-black mb-3">{activePopup.title}</h3>}
-          {activePopup.message && <p className="mb-6 opacity-90">{activePopup.message}</p>}
-
-          {activePopup.cta_text && activePopup.cta_url && (
-            <a
-              href={activePopup.cta_url}
-              className="inline-block px-6 py-3 rounded-xl font-bold hover:opacity-90 transition-opacity"
-              style={{ backgroundColor: activePopup.button_bg_color, color: activePopup.button_text_color }}
+        <div className="relative max-w-md w-full" onClick={e => e.stopPropagation()}>
+          <PopupFrame frame={activePopup} backgroundColor={activePopup.bg_color} className="p-8 text-center shadow-2xl">
+            <button
+              onClick={close}
+              className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center font-bold hover:bg-black/10 z-20"
+              style={{ color: activePopup.text_color }}
             >
-              {activePopup.cta_text}
-            </a>
-          )}
+              ✕
+            </button>
+
+            <div style={{ color: activePopup.text_color }}>
+              {activePopup.image_url && (
+                <img src={activePopup.image_url} alt="" className="w-full h-auto rounded-lg mb-4" />
+              )}
+              {activePopup.title && <h3 className="text-2xl font-black mb-3">{activePopup.title}</h3>}
+              {activePopup.message && <p className="mb-6 opacity-90">{activePopup.message}</p>}
+
+              {activePopup.cta_text && activePopup.cta_url && (
+                <a
+                  href={activePopup.cta_url}
+                  className="inline-block px-6 py-3 rounded-xl font-bold hover:opacity-90 transition-opacity"
+                  style={{ backgroundColor: activePopup.button_bg_color, color: activePopup.button_text_color }}
+                >
+                  {activePopup.cta_text}
+                </a>
+              )}
+            </div>
+          </PopupFrame>
         </div>
       )}
     </div>

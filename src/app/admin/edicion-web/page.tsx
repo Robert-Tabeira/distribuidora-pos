@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { uploadImageToSupabase } from '@/lib/image-upload-helper'
+import { PopupFrame } from '@/components/popup-frame'
 import type { Employee } from '@/types/database'
 
 interface ColorSwatch {
@@ -70,6 +71,13 @@ interface Popup {
   show_on_catalogo: boolean
   show_once_per_session: boolean
   order_position: number
+  border_style: 'none' | 'solid' | 'dashed' | 'dotted'
+  border_width: number
+  border_color: string
+  border_radius: number
+  dash_length: number
+  dash_gap: number
+  shape: 'rectangular' | 'ticket'
 }
 
 interface HeroSlide {
@@ -185,7 +193,8 @@ function SitePreviewPanel({
   announcements,
   logoForm,
   headerForm,
-  menuLinks
+  menuLinks,
+  editingPopupForm
 }: {
   sectionView: string | null
   barForm: { bg_color: string; text_color: string; font_family: string; font_size: string; font_weight: string; letter_spacing: string; animation: string }
@@ -193,6 +202,7 @@ function SitePreviewPanel({
   logoForm: { site_name: string; site_tagline: string; logo_url: string; use_logo_image: boolean }
   headerForm: { bg_color: string; text_color: string; active_color: string; sticky: boolean; shadow: boolean }
   menuLinks: MenuLink[]
+  editingPopupForm?: any
 }) {
   const FONT_FAMILY_MAP: Record<string, string> = {
     default: "'DM Sans', sans-serif",
@@ -212,7 +222,7 @@ function SitePreviewPanel({
     <div>
       <p className="text-xs font-semibold text-text-muted mb-2">VISTA PREVIA DEL SITIO</p>
 
-      <div className="rounded-2xl border border-border overflow-hidden shadow-sm bg-white">
+      <div className="relative rounded-2xl border border-border overflow-hidden shadow-sm bg-white">
         {/* Barra tipo navegador */}
         <div className="bg-gray-100 px-3 py-2 flex items-center gap-1.5 border-b border-border">
           <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
@@ -273,9 +283,49 @@ function SitePreviewPanel({
             <div className="h-10 bg-gray-200 rounded" />
           </div>
         </div>
+
+        {/* Overlay: pop-up en construcción */}
+        {editingPopupForm && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center p-6">
+            {editingPopupForm.content_mode === 'image' ? (
+              <div className="relative w-36">
+                <div className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-white shadow flex items-center justify-center text-[9px] font-bold text-gray-700 z-20">✕</div>
+                <PopupFrame frame={editingPopupForm} className="overflow-hidden">
+                  {editingPopupForm.clickable_image_url ? (
+                    <img src={editingPopupForm.clickable_image_url} alt="" className="w-full h-auto block" />
+                  ) : (
+                    <div className="w-full h-20 bg-gray-200 flex items-center justify-center text-[9px] text-gray-400 text-center px-2">
+                      Subí una imagen
+                    </div>
+                  )}
+                </PopupFrame>
+              </div>
+            ) : (
+              <PopupFrame frame={editingPopupForm} backgroundColor={editingPopupForm.bg_color} className="p-4 text-center shadow-xl w-48 relative">
+                <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold z-20" style={{ color: editingPopupForm.text_color }}>✕</div>
+                <div style={{ color: editingPopupForm.text_color }}>
+                  {editingPopupForm.image_url && <img src={editingPopupForm.image_url} alt="" className="w-full h-auto rounded mb-2" />}
+                  {editingPopupForm.title && <p className="font-black text-xs mb-1 leading-tight">{editingPopupForm.title}</p>}
+                  {editingPopupForm.message && <p className="text-[9px] opacity-90 mb-2 leading-snug">{editingPopupForm.message}</p>}
+                  {editingPopupForm.cta_text && (
+                    <span
+                      className="inline-block px-2.5 py-1 rounded text-[9px] font-bold"
+                      style={{ backgroundColor: editingPopupForm.button_bg_color, color: editingPopupForm.button_text_color }}
+                    >
+                      {editingPopupForm.cta_text}
+                    </span>
+                  )}
+                  {!editingPopupForm.title && !editingPopupForm.message && (
+                    <p className="text-[9px] opacity-60 italic">Completá el contenido a la izquierda</p>
+                  )}
+                </div>
+              </PopupFrame>
+            )}
+          </div>
+        )}
       </div>
 
-      {sectionView && !['announcement', 'header'].includes(sectionView) && (
+      {sectionView && !['announcement', 'header', 'popups'].includes(sectionView) && (
         <p className="text-xs text-text-light mt-3 text-center">
           Esta sección todavía no tiene vista previa propia — arriba se ve el resto del sitio (barra + header) mientras tanto.
         </p>
@@ -463,7 +513,14 @@ export default function WebsiteEditionPage() {
     trigger_on_exit: false,
     show_on_landing: true,
     show_on_catalogo: true,
-    show_once_per_session: true
+    show_once_per_session: true,
+    border_style: 'none' as 'none' | 'solid' | 'dashed' | 'dotted',
+    border_width: 2,
+    border_color: '#111827',
+    border_radius: 16,
+    dash_length: 8,
+    dash_gap: 6,
+    shape: 'rectangular' as 'rectangular' | 'ticket'
   })
 
   useEffect(() => {
@@ -1213,7 +1270,14 @@ export default function WebsiteEditionPage() {
         trigger_on_exit: popup.trigger_on_exit,
         show_on_landing: popup.show_on_landing,
         show_on_catalogo: popup.show_on_catalogo,
-        show_once_per_session: popup.show_once_per_session
+        show_once_per_session: popup.show_once_per_session,
+        border_style: popup.border_style,
+        border_width: popup.border_width,
+        border_color: popup.border_color,
+        border_radius: popup.border_radius,
+        dash_length: popup.dash_length,
+        dash_gap: popup.dash_gap,
+        shape: popup.shape
       })
     } else {
       setEditingPopup(null)
@@ -1225,7 +1289,9 @@ export default function WebsiteEditionPage() {
         trigger_on_load: true, trigger_on_load_delay: 3,
         trigger_on_scroll: false, trigger_on_scroll_percent: 50,
         trigger_on_exit: false,
-        show_on_landing: true, show_on_catalogo: true, show_once_per_session: true
+        show_on_landing: true, show_on_catalogo: true, show_once_per_session: true,
+        border_style: 'none', border_width: 2, border_color: '#111827', border_radius: 16,
+        dash_length: 8, dash_gap: 6, shape: 'rectangular'
       })
     }
     setShowPopupModal(true)
@@ -2108,7 +2174,7 @@ export default function WebsiteEditionPage() {
         )}
 
         {/* POP-UPS */}
-        {activeTab === 'sections' && sectionView === 'popups' && (
+        {activeTab === 'sections' && sectionView === 'popups' && !showPopupModal && (
           <div>
             <div className="flex justify-between items-center mb-6">
               <div>
@@ -2148,6 +2214,9 @@ export default function WebsiteEditionPage() {
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary uppercase">
                               {popup.content_mode === 'image' ? 'Imagen' : 'Constructor'}
                             </span>
+                            {popup.shape === 'ticket' && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 uppercase">🎟️ Ticket</span>
+                            )}
                           </div>
                           <div className="flex flex-wrap gap-1.5 text-xs text-text-muted">
                             {triggers.length > 0 ? triggers.map((t, i) => (
@@ -2177,6 +2246,379 @@ export default function WebsiteEditionPage() {
           </div>
         )}
 
+        {/* Edición de pop-up: inline, igual que el resto de las secciones (no modal), para que la vista previa de la derecha lo muestre en vivo */}
+        {activeTab === 'sections' && sectionView === 'popups' && showPopupModal && (
+          <div>
+            <button
+              onClick={() => setShowPopupModal(false)}
+              className="flex items-center gap-1.5 text-sm font-semibold text-text-muted hover:text-text mb-4"
+            >
+              ← Volver a la lista
+            </button>
+
+            <h3 className="font-bold text-xl mb-1">{editingPopup ? 'Editar Pop-up' : 'Nuevo Pop-up'}</h3>
+            <p className="text-sm text-text-muted mb-6">Los cambios se ven en vivo en la vista previa de la derecha</p>
+
+            <div className="space-y-4 mb-4 max-w-2xl">
+              <div>
+                <label className="block text-sm font-semibold text-text-muted mb-2">Nombre interno *</label>
+                <input
+                  type="text"
+                  value={popupForm.name}
+                  onChange={(e) => setPopupForm({ ...popupForm, name: e.target.value })}
+                  placeholder="Ej: Promo de verano"
+                  className="input"
+                />
+                <p className="text-xs text-text-light mt-1">Solo para identificarlo acá en el admin, no se muestra a los visitantes.</p>
+              </div>
+
+              <div className="flex gap-2 p-1 bg-gray-100 rounded-xl w-fit">
+                <button
+                  type="button"
+                  onClick={() => setPopupForm({ ...popupForm, content_mode: 'builder' })}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${popupForm.content_mode === 'builder' ? 'bg-white shadow text-text' : 'text-text-muted'}`}
+                >
+                  Constructor
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPopupForm({ ...popupForm, content_mode: 'image' })}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${popupForm.content_mode === 'image' ? 'bg-white shadow text-text' : 'text-text-muted'}`}
+                >
+                  Imagen propia
+                </button>
+              </div>
+            </div>
+
+            {/* CONTENIDO */}
+            {popupForm.content_mode === 'image' ? (
+              <CollapsibleCard icon="🖼️" title="Imagen" defaultOpen subtitle="Clickeable, con transparencia si el PNG la tiene">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-text-muted mb-2">Imagen del pop-up *</label>
+                    {popupForm.clickable_image_url && (
+                      <div className="mb-3 p-3 bg-gray-50 rounded-lg inline-block">
+                        <img src={popupForm.clickable_image_url} alt="Pop-up" className="h-32 object-contain" />
+                      </div>
+                    )}
+                    <input type="file" accept="image/*" onChange={handleClickableImageUpload} disabled={uploadingClickableImage} className="input" />
+                    {uploadingClickableImage && <p className="text-xs text-text-muted mt-2">Subiendo...</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-text-muted mb-2">Link al hacer clic (opcional)</label>
+                    <input
+                      type="text"
+                      value={popupForm.clickable_image_link}
+                      onChange={(e) => setPopupForm({ ...popupForm, clickable_image_link: e.target.value })}
+                      placeholder="/catalogo"
+                      className="input"
+                    />
+                  </div>
+                </div>
+              </CollapsibleCard>
+            ) : (
+              <CollapsibleCard icon="✏️" title="Contenido" defaultOpen subtitle="Título, mensaje y botón">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-text-muted mb-2">Título</label>
+                    <input
+                      type="text"
+                      value={popupForm.title}
+                      onChange={(e) => setPopupForm({ ...popupForm, title: e.target.value })}
+                      placeholder="Ej: ¡20% OFF hoy!"
+                      className="input"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-text-muted mb-2">Mensaje</label>
+                    <textarea
+                      value={popupForm.message}
+                      onChange={(e) => setPopupForm({ ...popupForm, message: e.target.value })}
+                      placeholder="Ej: Válido solo por hoy en toda la tienda"
+                      className="input"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-text-muted mb-2">Imagen decorativa (opcional)</label>
+                    {popupForm.image_url && (
+                      <div className="mb-3 p-3 bg-gray-50 rounded-lg inline-block">
+                        <img src={popupForm.image_url} alt="" className="h-24 object-contain" />
+                      </div>
+                    )}
+                    <input type="file" accept="image/*" onChange={handlePopupImageUpload} disabled={uploadingPopupImage} className="input" />
+                    {uploadingPopupImage && <p className="text-xs text-text-muted mt-2">Subiendo...</p>}
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-text-muted mb-2">Texto del botón</label>
+                      <input
+                        type="text"
+                        value={popupForm.cta_text}
+                        onChange={(e) => setPopupForm({ ...popupForm, cta_text: e.target.value })}
+                        placeholder="Ver catálogo"
+                        className="input"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-text-muted mb-2">Link del botón</label>
+                      <input
+                        type="text"
+                        value={popupForm.cta_url}
+                        onChange={(e) => setPopupForm({ ...popupForm, cta_url: e.target.value })}
+                        placeholder="/catalogo"
+                        className="input"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CollapsibleCard>
+            )}
+
+            {/* DISEÑO (solo aplica al modo Constructor) */}
+            {popupForm.content_mode === 'builder' && (
+              <CollapsibleCard icon="🎨" title="Diseño" subtitle="Colores del pop-up y del botón">
+                <div className="grid sm:grid-cols-2 gap-5">
+                  <ColorPicker label="Fondo" value={popupForm.bg_color} onChange={(hex) => setPopupForm({ ...popupForm, bg_color: hex })} palette={palette} />
+                  <ColorPicker label="Texto" value={popupForm.text_color} onChange={(hex) => setPopupForm({ ...popupForm, text_color: hex })} palette={palette} />
+                  <ColorPicker label="Fondo del botón" value={popupForm.button_bg_color} onChange={(hex) => setPopupForm({ ...popupForm, button_bg_color: hex })} palette={palette} />
+                  <ColorPicker label="Texto del botón" value={popupForm.button_text_color} onChange={(hex) => setPopupForm({ ...popupForm, button_text_color: hex })} palette={palette} />
+                </div>
+              </CollapsibleCard>
+            )}
+
+            {/* ESTILO DEL RECUADRO */}
+            <CollapsibleCard icon="🎟️" title="Estilo del recuadro" subtitle={popupForm.shape === 'ticket' ? 'Ticket / cupón' : 'Borde y forma'}>
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-sm font-semibold text-text-muted mb-2">Forma</label>
+                  <div className="flex gap-2 p-1 bg-gray-100 rounded-xl w-fit">
+                    <button
+                      type="button"
+                      onClick={() => setPopupForm({ ...popupForm, shape: 'rectangular' })}
+                      className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${popupForm.shape === 'rectangular' ? 'bg-white shadow text-text' : 'text-text-muted'}`}
+                    >
+                      Rectangular
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPopupForm({ ...popupForm, shape: 'ticket' })}
+                      className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${popupForm.shape === 'ticket' ? 'bg-white shadow text-text' : 'text-text-muted'}`}
+                    >
+                      🎟️ Ticket / cupón
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-text-muted mb-2">Borde</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {[
+                      { value: 'none', label: 'Sin borde' },
+                      { value: 'solid', label: 'Sólido' },
+                      { value: 'dashed', label: 'Discontinuo' },
+                      { value: 'dotted', label: 'Punteado' }
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setPopupForm({ ...popupForm, border_style: opt.value as typeof popupForm.border_style })}
+                        className={`px-3 py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
+                          popupForm.border_style === opt.value ? 'border-primary bg-primary/10 text-primary' : 'border-border text-text-muted'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {popupForm.border_style !== 'none' && (
+                  <>
+                    <ColorPicker label="Color del borde" value={popupForm.border_color} onChange={(hex) => setPopupForm({ ...popupForm, border_color: hex })} palette={palette} />
+
+                    <div className="grid sm:grid-cols-2 gap-5">
+                      <div>
+                        <label className="block text-sm font-semibold text-text-muted mb-2">
+                          Grosor <span className="text-text-light font-normal">({popupForm.border_width}px)</span>
+                        </label>
+                        <input
+                          type="range" min={1} max={10}
+                          value={popupForm.border_width}
+                          onChange={(e) => setPopupForm({ ...popupForm, border_width: parseInt(e.target.value) })}
+                          className="w-full"
+                        />
+                      </div>
+
+                      {popupForm.shape !== 'ticket' && (
+                        <div>
+                          <label className="block text-sm font-semibold text-text-muted mb-2">
+                            Redondeado <span className="text-text-light font-normal">({popupForm.border_radius}px)</span>
+                          </label>
+                          <input
+                            type="range" min={0} max={40}
+                            value={popupForm.border_radius}
+                            onChange={(e) => setPopupForm({ ...popupForm, border_radius: parseInt(e.target.value) })}
+                            className="w-full"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {(popupForm.border_style === 'dashed' || popupForm.border_style === 'dotted') && (
+                      <div className="grid sm:grid-cols-2 gap-5">
+                        {popupForm.border_style === 'dashed' && (
+                          <div>
+                            <label className="block text-sm font-semibold text-text-muted mb-2">
+                              Largo del guión <span className="text-text-light font-normal">({popupForm.dash_length}px)</span>
+                            </label>
+                            <input
+                              type="range" min={2} max={30}
+                              value={popupForm.dash_length}
+                              onChange={(e) => setPopupForm({ ...popupForm, dash_length: parseInt(e.target.value) })}
+                              className="w-full"
+                            />
+                          </div>
+                        )}
+                        <div>
+                          <label className="block text-sm font-semibold text-text-muted mb-2">
+                            Separación <span className="text-text-light font-normal">({popupForm.dash_gap}px)</span>
+                          </label>
+                          <input
+                            type="range" min={2} max={30}
+                            value={popupForm.dash_gap}
+                            onChange={(e) => setPopupForm({ ...popupForm, dash_gap: parseInt(e.target.value) })}
+                            className="w-full"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </CollapsibleCard>
+
+            {/* DISPARADORES */}
+            <CollapsibleCard icon="⚡" title="Disparadores" subtitle="Cuándo aparece (podés combinar varios)">
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={popupForm.trigger_on_load}
+                    onChange={(e) => setPopupForm({ ...popupForm, trigger_on_load: e.target.checked })}
+                    className="w-5 h-5 rounded border-gray-300 mt-0.5"
+                  />
+                  <div className="flex-1">
+                    <label className="font-semibold text-sm">⏱️ Al cargar la página</label>
+                    {popupForm.trigger_on_load && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={0}
+                          value={popupForm.trigger_on_load_delay}
+                          onChange={(e) => setPopupForm({ ...popupForm, trigger_on_load_delay: parseInt(e.target.value) || 0 })}
+                          className="input !w-20"
+                        />
+                        <span className="text-sm text-text-muted">segundos de espera</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={popupForm.trigger_on_scroll}
+                    onChange={(e) => setPopupForm({ ...popupForm, trigger_on_scroll: e.target.checked })}
+                    className="w-5 h-5 rounded border-gray-300 mt-0.5"
+                  />
+                  <div className="flex-1">
+                    <label className="font-semibold text-sm">📜 Al hacer scroll</label>
+                    {popupForm.trigger_on_scroll && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          value={popupForm.trigger_on_scroll_percent}
+                          onChange={(e) => setPopupForm({ ...popupForm, trigger_on_scroll_percent: parseInt(e.target.value) || 0 })}
+                          className="input !w-20"
+                        />
+                        <span className="text-sm text-text-muted">% de la página</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={popupForm.trigger_on_exit}
+                    onChange={(e) => setPopupForm({ ...popupForm, trigger_on_exit: e.target.checked })}
+                    className="w-5 h-5 rounded border-gray-300"
+                  />
+                  <span className="font-semibold text-sm">🚪 Al intentar salir de la página (exit intent)</span>
+                </label>
+
+                <label className="flex items-center gap-3 cursor-pointer pt-2 border-t border-border">
+                  <input
+                    type="checkbox"
+                    checked={popupForm.show_once_per_session}
+                    onChange={(e) => setPopupForm({ ...popupForm, show_once_per_session: e.target.checked })}
+                    className="w-5 h-5 rounded border-gray-300"
+                  />
+                  <span className="font-semibold text-sm">Mostrar solo una vez por sesión</span>
+                </label>
+              </div>
+            </CollapsibleCard>
+
+            {/* PÁGINAS */}
+            <CollapsibleCard icon="📍" title="Páginas" subtitle={[popupForm.show_on_landing && 'Landing', popupForm.show_on_catalogo && 'Catálogo'].filter(Boolean).join(', ') || 'Ninguna seleccionada'}>
+              <div className="space-y-3">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={popupForm.show_on_landing}
+                    onChange={(e) => setPopupForm({ ...popupForm, show_on_landing: e.target.checked })}
+                    className="w-5 h-5 rounded border-gray-300"
+                  />
+                  <span className="font-semibold text-sm">Landing</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={popupForm.show_on_catalogo}
+                    onChange={(e) => setPopupForm({ ...popupForm, show_on_catalogo: e.target.checked })}
+                    className="w-5 h-5 rounded border-gray-300"
+                  />
+                  <span className="font-semibold text-sm">Catálogo</span>
+                </label>
+              </div>
+            </CollapsibleCard>
+
+            <label className="flex items-center gap-3 cursor-pointer mb-6 mt-2 max-w-2xl">
+              <input
+                type="checkbox"
+                checked={popupForm.is_active}
+                onChange={(e) => setPopupForm({ ...popupForm, is_active: e.target.checked })}
+                className="w-5 h-5 rounded border-gray-300"
+              />
+              <span className="font-semibold text-gray-700">Pop-up activo</span>
+            </label>
+
+            <div className="flex gap-3 max-w-2xl mb-8">
+              <button onClick={() => setShowPopupModal(false)} className="btn btn-outline flex-1">Cancelar</button>
+              <button onClick={savePopup} disabled={savingPopup} className="btn btn-primary flex-1">
+                {savingPopup ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* FOOTER (próximamente) */}
         {activeTab === 'sections' && sectionView === 'footer' && (
           <div className="card text-center py-16 text-text-muted">
@@ -2196,6 +2638,7 @@ export default function WebsiteEditionPage() {
           logoForm={logoForm}
           headerForm={headerForm}
           menuLinks={menuLinks}
+          editingPopupForm={sectionView === 'popups' && showPopupModal ? popupForm : null}
         />
       </div>
       </div>
@@ -2368,264 +2811,6 @@ export default function WebsiteEditionPage() {
               </button>
               <button onClick={saveSection} disabled={savingSection} className="btn btn-primary flex-1">
                 {savingSection ? 'Guardando...' : 'Guardar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Popup Modal */}
-      {showPopupModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50" onClick={() => setShowPopupModal(false)}>
-          <div className="bg-surface w-full max-w-lg rounded-t-3xl p-6 animate-slide-up max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
-            <div className="w-12 h-1.5 bg-border rounded-full mx-auto mb-6" />
-
-            <h3 className="font-bold text-xl mb-6">{editingPopup ? 'Editar Pop-up' : 'Nuevo Pop-up'}</h3>
-
-            <div className="space-y-4 mb-2">
-              <div>
-                <label className="block text-sm font-semibold text-text-muted mb-2">Nombre interno *</label>
-                <input
-                  type="text"
-                  value={popupForm.name}
-                  onChange={(e) => setPopupForm({ ...popupForm, name: e.target.value })}
-                  placeholder="Ej: Promo de verano"
-                  className="input"
-                />
-                <p className="text-xs text-text-light mt-1">Solo para identificarlo acá en el admin, no se muestra a los visitantes.</p>
-              </div>
-
-              <div className="flex gap-2 p-1 bg-gray-100 rounded-xl w-fit">
-                <button
-                  type="button"
-                  onClick={() => setPopupForm({ ...popupForm, content_mode: 'builder' })}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${popupForm.content_mode === 'builder' ? 'bg-white shadow text-text' : 'text-text-muted'}`}
-                >
-                  Constructor
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPopupForm({ ...popupForm, content_mode: 'image' })}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${popupForm.content_mode === 'image' ? 'bg-white shadow text-text' : 'text-text-muted'}`}
-                >
-                  Imagen propia
-                </button>
-              </div>
-            </div>
-
-            {/* CONTENIDO */}
-            {popupForm.content_mode === 'image' ? (
-              <CollapsibleCard icon="🖼️" title="Imagen" defaultOpen subtitle="Clickeable, con transparencia si el PNG la tiene">
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-text-muted mb-2">Imagen del pop-up *</label>
-                    {popupForm.clickable_image_url && (
-                      <div className="mb-3 p-3 bg-gray-50 rounded-lg inline-block">
-                        <img src={popupForm.clickable_image_url} alt="Pop-up" className="h-32 object-contain" />
-                      </div>
-                    )}
-                    <input type="file" accept="image/*" onChange={handleClickableImageUpload} disabled={uploadingClickableImage} className="input" />
-                    {uploadingClickableImage && <p className="text-xs text-text-muted mt-2">Subiendo...</p>}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-text-muted mb-2">Link al hacer clic (opcional)</label>
-                    <input
-                      type="text"
-                      value={popupForm.clickable_image_link}
-                      onChange={(e) => setPopupForm({ ...popupForm, clickable_image_link: e.target.value })}
-                      placeholder="/catalogo"
-                      className="input"
-                    />
-                  </div>
-                </div>
-              </CollapsibleCard>
-            ) : (
-              <CollapsibleCard icon="✏️" title="Contenido" defaultOpen subtitle="Título, mensaje y botón">
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-text-muted mb-2">Título</label>
-                    <input
-                      type="text"
-                      value={popupForm.title}
-                      onChange={(e) => setPopupForm({ ...popupForm, title: e.target.value })}
-                      placeholder="Ej: ¡20% OFF hoy!"
-                      className="input"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-text-muted mb-2">Mensaje</label>
-                    <textarea
-                      value={popupForm.message}
-                      onChange={(e) => setPopupForm({ ...popupForm, message: e.target.value })}
-                      placeholder="Ej: Válido solo por hoy en toda la tienda"
-                      className="input"
-                      rows={3}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-text-muted mb-2">Imagen decorativa (opcional)</label>
-                    {popupForm.image_url && (
-                      <div className="mb-3 p-3 bg-gray-50 rounded-lg inline-block">
-                        <img src={popupForm.image_url} alt="" className="h-24 object-contain" />
-                      </div>
-                    )}
-                    <input type="file" accept="image/*" onChange={handlePopupImageUpload} disabled={uploadingPopupImage} className="input" />
-                    {uploadingPopupImage && <p className="text-xs text-text-muted mt-2">Subiendo...</p>}
-                  </div>
-
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-text-muted mb-2">Texto del botón</label>
-                      <input
-                        type="text"
-                        value={popupForm.cta_text}
-                        onChange={(e) => setPopupForm({ ...popupForm, cta_text: e.target.value })}
-                        placeholder="Ver catálogo"
-                        className="input"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-text-muted mb-2">Link del botón</label>
-                      <input
-                        type="text"
-                        value={popupForm.cta_url}
-                        onChange={(e) => setPopupForm({ ...popupForm, cta_url: e.target.value })}
-                        placeholder="/catalogo"
-                        className="input"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </CollapsibleCard>
-            )}
-
-            {/* DISEÑO (solo aplica al modo Constructor) */}
-            {popupForm.content_mode === 'builder' && (
-              <CollapsibleCard icon="🎨" title="Diseño" subtitle="Colores del pop-up y del botón">
-                <div className="grid sm:grid-cols-2 gap-5">
-                  <ColorPicker label="Fondo" value={popupForm.bg_color} onChange={(hex) => setPopupForm({ ...popupForm, bg_color: hex })} palette={palette} />
-                  <ColorPicker label="Texto" value={popupForm.text_color} onChange={(hex) => setPopupForm({ ...popupForm, text_color: hex })} palette={palette} />
-                  <ColorPicker label="Fondo del botón" value={popupForm.button_bg_color} onChange={(hex) => setPopupForm({ ...popupForm, button_bg_color: hex })} palette={palette} />
-                  <ColorPicker label="Texto del botón" value={popupForm.button_text_color} onChange={(hex) => setPopupForm({ ...popupForm, button_text_color: hex })} palette={palette} />
-                </div>
-              </CollapsibleCard>
-            )}
-
-            {/* DISPARADORES */}
-            <CollapsibleCard icon="⚡" title="Disparadores" subtitle="Cuándo aparece (podés combinar varios)">
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <input
-                    type="checkbox"
-                    checked={popupForm.trigger_on_load}
-                    onChange={(e) => setPopupForm({ ...popupForm, trigger_on_load: e.target.checked })}
-                    className="w-5 h-5 rounded border-gray-300 mt-0.5"
-                  />
-                  <div className="flex-1">
-                    <label className="font-semibold text-sm">⏱️ Al cargar la página</label>
-                    {popupForm.trigger_on_load && (
-                      <div className="mt-2 flex items-center gap-2">
-                        <input
-                          type="number"
-                          min={0}
-                          value={popupForm.trigger_on_load_delay}
-                          onChange={(e) => setPopupForm({ ...popupForm, trigger_on_load_delay: parseInt(e.target.value) || 0 })}
-                          className="input !w-20"
-                        />
-                        <span className="text-sm text-text-muted">segundos de espera</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <input
-                    type="checkbox"
-                    checked={popupForm.trigger_on_scroll}
-                    onChange={(e) => setPopupForm({ ...popupForm, trigger_on_scroll: e.target.checked })}
-                    className="w-5 h-5 rounded border-gray-300 mt-0.5"
-                  />
-                  <div className="flex-1">
-                    <label className="font-semibold text-sm">📜 Al hacer scroll</label>
-                    {popupForm.trigger_on_scroll && (
-                      <div className="mt-2 flex items-center gap-2">
-                        <input
-                          type="number"
-                          min={0}
-                          max={100}
-                          value={popupForm.trigger_on_scroll_percent}
-                          onChange={(e) => setPopupForm({ ...popupForm, trigger_on_scroll_percent: parseInt(e.target.value) || 0 })}
-                          className="input !w-20"
-                        />
-                        <span className="text-sm text-text-muted">% de la página</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={popupForm.trigger_on_exit}
-                    onChange={(e) => setPopupForm({ ...popupForm, trigger_on_exit: e.target.checked })}
-                    className="w-5 h-5 rounded border-gray-300"
-                  />
-                  <span className="font-semibold text-sm">🚪 Al intentar salir de la página (exit intent)</span>
-                </label>
-
-                <label className="flex items-center gap-3 cursor-pointer pt-2 border-t border-border">
-                  <input
-                    type="checkbox"
-                    checked={popupForm.show_once_per_session}
-                    onChange={(e) => setPopupForm({ ...popupForm, show_once_per_session: e.target.checked })}
-                    className="w-5 h-5 rounded border-gray-300"
-                  />
-                  <span className="font-semibold text-sm">Mostrar solo una vez por sesión</span>
-                </label>
-              </div>
-            </CollapsibleCard>
-
-            {/* PÁGINAS */}
-            <CollapsibleCard icon="📍" title="Páginas" subtitle={[popupForm.show_on_landing && 'Landing', popupForm.show_on_catalogo && 'Catálogo'].filter(Boolean).join(', ') || 'Ninguna seleccionada'}>
-              <div className="space-y-3">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={popupForm.show_on_landing}
-                    onChange={(e) => setPopupForm({ ...popupForm, show_on_landing: e.target.checked })}
-                    className="w-5 h-5 rounded border-gray-300"
-                  />
-                  <span className="font-semibold text-sm">Landing</span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={popupForm.show_on_catalogo}
-                    onChange={(e) => setPopupForm({ ...popupForm, show_on_catalogo: e.target.checked })}
-                    className="w-5 h-5 rounded border-gray-300"
-                  />
-                  <span className="font-semibold text-sm">Catálogo</span>
-                </label>
-              </div>
-            </CollapsibleCard>
-
-            <label className="flex items-center gap-3 cursor-pointer mb-6 mt-2">
-              <input
-                type="checkbox"
-                checked={popupForm.is_active}
-                onChange={(e) => setPopupForm({ ...popupForm, is_active: e.target.checked })}
-                className="w-5 h-5 rounded border-gray-300"
-              />
-              <span className="font-semibold text-gray-700">Pop-up activo</span>
-            </label>
-
-            <div className="flex gap-3">
-              <button onClick={() => setShowPopupModal(false)} className="btn btn-outline flex-1">Cancelar</button>
-              <button onClick={savePopup} disabled={savingPopup} className="btn btn-primary flex-1">
-                {savingPopup ? 'Guardando...' : 'Guardar'}
               </button>
             </div>
           </div>
