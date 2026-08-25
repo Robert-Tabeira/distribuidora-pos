@@ -11,6 +11,7 @@ export default function ProductosPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'pending' | 'complete'>('pending')
+  const [searchQuery, setSearchQuery] = useState('')
   
   // Modal de edición
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
@@ -76,6 +77,21 @@ export default function ProductosPage() {
 
   const pendingProducts = products.filter(p => p.status === 'pending')
   const completeProducts = products.filter(p => p.status === 'complete')
+
+  function matchesSearch(product: Product) {
+    if (!searchQuery.trim()) return true
+    const q = searchQuery.trim().toLowerCase()
+    return (
+      product.name?.toLowerCase().includes(q) ||
+      product.product_code?.toLowerCase().includes(q) ||
+      product.description?.toLowerCase().includes(q) ||
+      getCategoryName(product.category_id)?.toLowerCase().includes(q) ||
+      product.location?.toLowerCase().includes(q)
+    )
+  }
+
+  const filteredPendingProducts = pendingProducts.filter(matchesSearch)
+  const filteredCompleteProducts = completeProducts.filter(matchesSearch)
 
   function openEditModal(product: Product) {
     setEditingProduct(product)
@@ -384,26 +400,59 @@ export default function ProductosPage() {
         </div>
       </div>
 
+      {/* Buscador */}
+      <div className="px-4 mb-4">
+        <div className="relative">
+          <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Buscar por nombre, código, categoría..."
+            className="input w-full !pl-11 !pr-11"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full bg-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-300"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Contenido */}
       <div className="flex-1 px-4 pb-4">
         {activeTab === 'pending' ? (
-          pendingProducts.length === 0 ? (
+          filteredPendingProducts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-text-muted">
               <div className="w-16 h-16 rounded-2xl bg-surface flex items-center justify-center mb-4">
                 <svg className="w-8 h-8 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <p className="font-medium">No hay productos pendientes</p>
-              <p className="text-sm mt-1">¡Todo está al día!</p>
+              {searchQuery ? (
+                <>
+                  <p className="font-medium">Sin resultados para "{searchQuery}"</p>
+                  <p className="text-sm mt-1">Probá con otro término de búsqueda</p>
+                </>
+              ) : (
+                <>
+                  <p className="font-medium">No hay productos pendientes</p>
+                  <p className="text-sm mt-1">¡Todo está al día!</p>
+                </>
+              )}
             </div>
           ) : (
             <div className="card overflow-hidden">
-              {pendingProducts.map((product, idx) => (
+              {filteredPendingProducts.map((product, idx) => (
                 <div
                   key={product.id}
                   className={`flex items-center gap-4 p-4 ${
-                    idx !== pendingProducts.length - 1 ? 'border-b border-border-light' : ''
+                    idx !== filteredPendingProducts.length - 1 ? 'border-b border-border-light' : ''
                   }`}
                 >
                   <div className="w-12 h-12 rounded-xl bg-warning/10 flex items-center justify-center">
@@ -449,30 +498,37 @@ export default function ProductosPage() {
             </div>
           )
         ) : (
-          completeProducts.length === 0 ? (
+          filteredCompleteProducts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-text-muted">
               <div className="w-16 h-16 rounded-2xl bg-surface flex items-center justify-center mb-4">
                 <svg className="w-8 h-8 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                 </svg>
               </div>
-              <p className="font-medium">No hay productos</p>
+              {searchQuery ? (
+                <>
+                  <p className="font-medium">Sin resultados para "{searchQuery}"</p>
+                  <p className="text-sm mt-1">Probá con otro término de búsqueda</p>
+                </>
+              ) : (
+                <p className="font-medium">No hay productos</p>
+              )}
             </div>
           ) : (
             <div className="card overflow-hidden">
-              {completeProducts.map((product, idx) => (
+              {filteredCompleteProducts.map((product, idx) => (
                 <div
                   key={product.id}
                   className={`flex items-center gap-4 p-4 ${
-                    idx !== completeProducts.length - 1 ? 'border-b border-border-light' : ''
+                    idx !== filteredCompleteProducts.length - 1 ? 'border-b border-border-light' : ''
                   }`}
                 >
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center overflow-hidden p-1">
                     {product.gallery && product.gallery.length > 0 ? (
                       <img
                         src={product.gallery[0]}
                         alt={product.name}
-                        className="w-full h-full object-cover rounded-xl"
+                        className="w-full h-full object-contain rounded-lg"
                       />
                     ) : (
                       <span className="text-lg">📦</span>
