@@ -75,6 +75,12 @@ export default function ProductosPage() {
     router.push('/admin')
   }
 
+  const getCategoryName = (categoryId: string | null) => {
+    if (!categoryId) return 'Sin categoría'
+    const cat = categories.find(c => c.id === categoryId)
+    return cat?.name || 'Sin categoría'
+  }
+
   const pendingProducts = products.filter(p => p.status === 'pending')
   const completeProducts = products.filter(p => p.status === 'complete')
 
@@ -320,12 +326,6 @@ export default function ProductosPage() {
       console.error('Error al eliminar:', error)
       alert('Error al eliminar el producto')
     }
-  }
-
-  const getCategoryName = (categoryId: string | null) => {
-    if (!categoryId) return 'Sin categoría'
-    const cat = categories.find(c => c.id === categoryId)
-    return cat?.name || 'Sin categoría'
   }
 
   if (loading) {
