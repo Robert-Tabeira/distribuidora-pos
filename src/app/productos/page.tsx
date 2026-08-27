@@ -12,6 +12,21 @@ export default function ProductosPage() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'pending' | 'complete'>('pending')
   const [searchQuery, setSearchQuery] = useState('')
+  const [sortOption, setSortOption] = useState<'name_asc' | 'name_desc' | 'updated_desc' | 'updated_asc'>('updated_desc')
+
+  // Tipos de unidad ("Se vende por"), editables desde una ruedita de config
+  const DEFAULT_UNIT_TYPES = [
+    { id: 'd1', value: 'unidad', label: 'Unidad', icon: '🔢', order_position: 1 },
+    { id: 'd2', value: 'kg', label: 'Kilo', icon: '⚖️', order_position: 2 },
+    { id: 'd3', value: 'litro', label: 'Litro', icon: '💧', order_position: 3 },
+    { id: 'd4', value: 'caja', label: 'Caja', icon: '📦', order_position: 4 },
+    { id: 'd5', value: 'funda', label: 'Funda', icon: '🛍️', order_position: 5 }
+  ]
+  const [unitTypes, setUnitTypes] = useState<{ id: string; value: string; label: string; icon: string; order_position: number }[]>(DEFAULT_UNIT_TYPES)
+  const [showUnitTypesModal, setShowUnitTypesModal] = useState(false)
+  const [newUnitLabel, setNewUnitLabel] = useState('')
+  const [newUnitIcon, setNewUnitIcon] = useState('')
+  const [savingUnitType, setSavingUnitType] = useState(false)
   
   // Modal de edición
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
@@ -53,9 +68,10 @@ export default function ProductosPage() {
   }, [router])
 
   async function loadData() {
-    const [productsRes, categoriesRes] = await Promise.all([
+    const [productsRes, categoriesRes, unitTypesRes] = await Promise.all([
       supabase.from('products').select('*').order('created_at', { ascending: false }),
-      supabase.from('categories').select('*').order('order_position')
+      supabase.from('categories').select('*').order('order_position'),
+      supabase.from('unit_types').select('*').order('order_position')
     ])
 
     if (productsRes.data) {
@@ -68,6 +84,7 @@ export default function ProductosPage() {
       setLocations(uniqueLocations)
     }
     if (categoriesRes.data) setCategories(categoriesRes.data)
+    if (unitTypesRes.data && unitTypesRes.data.length > 0) setUnitTypes(unitTypesRes.data)
     setLoading(false)
   }
 
@@ -79,6 +96,21 @@ export default function ProductosPage() {
     if (!categoryId) return 'Sin categoría'
     const cat = categories.find(c => c.id === categoryId)
     return cat?.name || 'Sin categoría'
+  }
+
+  // Genera un código automático tipo "Q1", "F2" (letra de la categoría +
+  // número secuencial), continuando desde el número más alto ya usado
+  // para esa letra, para no pisar códigos existentes.
+  function generateProductCode(categoryId: string | null) {
+    const cat = categories.find(c => c.id === categoryId)
+    const letter = (cat?.name?.trim()?.[0] || 'P').toUpperCase()
+    const regex = new RegExp(`^${letter}(\\d+)$`, 'i')
+    let max = 0
+    products.forEach(p => {
+      const m = p.product_code?.match(regex)
+      if (m) max = Math.max(max, parseInt(m[1], 10))
+    })
+    return `${letter}${max + 1}`
   }
 
   const pendingProducts = products.filter(p => p.status === 'pending')
@@ -96,8 +128,35 @@ export default function ProductosPage() {
     )
   }
 
-  const filteredPendingProducts = pendingProducts.filter(matchesSearch)
-  const filteredCompleteProducts = completeProducts.filter(matchesSearch)
+  function sortProducts(list: Product[]) {
+    const sorted = [...list]
+    switch (sortOption) {
+      case 'name_asc':
+        sorted.sort((a, b) => a.name.localeCompare(b.name, 'es'))
+        break
+      case 'name_desc':
+        sorted.sort((a, b) => b.name.localeCompare(a.name, 'es'))
+        break
+      case 'updated_desc':
+        sorted.sort((a, b) => {
+          const dateB = new Date((b as any).updated_at || b.created_at).getTime()
+          const dateA = new Date((a as any).updated_at || a.created_at).getTime()
+          return dateB - dateA
+        })
+        break
+      case 'updated_asc':
+        sorted.sort((a, b) => {
+          const dateB = new Date((b as any).updated_at || b.created_at).getTime()
+          const dateA = new Date((a as any).updated_at || a.created_at).getTime()
+          return dateA - dateB
+        })
+        break
+    }
+    return sorted
+  }
+
+  const filteredPendingProducts = sortProducts(pendingProducts.filter(matchesSearch))
+  const filteredCompleteProducts = sortProducts(completeProducts.filter(matchesSearch))
 
   function openEditModal(product: Product) {
     setEditingProduct(product)
@@ -107,7 +166,7 @@ export default function ProductosPage() {
     setEditCategory(product.category_id)
     setEditLocation(product.location || '')
     setEditDescription(product.description || '')
-    setEditProductCode(product.product_code || '')
+    setEditProductCode(product.product_code || generateProductCode(product.category_id))
     setEditGallery(product.gallery || [])
     setShowLocationDropdown(false)
     setImagePreview(null)
@@ -125,6 +184,85 @@ export default function ProductosPage() {
       }
     } else {
       setEditUnits([...editUnits, unit])
+    }
+  }
+
+  // ===== TIPOS DE UNIDAD ("Se vende por") =====
+  async function addUnitType() {
+    if (!newUnitLabel.trim()) return
+    setSavingUnitType(true)
+    try {
+      const value = newUnitLabel.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
+      const maxOrder = unitTypes.length > 0 ? Math.max(...unitTypes.map(u => u.order_position)) : 0
+
+      const { data, error } = await supabase
+        .from('unit_types')
+        .insert([{ value, label: newUnitLabel.trim(), icon: newUnitIcon.trim() || '🏷️', order_position: maxOrder + 1 }])
+        .select()
+
+      if (error) throw error
+      if (data) setUnitTypes([...unitTypes, data[0]])
+      setNewUnitLabel('')
+      setNewUnitIcon('')
+    } catch (error) {
+      console.error('Error adding unit type:', error)
+      alert('❌ Error al agregar. Verificá que la tabla "unit_types" ya exista en Supabase.')
+    } finally {
+      setSavingUnitType(false)
+    }
+  }
+
+  async function updateUnitType(id: string, field: 'label' | 'icon', value: string) {
+    setUnitTypes(unitTypes.map(u => (u.id === id ? { ...u, [field]: value } : u)))
+  }
+
+  async function saveUnitTypeEdit(unit: { id: string; label: string; icon: string }) {
+    try {
+      const { error } = await supabase
+        .from('unit_types')
+        .update({ label: unit.label, icon: unit.icon })
+        .eq('id', unit.id)
+      if (error) throw error
+    } catch (error) {
+      console.error('Error saving unit type:', error)
+      alert('❌ Error al guardar el cambio')
+    }
+  }
+
+  async function deleteUnitType(id: string) {
+    if (!confirm('¿Eliminar esta opción? Los productos que ya la tengan asignada no se modifican.')) return
+    try {
+      const { error } = await supabase.from('unit_types').delete().eq('id', id)
+      if (error) throw error
+      setUnitTypes(unitTypes.filter(u => u.id !== id))
+    } catch (error) {
+      console.error('Error deleting unit type:', error)
+      alert('❌ Error al eliminar')
+    }
+  }
+
+  async function moveUnitType(id: string, direction: 'up' | 'down') {
+    const sorted = [...unitTypes].sort((a, b) => a.order_position - b.order_position)
+    const idx = sorted.findIndex(u => u.id === id)
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1
+    if (swapIdx < 0 || swapIdx >= sorted.length) return
+
+    const current = sorted[idx]
+    const swapWith = sorted[swapIdx]
+
+    try {
+      await Promise.all([
+        supabase.from('unit_types').update({ order_position: swapWith.order_position }).eq('id', current.id),
+        supabase.from('unit_types').update({ order_position: current.order_position }).eq('id', swapWith.id)
+      ])
+      setUnitTypes(unitTypes.map(u => {
+        if (u.id === current.id) return { ...u, order_position: swapWith.order_position }
+        if (u.id === swapWith.id) return { ...u, order_position: current.order_position }
+        return u
+      }))
+    } catch (error) {
+      console.error('Error reordering unit types:', error)
+      alert('❌ Error al reordenar')
     }
   }
 
@@ -422,6 +560,20 @@ export default function ProductosPage() {
             </button>
           )}
         </div>
+
+        <div className="flex items-center gap-2 mt-3">
+          <span className="text-xs font-semibold text-text-muted whitespace-nowrap">Ordenar por:</span>
+          <select
+            value={sortOption}
+            onChange={(e) => setSortOption(e.target.value as typeof sortOption)}
+            className="input !py-1.5 !text-sm !w-auto"
+          >
+            <option value="updated_desc">Modificado: más reciente</option>
+            <option value="updated_asc">Modificado: más antiguo</option>
+            <option value="name_asc">Nombre (A-Z)</option>
+            <option value="name_desc">Nombre (Z-A)</option>
+          </select>
+        </div>
       </div>
 
       {/* Contenido */}
@@ -599,14 +751,24 @@ export default function ProductosPage() {
 
             {/* Código */}
             <div className="mb-4">
-              <label className="block text-sm font-semibold text-text-muted mb-2">Código (ej: Q1, F2)</label>
-              <input
-                type="text"
-                value={editProductCode}
-                onChange={(e) => setEditProductCode(e.target.value)}
-                placeholder="Ej: Q1"
-                className="input"
-              />
+              <label className="block text-sm font-semibold text-text-muted mb-2">Código (se genera automáticamente)</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={editProductCode}
+                  onChange={(e) => setEditProductCode(e.target.value)}
+                  placeholder="Ej: Q1"
+                  className="input flex-1"
+                />
+                <button
+                  type="button"
+                  onClick={() => setEditProductCode(generateProductCode(editCategory))}
+                  title="Generar código automático"
+                  className="px-3 rounded-xl border-2 border-border text-text-muted hover:bg-gray-50 font-semibold"
+                >
+                  🔄
+                </button>
+              </div>
             </div>
 
             {/* Descripción */}
@@ -623,41 +785,21 @@ export default function ProductosPage() {
 
             {/* Unidad */}
             <div className="mb-4">
-              <label className="block text-sm font-semibold text-text-muted mb-2">
-                Se vende por <span className="text-text-light font-normal">(podés elegir varias)</span>
-              </label>
-              <div className="grid grid-cols-3 gap-2 mb-2">
-                {[
-                  { value: 'unidad', label: 'Unidad', icon: '🔢' },
-                  { value: 'kg', label: 'Kilo', icon: '⚖️' },
-                  { value: 'litro', label: 'Litro', icon: '💧' },
-                ].map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => toggleUnit(opt.value)}
-                    className={`p-4 rounded-xl border-2 transition-all relative ${
-                      editUnits.includes(opt.value)
-                        ? 'border-primary bg-primary/10'
-                        : 'border-border'
-                    }`}
-                  >
-                    {editUnits.includes(opt.value) && (
-                      <div className="absolute top-1 right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                    )}
-                    <div className="text-2xl mb-1">{opt.icon}</div>
-                    <div className="text-sm font-medium">{opt.label}</div>
-                  </button>
-                ))}
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-semibold text-text-muted">
+                  Se vende por <span className="text-text-light font-normal">(podés elegir varias)</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowUnitTypesModal(true)}
+                  title="Editar opciones"
+                  className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 text-text-muted flex-shrink-0"
+                >
+                  ⚙️
+                </button>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { value: 'caja', label: 'Caja', icon: '📦' },
-                  { value: 'funda', label: 'Funda', icon: '🛍️' },
-                ].map(opt => (
+              <div className="grid grid-cols-3 gap-2">
+                {[...unitTypes].sort((a, b) => a.order_position - b.order_position).map(opt => (
                   <button
                     key={opt.value}
                     onClick={() => toggleUnit(opt.value)}
@@ -807,6 +949,91 @@ export default function ProductosPage() {
                 {saving ? 'Guardando...' : 'No, es diferente'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: editar opciones de "Se vende por" */}
+      {showUnitTypesModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50" onClick={() => setShowUnitTypesModal(false)}>
+          <div className="bg-white w-full max-w-lg rounded-t-3xl p-6 max-h-[85vh] overflow-auto" onClick={e => e.stopPropagation()}>
+            <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6" />
+
+            <h3 className="font-bold text-xl mb-1">Opciones de "Se vende por"</h3>
+            <p className="text-sm text-text-muted mb-6">Agregá, editá o quitá las formas de venta disponibles</p>
+
+            <div className="space-y-2 mb-6">
+              {[...unitTypes].sort((a, b) => a.order_position - b.order_position).map((unit, idx, arr) => (
+                <div key={unit.id} className="flex items-center gap-2 p-2 rounded-xl border border-border">
+                  <div className="flex flex-col gap-0.5">
+                    <button
+                      onClick={() => moveUnitType(unit.id, 'up')}
+                      disabled={idx === 0}
+                      className="w-5 h-5 flex items-center justify-center rounded bg-gray-100 disabled:opacity-30 hover:bg-gray-200 text-xs"
+                    >▲</button>
+                    <button
+                      onClick={() => moveUnitType(unit.id, 'down')}
+                      disabled={idx === arr.length - 1}
+                      className="w-5 h-5 flex items-center justify-center rounded bg-gray-100 disabled:opacity-30 hover:bg-gray-200 text-xs"
+                    >▼</button>
+                  </div>
+
+                  <input
+                    type="text"
+                    value={unit.icon}
+                    onChange={(e) => updateUnitType(unit.id, 'icon', e.target.value)}
+                    onBlur={() => saveUnitTypeEdit(unit)}
+                    className="input !w-14 text-center !py-2"
+                    maxLength={4}
+                  />
+                  <input
+                    type="text"
+                    value={unit.label}
+                    onChange={(e) => updateUnitType(unit.id, 'label', e.target.value)}
+                    onBlur={() => saveUnitTypeEdit(unit)}
+                    className="input flex-1 !py-2"
+                  />
+                  <button
+                    onClick={() => deleteUnitType(unit.id)}
+                    className="w-9 h-9 flex items-center justify-center rounded-lg bg-red-100 text-red-600 hover:bg-red-200 flex-shrink-0"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-3 rounded-xl bg-gray-50 border border-dashed border-border mb-6">
+              <p className="text-xs font-semibold text-text-muted mb-2">AGREGAR NUEVA OPCIÓN</p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newUnitIcon}
+                  onChange={(e) => setNewUnitIcon(e.target.value)}
+                  placeholder="🏷️"
+                  className="input !w-14 text-center !py-2"
+                  maxLength={4}
+                />
+                <input
+                  type="text"
+                  value={newUnitLabel}
+                  onChange={(e) => setNewUnitLabel(e.target.value)}
+                  placeholder="Ej: Docena"
+                  className="input flex-1 !py-2"
+                />
+                <button
+                  onClick={addUnitType}
+                  disabled={savingUnitType || !newUnitLabel.trim()}
+                  className="px-4 rounded-xl bg-primary text-white font-semibold disabled:opacity-50"
+                >
+                  + Agregar
+                </button>
+              </div>
+            </div>
+
+            <button onClick={() => setShowUnitTypesModal(false)} className="btn btn-primary w-full">
+              Listo
+            </button>
           </div>
         </div>
       )}
