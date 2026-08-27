@@ -5,6 +5,59 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import type { Employee, Product } from '@/types/database'
 
+// Emojis organizados por categoría, estilo selector tipo WhatsApp
+const EMOJI_CATEGORIES: { label: string; emojis: string[] }[] = [
+  {
+    label: 'Tienda y Envíos',
+    emojis: ['🏷️', '🔢', '⚖️', '💧', '📦', '🛍️', '🛒', '🎁', '📏', '📐', '🧾', '💰', '💳', '🏪', '🚚', '🧊', '🪝', '🔗', '⭐', '✅']
+  },
+  {
+    label: 'Comida y Bebida',
+    emojis: ['🍖', '🍗', '🥓', '🧀', '🥩', '🍞', '🥫', '🥚', '🥛', '🧈', '🍯', '🧂', '🌭', '🍔', '🍕', '🥪', '🍟', '🥗', '🍅', '🥔', '🥕', '🌽', '🍎', '🍌', '🍇', '🍓', '🍾', '🥤', '🧃', '☕', '🍫', '🍬', '🍭']
+  },
+  {
+    label: 'Objetos',
+    emojis: ['🧴', '🧻', '🧽', '🪣', '🧺', '🧵', '🪜', '🧱', '🪵', '🔩', '🔧', '🧲', '⛓️', '🔥', '💡', '🔑', '📌', '✂️']
+  },
+  {
+    label: 'Caritas y Símbolos',
+    emojis: ['😀', '😊', '👍', '👎', '❤️', '💯', '🎉', '✨', '❌', '⚠️', '❓', '❗', '🔴', '🟢', '🟡', '🔵', '⚪', '⚫']
+  }
+]
+
+function EmojiPicker({ onSelect, onClose }: { onSelect: (emoji: string) => void; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[60]" onClick={onClose}>
+      <div
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl border border-border w-[90vw] max-w-xs max-h-[70vh] overflow-auto p-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-3">
+          <p className="font-bold text-sm">Elegí un ícono</p>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 text-text-muted">✕</button>
+        </div>
+
+        {EMOJI_CATEGORIES.map(cat => (
+          <div key={cat.label} className="mb-4">
+            <p className="text-[11px] font-bold text-text-muted uppercase mb-2">{cat.label}</p>
+            <div className="grid grid-cols-7 gap-1">
+              {cat.emojis.map(emoji => (
+                <button
+                  key={emoji}
+                  onClick={() => onSelect(emoji)}
+                  className="text-2xl w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 active:scale-90 transition-all"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function ProductosPage() {
   const router = useRouter()
   const [employee, setEmployee] = useState<Employee | null>(null)
@@ -27,6 +80,7 @@ export default function ProductosPage() {
   const [newUnitLabel, setNewUnitLabel] = useState('')
   const [newUnitIcon, setNewUnitIcon] = useState('')
   const [savingUnitType, setSavingUnitType] = useState(false)
+  const [emojiPickerTarget, setEmojiPickerTarget] = useState<'new' | string | null>(null)
   
   // Modal de edición
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
@@ -978,14 +1032,13 @@ export default function ProductosPage() {
                     >▼</button>
                   </div>
 
-                  <input
-                    type="text"
-                    value={unit.icon}
-                    onChange={(e) => updateUnitType(unit.id, 'icon', e.target.value)}
-                    onBlur={() => saveUnitTypeEdit(unit)}
-                    className="input !w-14 text-center !py-2"
-                    maxLength={4}
-                  />
+                  <button
+                    type="button"
+                    onClick={() => setEmojiPickerTarget(unit.id)}
+                    className="input !w-14 text-center !py-2 text-xl flex items-center justify-center"
+                  >
+                    {unit.icon}
+                  </button>
                   <input
                     type="text"
                     value={unit.label}
@@ -1006,14 +1059,13 @@ export default function ProductosPage() {
             <div className="p-3 rounded-xl bg-gray-50 border border-dashed border-border mb-6">
               <p className="text-xs font-semibold text-text-muted mb-2">AGREGAR NUEVA OPCIÓN</p>
               <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newUnitIcon}
-                  onChange={(e) => setNewUnitIcon(e.target.value)}
-                  placeholder="🏷️"
-                  className="input !w-14 text-center !py-2"
-                  maxLength={4}
-                />
+                <button
+                  type="button"
+                  onClick={() => setEmojiPickerTarget('new')}
+                  className="input !w-14 text-center !py-2 text-xl flex items-center justify-center"
+                >
+                  {newUnitIcon || '🏷️'}
+                </button>
                 <input
                   type="text"
                   value={newUnitLabel}
@@ -1036,6 +1088,23 @@ export default function ProductosPage() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Selector de emoji tipo WhatsApp */}
+      {emojiPickerTarget && (
+        <EmojiPicker
+          onClose={() => setEmojiPickerTarget(null)}
+          onSelect={(emoji) => {
+            if (emojiPickerTarget === 'new') {
+              setNewUnitIcon(emoji)
+            } else {
+              const unit = unitTypes.find(u => u.id === emojiPickerTarget)
+              updateUnitType(emojiPickerTarget, 'icon', emoji)
+              if (unit) saveUnitTypeEdit({ ...unit, icon: emoji })
+            }
+            setEmojiPickerTarget(null)
+          }}
+        />
       )}
     </div>
   )
