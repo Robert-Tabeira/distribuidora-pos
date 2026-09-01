@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Header } from '@/components/header'
+import { PublicLayout } from '@/components/public-layout'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import type { Product, Category, Discount } from '@/types/database'
@@ -134,10 +134,8 @@ export default function CatalogPage() {
   }
 
   return (
+    <PublicLayout>
     <div className="min-h-screen bg-gray-50">
-      {/* HEADER */}
-      <Header />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {/* SIDEBAR FILTROS */}
@@ -295,6 +293,10 @@ export default function CatalogPage() {
 
                     {/* Info - Altura fija */}
                     <div className="p-4 flex flex-col flex-1">
+                      {product.product_code && (
+                        <p className="text-xs text-blue-600 font-semibold mb-1">#{product.product_code}</p>
+                      )}
+
                       <h3 className="font-bold text-gray-900 line-clamp-2 mb-2 flex-1">{product.name}</h3>
 
                       {product.description && (
@@ -390,5 +392,6 @@ export default function CatalogPage() {
         </div>
       )}
     </div>
+    </PublicLayout>
   )
 }
