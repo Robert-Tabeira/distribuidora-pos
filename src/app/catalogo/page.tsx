@@ -30,6 +30,7 @@ export default function CatalogPage() {
   const [cartItems, setCartItems] = useState<{ productId: string; quantity: number }[]>([])
   const [showCart, setShowCart] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sortOption, setSortOption] = useState<'default' | 'name_asc' | 'name_desc'>('default')
 
   useEffect(() => {
     loadData()
@@ -129,10 +130,18 @@ export default function CatalogPage() {
       filtered = filtered.filter(p => p.discount)
     }
 
+    // Ordenar
+    if (sortOption === 'name_asc') {
+      filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name, 'es'))
+    } else if (sortOption === 'name_desc') {
+      filtered = [...filtered].sort((a, b) => b.name.localeCompare(a.name, 'es'))
+    }
+
     return filtered
-  }, [products, searchQuery, selectedCategories, showOnlyDiscounts])
+  }, [products, searchQuery, selectedCategories, showOnlyDiscounts, sortOption])
 
   const cartTotal = cartItems.reduce((sum, item) => sum + item.quantity, 0)
+  const activeFilterCount = selectedCategories.length + (showOnlyDiscounts ? 1 : 0)
 
   const toggleCategory = (categoryId: string) => {
     setSelectedCategories(prev =>
@@ -155,8 +164,18 @@ export default function CatalogPage() {
               sidebarOpen ? 'block' : 'hidden'
             } md:col-span-1`}
           >
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm sticky top-24">
-              <h3 className="font-black text-lg text-gray-900 mb-6">Filtros</h3>
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm md:sticky md:top-24">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-black text-lg text-gray-900">Filtros</h3>
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  className="md:hidden w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
 
               {/* Limpiar Filtros */}
               {(selectedCategories.length > 0 || showOnlyDiscounts || searchQuery.trim()) && (
@@ -215,14 +234,14 @@ export default function CatalogPage() {
             {/* Info y Búsqueda */}
             <div className="mb-6">
               <div className="mb-4">
-                <h2 className="text-3xl font-black text-gray-900">Productos</h2>
+                <h2 className="text-2xl sm:text-3xl font-black text-gray-900">Productos</h2>
                 <p className="text-sm text-gray-600 mt-1">
                   {filteredProducts.length} producto{filteredProducts.length !== 1 ? 's' : ''} disponible{filteredProducts.length !== 1 ? 's' : ''}
                 </p>
               </div>
 
               {/* Buscador */}
-              <div className="relative">
+              <div className="relative mb-3">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -247,6 +266,34 @@ export default function CatalogPage() {
                     </svg>
                   </button>
                 )}
+              </div>
+
+              {/* Fila de controles: filtros (mobile) + orden */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="md:hidden flex-shrink-0 flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-xl font-semibold text-sm text-gray-700 bg-white active:scale-95 transition-all"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                  </svg>
+                  Filtros
+                  {activeFilterCount > 0 && (
+                    <span className="w-5 h-5 flex items-center justify-center bg-blue-900 text-white text-xs rounded-full">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </button>
+
+                <select
+                  value={sortOption}
+                  onChange={(e) => setSortOption(e.target.value as typeof sortOption)}
+                  className="flex-1 min-w-0 px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-900"
+                >
+                  <option value="default">Ordenar: relevancia</option>
+                  <option value="name_asc">Nombre (A-Z)</option>
+                  <option value="name_desc">Nombre (Z-A)</option>
+                </select>
               </div>
             </div>
 
@@ -277,15 +324,15 @@ export default function CatalogPage() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                 {filteredProducts.map(product => (
                   <div
                     key={product.id}
-                    className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col h-full cursor-pointer group"
+                    className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col h-full cursor-pointer group"
                     onClick={() => addToCart(product.id)}
                   >
                     {/* Imagen */}
-                    <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+                    <div className="relative h-28 sm:h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
                       {product.gallery?.[0] ? (
                         <img
                           src={product.gallery[0]}
@@ -296,22 +343,22 @@ export default function CatalogPage() {
                         <div className="w-full h-full flex items-center justify-center text-5xl">📦</div>
                       )}
                       {product.discount && (
-                        <div className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1 rounded-full font-black text-sm shadow-lg">
+                        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-red-500 text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full font-black text-[10px] sm:text-sm shadow-lg">
                           -{product.discount.percentage}%
                         </div>
                       )}
                     </div>
 
                     {/* Info - Altura fija */}
-                    <div className="p-4 flex flex-col flex-1">
-                      <h3 className="font-bold text-gray-900 line-clamp-2 mb-2 flex-1">{product.name}</h3>
+                    <div className="p-2.5 sm:p-4 flex flex-col flex-1">
+                      <h3 className="font-bold text-gray-900 text-sm sm:text-base line-clamp-2 mb-1 sm:mb-2 flex-1">{product.name}</h3>
 
                       {product.description && (
-                        <p className="text-xs text-gray-600 line-clamp-2 mb-2">{product.description}</p>
+                        <p className="hidden sm:block text-xs text-gray-600 line-clamp-2 mb-2">{product.description}</p>
                       )}
 
                       {product.discount && (
-                        <p className="text-xs text-red-600 font-semibold">🎁 {product.discount.name}</p>
+                        <p className="text-[10px] sm:text-xs text-red-600 font-semibold">🎁 {product.discount.name}</p>
                       )}
                     </div>
                   </div>
