@@ -10,6 +10,15 @@ interface ProductWithDiscount extends Product {
   discount?: Discount
 }
 
+// Normaliza texto para comparar sin importar tildes/diacríticos
+// ("azucar" debe coincidir con "azúcar")
+function normalizeText(text: string) {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+}
+
 export default function CatalogPage() {
   const router = useRouter()
   const [products, setProducts] = useState<ProductWithDiscount[]>([])
@@ -102,11 +111,11 @@ export default function CatalogPage() {
 
     // Filtrar por búsqueda
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase()
+      const query = normalizeText(searchQuery)
       filtered = filtered.filter(p =>
-        p.name.toLowerCase().includes(query) ||
-        p.product_code?.toLowerCase().includes(query) ||
-        p.description?.toLowerCase().includes(query)
+        normalizeText(p.name).includes(query) ||
+        (p.product_code && normalizeText(p.product_code).includes(query)) ||
+        (p.description && normalizeText(p.description).includes(query))
       )
     }
 

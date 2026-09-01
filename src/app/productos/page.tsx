@@ -1,96 +1,67 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import type { Employee, Product } from '@/types/database'
-import emojiDataByGroup from 'unicode-emoji-json/data-by-group.json'
 
-// Set completo de Unicode (~1900 emojis, las mismas 9 categorías que usan
-// WhatsApp/Google/Apple), en vez de una lista corta armada a mano
-type EmojiEntry = { emoji: string; name: string }
-type EmojiGroup = { name: string; slug: string; emojis: EmojiEntry[] }
-
-const CATEGORY_LABELS: Record<string, string> = {
-  'Smileys & Emotion': '😀 Caritas',
-  'People & Body': '🙌 Personas',
-  'Animals & Nature': '🐶 Animales',
-  'Food & Drink': '🍔 Comida',
-  'Travel & Places': '✈️ Viajes',
-  'Activities': '⚽ Activ.',
-  'Objects': '💡 Objetos',
-  'Symbols': '🔣 Símbolos',
-  'Flags': '🚩 Banderas'
+// Normaliza texto para comparar sin importar tildes/diacríticos
+// ("azucar" debe coincidir con "azúcar")
+function normalizeText(text: string) {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
 }
 
-const EMOJI_GROUPS: EmojiGroup[] = emojiDataByGroup as EmojiGroup[]
-const ALL_EMOJIS: EmojiEntry[] = EMOJI_GROUPS.flatMap(g => g.emojis)
+// Emojis organizados por categoría, estilo selector tipo WhatsApp
+const EMOJI_CATEGORIES: { label: string; emojis: string[] }[] = [
+  {
+    label: 'Tienda y Envíos',
+    emojis: ['🏷️', '🔢', '⚖️', '💧', '📦', '🛍️', '🛒', '🎁', '📏', '📐', '🧾', '💰', '💳', '🏪', '🚚', '🧊', '🪝', '🔗', '⭐', '✅']
+  },
+  {
+    label: 'Comida y Bebida',
+    emojis: ['🍖', '🍗', '🥓', '🧀', '🥩', '🍞', '🥫', '🥚', '🥛', '🧈', '🍯', '🧂', '🌭', '🍔', '🍕', '🥪', '🍟', '🥗', '🍅', '🥔', '🥕', '🌽', '🍎', '🍌', '🍇', '🍓', '🍾', '🥤', '🧃', '☕', '🍫', '🍬', '🍭']
+  },
+  {
+    label: 'Objetos',
+    emojis: ['🧴', '🧻', '🧽', '🪣', '🧺', '🧵', '🪜', '🧱', '🪵', '🔩', '🔧', '🧲', '⛓️', '🔥', '💡', '🔑', '📌', '✂️']
+  },
+  {
+    label: 'Caritas y Símbolos',
+    emojis: ['😀', '😊', '👍', '👎', '❤️', '💯', '🎉', '✨', '❌', '⚠️', '❓', '❗', '🔴', '🟢', '🟡', '🔵', '⚪', '⚫']
+  }
+]
 
 function EmojiPicker({ onSelect, onClose }: { onSelect: (emoji: string) => void; onClose: () => void }) {
-  const [activeGroup, setActiveGroup] = useState(0)
-  const [search, setSearch] = useState('')
-
-  const results = useMemo(() => {
-    if (!search.trim()) return EMOJI_GROUPS[activeGroup]?.emojis || []
-    const q = search.trim().toLowerCase()
-    return ALL_EMOJIS.filter(e => e.name.includes(q)).slice(0, 200)
-  }, [search, activeGroup])
-
   return (
     <div className="fixed inset-0 z-[60]" onClick={onClose}>
       <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl border border-border w-[92vw] max-w-sm h-[70vh] flex flex-col overflow-hidden"
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl border border-border w-[90vw] max-w-xs max-h-[70vh] overflow-auto p-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between p-4 pb-3 flex-shrink-0">
+        <div className="flex items-center justify-between mb-3">
           <p className="font-bold text-sm">Elegí un ícono</p>
           <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 text-text-muted">✕</button>
         </div>
 
-        <div className="px-4 pb-3 flex-shrink-0">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar (en inglés, ej: box, star, food)..."
-            className="input !py-2 text-sm"
-          />
-        </div>
-
-        {!search.trim() && (
-          <div className="flex gap-1 px-4 pb-2 overflow-x-auto flex-shrink-0">
-            {EMOJI_GROUPS.map((g, idx) => (
-              <button
-                key={g.slug}
-                onClick={() => setActiveGroup(idx)}
-                className={`whitespace-nowrap px-2.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                  activeGroup === idx ? 'bg-primary text-white' : 'bg-gray-100 text-text-muted'
-                }`}
-              >
-                {CATEGORY_LABELS[g.name] || g.name}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className="flex-1 overflow-auto px-4 pb-4">
-          {results.length === 0 ? (
-            <p className="text-sm text-text-muted text-center py-8">Sin resultados</p>
-          ) : (
+        {EMOJI_CATEGORIES.map(cat => (
+          <div key={cat.label} className="mb-4">
+            <p className="text-[11px] font-bold text-text-muted uppercase mb-2">{cat.label}</p>
             <div className="grid grid-cols-7 gap-1">
-              {results.map((e, i) => (
+              {cat.emojis.map(emoji => (
                 <button
-                  key={`${e.emoji}-${i}`}
-                  title={e.name}
-                  onClick={() => onSelect(e.emoji)}
+                  key={emoji}
+                  onClick={() => onSelect(emoji)}
                   className="text-2xl w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 active:scale-90 transition-all"
                 >
-                  {e.emoji}
+                  {emoji}
                 </button>
               ))}
             </div>
-          )}
-        </div>
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -210,13 +181,13 @@ export default function ProductosPage() {
 
   function matchesSearch(product: Product) {
     if (!searchQuery.trim()) return true
-    const q = searchQuery.trim().toLowerCase()
+    const q = normalizeText(searchQuery.trim())
     return (
-      product.name?.toLowerCase().includes(q) ||
-      product.product_code?.toLowerCase().includes(q) ||
-      product.description?.toLowerCase().includes(q) ||
-      getCategoryName(product.category_id)?.toLowerCase().includes(q) ||
-      product.location?.toLowerCase().includes(q)
+      (product.name && normalizeText(product.name).includes(q)) ||
+      (product.product_code && normalizeText(product.product_code).includes(q)) ||
+      (product.description && normalizeText(product.description).includes(q)) ||
+      normalizeText(getCategoryName(product.category_id) || '').includes(q) ||
+      (product.location && normalizeText(product.location).includes(q))
     )
   }
 
@@ -951,14 +922,14 @@ export default function ProductosPage() {
                 autoComplete="off"
               />
               {showLocationDropdown && editLocation.trim() && locations.filter(loc => 
-                loc.toLowerCase().includes(editLocation.toLowerCase()) && 
-                loc.toLowerCase() !== editLocation.toLowerCase()
+                normalizeText(loc).includes(normalizeText(editLocation)) && 
+                normalizeText(loc) !== normalizeText(editLocation)
               ).length > 0 && (
                 <div className="absolute left-0 right-0 top-full mt-1 bg-surface border border-border rounded-xl shadow-lg z-10 overflow-hidden">
                   {locations
                     .filter(loc => 
-                      loc.toLowerCase().includes(editLocation.toLowerCase()) && 
-                      loc.toLowerCase() !== editLocation.toLowerCase()
+                      normalizeText(loc).includes(normalizeText(editLocation)) && 
+                      normalizeText(loc) !== normalizeText(editLocation)
                     )
                     .map(loc => (
                       <button
