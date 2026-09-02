@@ -45,6 +45,30 @@ const DEFAULT_HEADER_SETTINGS: HeaderSettings = {
   shadow: true
 }
 
+// Ícono según la URL del link (heurística simple para los links típicos;
+// cualquier link "custom" cae en el ícono genérico)
+function LinkIcon({ url, className }: { url: string; className?: string }) {
+  if (url === '/' || url === '/landing') {
+    return (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+      </svg>
+    )
+  }
+  if (url.includes('catalogo')) {
+    return (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+      </svg>
+    )
+  }
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 010 5.656l-4 4a4 4 0 01-5.656-5.656l1.5-1.5M10.172 13.828a4 4 0 010-5.656l4-4a4 4 0 015.656 5.656l-1.5 1.5" />
+    </svg>
+  )
+}
+
 export function Header() {
   const router = useRouter()
   const pathname = usePathname()
@@ -88,6 +112,13 @@ export function Header() {
   }
 
   const isActive = (path: string) => pathname === path || (path === '/' && pathname === '/landing')
+
+  const hasBusinessInfo = Boolean(
+    (settings?.show_phone && settings?.phone_number) ||
+    (settings?.show_business_hours && settings?.business_hours) ||
+    (settings?.show_address && settings?.address) ||
+    (settings?.show_email && settings?.email)
+  )
 
   const siteName = settings?.site_name || 'Los Primos'
   const siteTagline = settings?.site_tagline || 'Distribuidora Oficial Sarubbi'
@@ -142,16 +173,16 @@ export function Header() {
           </nav>
 
           <div className="flex items-center gap-2">
-            {/* Business Info Button */}
-            <div className="relative">
+            {/* Business Info Button (desktop) */}
+            <div className="relative hidden md:block">
               <button
                 onClick={() => setShowInfo(!showInfo)}
-                className="flex items-center gap-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg font-semibold transition-all md:w-auto text-xs md:text-sm"
+                className="flex items-center gap-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg font-semibold transition-all text-sm"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span className="hidden md:inline">Info</span>
+                <span>Info</span>
               </button>
 
               {/* Dropdown Info */}
@@ -226,34 +257,112 @@ export function Header() {
             </div>
 
             {/* Menú hamburguesa - Mobile */}
-            {menuLinks.length > 0 && (
+            {(menuLinks.length > 0 || hasBusinessInfo) && (
               <button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
-                className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg hover:bg-gray-100"
+                className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg hover:bg-gray-100 transition-all"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: headerSettings.text_color }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
+                {showMobileMenu ? (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: headerSettings.text_color }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                ) : (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: headerSettings.text_color }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                )}
               </button>
             )}
           </div>
         </div>
 
-        {/* Nav Links - Mobile */}
-        {showMobileMenu && menuLinks.length > 0 && (
-          <nav className="md:hidden flex flex-col gap-1 pt-4 pb-2 border-t border-gray-100 mt-3">
-            {menuLinks.map(link => (
-              <Link
-                key={link.id}
-                href={link.url}
-                onClick={() => setShowMobileMenu(false)}
-                className="font-semibold py-2 transition-all"
-                style={{ color: isActive(link.url) ? headerSettings.active_color : headerSettings.text_color }}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
+        {/* Menú - Mobile: tarjeta con links + info del negocio */}
+        {showMobileMenu && (menuLinks.length > 0 || hasBusinessInfo) && (
+          <div className="md:hidden mt-3 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+            {menuLinks.length > 0 && (
+              <nav className="p-2">
+                {menuLinks.map(link => {
+                  const active = isActive(link.url)
+                  return (
+                    <Link
+                      key={link.id}
+                      href={link.url}
+                      onClick={() => setShowMobileMenu(false)}
+                      className="flex items-center gap-3 px-3 py-3 rounded-xl font-semibold transition-all"
+                      style={{
+                        color: active ? headerSettings.active_color : headerSettings.text_color,
+                        backgroundColor: active ? `${headerSettings.active_color}14` : 'transparent'
+                      }}
+                    >
+                      <LinkIcon url={link.url} className="w-5 h-5 flex-shrink-0" />
+                      {link.label}
+                    </Link>
+                  )
+                })}
+              </nav>
+            )}
+
+            {hasBusinessInfo && (
+              <div className={`p-4 space-y-4 ${menuLinks.length > 0 ? 'border-t border-gray-100' : ''}`}>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">Datos del negocio</p>
+
+                {settings?.show_phone && settings?.phone_number && (
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                    <div>
+                      <p className="text-xs text-gray-500">Teléfono</p>
+                      <a href={`https://wa.me/${settings.phone_number.replace(/\D/g, '')}`} className="font-semibold text-gray-900">
+                        {settings.phone_number}
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {settings?.show_business_hours && settings?.business_hours && (
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 2m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <p className="text-xs text-gray-500">Horarios</p>
+                      <p className="font-semibold text-gray-900">{settings.business_hours}</p>
+                    </div>
+                  </div>
+                )}
+
+                {settings?.show_address && settings?.address && (
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <div>
+                      <p className="text-xs text-gray-500">Dirección</p>
+                      <a href={`https://www.google.com/maps/place/Los+Primos/@-34.7641828,-55.7477291,758m/data=!3m2!1e3!4b1!4m6!3m5!1s0x959ff53fa68babfb:0xaa210ac7416011d2!8m2!3d-34.7641828!4d-55.7477291!16s%2Fg%2F11f06n4mrp?entry=ttu&g_ep=EgoyMDI2MDgwNS4xIKXMDSoASAFQAw%3D%3D${settings.address.replace(/\D/g, '')}`} className="font-semibold text-gray-900">
+                        {settings.address}
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {settings?.show_email && settings?.email && (
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    <div>
+                      <p className="text-xs text-gray-500">Email</p>
+                      <a href={`mailto:${settings.email}`} className="font-semibold text-gray-900">
+                        {settings.email}
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </header>
