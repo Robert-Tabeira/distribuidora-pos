@@ -30,7 +30,7 @@ export default function CatalogPage() {
   const [cartItems, setCartItems] = useState<{ productId: string; quantity: number }[]>([])
   const [showCart, setShowCart] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [sortOption, setSortOption] = useState<'default' | 'name_asc' | 'name_desc'>('default')
+  const [sortOption, setSortOption] = useState<'default' | 'name_asc' | 'name_desc' | 'recent'>('default')
 
   useEffect(() => {
     loadData()
@@ -135,6 +135,10 @@ export default function CatalogPage() {
       filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name, 'es'))
     } else if (sortOption === 'name_desc') {
       filtered = [...filtered].sort((a, b) => b.name.localeCompare(a.name, 'es'))
+    } else if (sortOption === 'recent') {
+      filtered = [...filtered].sort((a, b) =>
+        new Date((b as any).created_at).getTime() - new Date((a as any).created_at).getTime()
+      )
     }
 
     return filtered
@@ -291,6 +295,7 @@ export default function CatalogPage() {
                   className="flex-1 min-w-0 px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-900"
                 >
                   <option value="default">Ordenar: relevancia</option>
+                  <option value="recent">Recién agregados</option>
                   <option value="name_asc">Nombre (A-Z)</option>
                   <option value="name_desc">Nombre (Z-A)</option>
                 </select>
