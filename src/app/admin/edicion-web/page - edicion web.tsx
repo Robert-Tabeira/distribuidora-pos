@@ -44,10 +44,6 @@ interface HeaderSettings {
   active_color: string
   sticky: boolean
   shadow: boolean
-  nav_uppercase: boolean
-  nav_underline: boolean
-  nav_letter_spacing: 'normal' | 'wide' | 'wider'
-  nav_font_weight: '500' | '600' | '700'
 }
 
 interface Popup {
@@ -204,7 +200,7 @@ function SitePreviewPanel({
   barForm: { bg_color: string; text_color: string; font_family: string; font_size: string; font_weight: string; letter_spacing: string; animation: string }
   announcements: AnnouncementMessage[]
   logoForm: { site_name: string; site_tagline: string; logo_url: string; use_logo_image: boolean }
-  headerForm: { bg_color: string; text_color: string; active_color: string; sticky: boolean; shadow: boolean; nav_uppercase: boolean; nav_underline: boolean; nav_letter_spacing: string; nav_font_weight: string }
+  headerForm: { bg_color: string; text_color: string; active_color: string; sticky: boolean; shadow: boolean }
   menuLinks: MenuLink[]
   editingPopupForm?: any
 }) {
@@ -271,19 +267,8 @@ function SitePreviewPanel({
           )}
           <div className="flex gap-2.5 flex-shrink-0">
             {sortedLinks.slice(0, 3).map((link, idx) => (
-              <span
-                key={link.id}
-                className={`relative text-[9px] pb-0.5 ${headerForm.nav_uppercase ? 'uppercase' : ''}`}
-                style={{
-                  color: idx === 0 ? headerForm.active_color : headerForm.text_color,
-                  letterSpacing: LETTER_SPACING_MAP[headerForm.nav_letter_spacing],
-                  fontWeight: headerForm.nav_font_weight
-                }}
-              >
+              <span key={link.id} className="text-[9px] font-semibold" style={{ color: idx === 0 ? headerForm.active_color : headerForm.text_color }}>
                 {link.label}
-                {headerForm.nav_underline && idx === 0 && (
-                  <span className="absolute left-0 -bottom-0 h-px w-full" style={{ backgroundColor: headerForm.active_color }} />
-                )}
               </span>
             ))}
           </div>
@@ -495,11 +480,7 @@ export default function WebsiteEditionPage() {
     text_color: '#374151',
     active_color: '#2563eb',
     sticky: true,
-    shadow: true,
-    nav_uppercase: true,
-    nav_underline: true,
-    nav_letter_spacing: 'wide' as 'normal' | 'wide' | 'wider',
-    nav_font_weight: '700' as '500' | '600' | '700'
+    shadow: true
   })
   const [savingHeaderSettings, setSavingHeaderSettings] = useState(false)
 
@@ -606,11 +587,7 @@ export default function WebsiteEditionPage() {
           text_color: h.text_color,
           active_color: h.active_color,
           sticky: h.sticky,
-          shadow: h.shadow,
-          nav_uppercase: h.nav_uppercase ?? true,
-          nav_underline: h.nav_underline ?? true,
-          nav_letter_spacing: h.nav_letter_spacing ?? 'wide',
-          nav_font_weight: h.nav_font_weight ?? '700'
+          shadow: h.shadow
         })
       }
       if (popupsRes.data) setPopups(popupsRes.data as Popup[])
@@ -1950,7 +1927,6 @@ export default function WebsiteEditionPage() {
         {activeTab === 'sections' && sectionView === 'header' && (() => {
           const sortedLinks = [...menuLinks].sort((a, b) => a.order_position - b.order_position)
           const activePreviewLinks = sortedLinks.filter(l => l.is_active)
-          const LETTER_SPACING_MAP: Record<string, string> = { normal: 'normal', wide: '0.025em', wider: '0.05em' }
 
           return (
             <div>
@@ -1974,19 +1950,8 @@ export default function WebsiteEditionPage() {
                   )}
                   <div className="hidden sm:flex gap-5">
                     {activePreviewLinks.map((link, idx) => (
-                      <span
-                        key={link.id}
-                        className={`relative pb-1 text-sm ${headerForm.nav_uppercase ? 'uppercase' : ''}`}
-                        style={{
-                          color: idx === 0 ? headerForm.active_color : headerForm.text_color,
-                          letterSpacing: LETTER_SPACING_MAP[headerForm.nav_letter_spacing],
-                          fontWeight: headerForm.nav_font_weight
-                        }}
-                      >
+                      <span key={link.id} className="font-semibold text-sm" style={{ color: idx === 0 ? headerForm.active_color : headerForm.text_color }}>
                         {link.label}
-                        {headerForm.nav_underline && idx === 0 && (
-                          <span className="absolute left-0 bottom-0 h-0.5 w-full rounded-full" style={{ backgroundColor: headerForm.active_color }} />
-                        )}
                       </span>
                     ))}
                   </div>
@@ -2111,7 +2076,7 @@ export default function WebsiteEditionPage() {
                   <ColorPicker label="Color de enlace activo" value={headerForm.active_color} onChange={(hex) => setHeaderForm({ ...headerForm, active_color: hex })} palette={palette} />
                 </div>
 
-                <div className="flex flex-wrap gap-6">
+                <div className="flex flex-wrap gap-6 mb-6">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={headerForm.sticky} onChange={(e) => setHeaderForm({ ...headerForm, sticky: e.target.checked })} className="w-5 h-5 rounded border-gray-300" />
                     <span className="font-semibold text-sm">Header fijo al hacer scroll (sticky)</span>
@@ -2121,67 +2086,11 @@ export default function WebsiteEditionPage() {
                     <span className="font-semibold text-sm">Sombra debajo del header</span>
                   </label>
                 </div>
+
+                <button onClick={saveHeaderSettings} disabled={savingHeaderSettings} className="btn btn-primary w-full">
+                  {savingHeaderSettings ? 'Guardando...' : 'Guardar Estilo'}
+                </button>
               </CollapsibleCard>
-
-              {/* TEXTO DEL MENÚ */}
-              <CollapsibleCard
-                icon="🔤"
-                title="Texto del menú"
-                subtitle={`${headerForm.nav_uppercase ? 'Mayúsculas' : 'Normal'}${headerForm.nav_underline ? ', subrayado' : ''}`}
-              >
-                <div className="flex flex-wrap gap-6 mb-6">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={headerForm.nav_uppercase}
-                      onChange={(e) => setHeaderForm({ ...headerForm, nav_uppercase: e.target.checked })}
-                      className="w-5 h-5 rounded border-gray-300"
-                    />
-                    <span className="font-semibold text-sm">Mayúsculas</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={headerForm.nav_underline}
-                      onChange={(e) => setHeaderForm({ ...headerForm, nav_underline: e.target.checked })}
-                      className="w-5 h-5 rounded border-gray-300"
-                    />
-                    <span className="font-semibold text-sm">Subrayado en el link activo</span>
-                  </label>
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-5">
-                  <div>
-                    <label className="block text-sm font-semibold text-text-muted mb-2">Espaciado entre letras</label>
-                    <select
-                      value={headerForm.nav_letter_spacing}
-                      onChange={(e) => setHeaderForm({ ...headerForm, nav_letter_spacing: e.target.value as typeof headerForm.nav_letter_spacing })}
-                      className="input"
-                    >
-                      <option value="normal">Normal</option>
-                      <option value="wide">Amplio</option>
-                      <option value="wider">Muy amplio</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-text-muted mb-2">Grosor</label>
-                    <select
-                      value={headerForm.nav_font_weight}
-                      onChange={(e) => setHeaderForm({ ...headerForm, nav_font_weight: e.target.value as typeof headerForm.nav_font_weight })}
-                      className="input"
-                    >
-                      <option value="500">Medio</option>
-                      <option value="600">Semi-negrita</option>
-                      <option value="700">Negrita</option>
-                    </select>
-                  </div>
-                </div>
-              </CollapsibleCard>
-
-              <button onClick={saveHeaderSettings} disabled={savingHeaderSettings} className="btn btn-primary w-full max-w-2xl">
-                {savingHeaderSettings ? 'Guardando...' : 'Guardar Estilo'}
-              </button>
             </div>
           )
         })()}

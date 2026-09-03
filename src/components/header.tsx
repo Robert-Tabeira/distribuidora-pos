@@ -35,6 +35,10 @@ interface HeaderSettings {
   active_color: string
   sticky: boolean
   shadow: boolean
+  nav_uppercase: boolean
+  nav_underline: boolean
+  nav_letter_spacing: 'normal' | 'wide' | 'wider'
+  nav_font_weight: '500' | '600' | '700'
 }
 
 const DEFAULT_HEADER_SETTINGS: HeaderSettings = {
@@ -42,8 +46,14 @@ const DEFAULT_HEADER_SETTINGS: HeaderSettings = {
   text_color: '#374151',
   active_color: '#2563eb',
   sticky: true,
-  shadow: true
+  shadow: true,
+  nav_uppercase: true,
+  nav_underline: true,
+  nav_letter_spacing: 'wide',
+  nav_font_weight: '700'
 }
+
+const LETTER_SPACING_MAP: Record<string, string> = { normal: 'normal', wide: '0.025em', wider: '0.05em' }
 
 // Ícono según la URL del link (heurística simple para los links típicos;
 // cualquier link "custom" cae en el ícono genérico)
@@ -159,17 +169,30 @@ export function Header() {
           </Link>
 
           {/* Nav Links - Desktop */}
-          <nav className="hidden md:flex gap-8">
-            {menuLinks.map(link => (
-              <Link
-                key={link.id}
-                href={link.url}
-                className="font-semibold transition-all hover:opacity-70"
-                style={{ color: isActive(link.url) ? headerSettings.active_color : headerSettings.text_color }}
-              >
-                {link.label}
-              </Link>
-            ))}
+          <nav className="hidden md:flex gap-7">
+            {menuLinks.map(link => {
+              const active = isActive(link.url)
+              return (
+                <Link
+                  key={link.id}
+                  href={link.url}
+                  className={`relative py-1.5 text-sm transition-opacity hover:opacity-70 ${headerSettings.nav_uppercase ? 'uppercase' : ''}`}
+                  style={{
+                    color: active ? headerSettings.active_color : headerSettings.text_color,
+                    letterSpacing: LETTER_SPACING_MAP[headerSettings.nav_letter_spacing],
+                    fontWeight: headerSettings.nav_font_weight
+                  }}
+                >
+                  {link.label}
+                  {headerSettings.nav_underline && (
+                    <span
+                      className="absolute left-0 -bottom-0.5 h-0.5 w-full rounded-full transition-opacity"
+                      style={{ backgroundColor: headerSettings.active_color, opacity: active ? 1 : 0 }}
+                    />
+                  )}
+                </Link>
+              )
+            })}
           </nav>
 
           <div className="flex items-center gap-2">
@@ -177,7 +200,11 @@ export function Header() {
             <div className="relative hidden md:block">
               <button
                 onClick={() => setShowInfo(!showInfo)}
-                className="flex items-center gap-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg font-semibold transition-all text-sm"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg font-bold text-sm uppercase tracking-wide transition-all hover:opacity-80"
+                style={{
+                  color: headerSettings.active_color,
+                  backgroundColor: `${headerSettings.active_color}14`
+                }}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -260,7 +287,8 @@ export function Header() {
             {(menuLinks.length > 0 || hasBusinessInfo) && (
               <button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
-                className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg hover:bg-gray-100 transition-all"
+                className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg transition-all hover:opacity-70"
+                style={{ backgroundColor: showMobileMenu ? `${headerSettings.text_color}0d` : 'transparent' }}
               >
                 {showMobileMenu ? (
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: headerSettings.text_color }}>
@@ -288,10 +316,12 @@ export function Header() {
                       key={link.id}
                       href={link.url}
                       onClick={() => setShowMobileMenu(false)}
-                      className="flex items-center gap-3 px-3 py-3 rounded-xl font-semibold transition-all"
+                      className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${headerSettings.nav_uppercase ? 'uppercase text-sm' : ''}`}
                       style={{
                         color: active ? headerSettings.active_color : headerSettings.text_color,
-                        backgroundColor: active ? `${headerSettings.active_color}14` : 'transparent'
+                        backgroundColor: active ? `${headerSettings.active_color}14` : 'transparent',
+                        letterSpacing: LETTER_SPACING_MAP[headerSettings.nav_letter_spacing],
+                        fontWeight: headerSettings.nav_font_weight
                       }}
                     >
                       <LinkIcon url={link.url} className="w-5 h-5 flex-shrink-0" />
