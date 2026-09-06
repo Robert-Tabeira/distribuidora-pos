@@ -114,6 +114,8 @@ export default function ProductosPage() {
   // Modal de coincidencias
   const [similarProducts, setSimilarProducts] = useState<Product[]>([])
   const [showSimilarModal, setShowSimilarModal] = useState(false)
+  const [selectedDuplicateId, setSelectedDuplicateId] = useState<string | null>(null)
+  const [resolvingDuplicate, setResolvingDuplicate] = useState(false)
 
   useEffect(() => {
     const stored = localStorage.getItem('employee')
@@ -446,6 +448,7 @@ export default function ProductosPage() {
     
     if (similar.length > 0) {
       setSimilarProducts(similar)
+      setSelectedDuplicateId(null)
       setShowSimilarModal(true)
       return
     }
@@ -506,6 +509,102 @@ export default function ProductosPage() {
       alert('Error al guardar el producto')
     } finally {
       setSaving(false)
+    }
+  }
+
+  // El usuario marcó que "oldProduct" (ya ingresado) es el mismo que el
+  // producto pendiente que está editando. Actualiza el producto viejo con
+  // los datos nuevos, y borra el pendiente (ya no hace falta, era el duplicado).
+  async function replaceOldWithNew(oldProduct: Product) {
+    if (!editingProduct || !editName.trim() || editUnits.length === 0) return
+
+    setResolvingDuplicate(true)
+    try {
+      const newLocation = editLocation.trim() || null
+
+      const { error: updateError } = await supabase
+        .from('products')
+        .update({
+          name: editName.trim(),
+          unit: editUnits,
+          category_id: editCategory,
+          location: newLocation,
+          description: editDescription.trim() || null,
+          product_code: editProductCode.trim() || null,
+          gallery: editGallery,
+          status: 'complete',
+        })
+        .eq('id', oldProduct.id)
+
+      if (updateError) throw updateError
+
+      const { error: deleteError } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', editingProduct.id)
+
+      if (deleteError) throw deleteError
+
+      setProducts(products
+        .filter(p => p.id !== editingProduct.id)
+        .map(p =>
+          p.id === oldProduct.id
+            ? {
+                ...p,
+                name: editName.trim(),
+                unit: editUnits,
+                category_id: editCategory,
+                location: newLocation,
+                description: editDescription.trim() || null,
+                product_code: editProductCode.trim() || null,
+                gallery: editGallery,
+                status: 'complete' as const
+              }
+            : p
+        )
+      )
+
+      if (newLocation && !locations.includes(newLocation)) {
+        setLocations([...locations, newLocation].sort())
+      }
+
+      closeEditModal()
+      setShowSimilarModal(false)
+      setSelectedDuplicateId(null)
+      if (navigator.vibrate) navigator.vibrate(50)
+    } catch (error) {
+      console.error('Error al reemplazar:', error)
+      alert('Error al reemplazar el producto')
+    } finally {
+      setResolvingDuplicate(false)
+    }
+  }
+
+  // El usuario marcó que hay un duplicado, pero decide quedarse con el
+  // producto viejo tal cual está y descartar el pendiente que estaba editando.
+  async function discardNewKeepOld() {
+    if (!editingProduct) return
+
+    setResolvingDuplicate(true)
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', editingProduct.id)
+
+      if (error) throw error
+
+      setProducts(products.filter(p => p.id !== editingProduct.id))
+
+      closeEditModal()
+      setShowSimilarModal(false)
+      setSelectedDuplicateId(null)
+      if (navigator.vibrate) navigator.vibrate(50)
+    } catch (error) {
+      console.error('Error al eliminar el duplicado:', error)
+      alert('Error al eliminar el producto')
+    } finally {
+      setResolvingDuplicate(false)
     }
   }
 
@@ -972,7 +1071,7 @@ export default function ProductosPage() {
       {/* Modal de productos similares */}
       {showSimilarModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50">
-          <div className="bg-surface w-full max-w-lg rounded-t-3xl p-6 animate-slide-up max-h-[80vh] overflow-auto" onClick={e => e.stopPropagation()}>
+          <div className="bg-surface w-full max-w-lg rounded-t-3xl p-6 animate-slide-up max-h-[85vh] overflow-auto" onClick={e => e.stopPropagation()}>
             <div className="w-12 h-1.5 bg-border rounded-full mx-auto mb-6" />
             
             <div className="text-center mb-6">
@@ -982,36 +1081,84 @@ export default function ProductosPage() {
                 </svg>
               </div>
               <h3 className="font-bold text-xl mb-2">¿Es el mismo producto?</h3>
-              <p className="text-text-muted">Encontramos productos similares a <span className="font-semibold text-text">"{editName}"</span></p>
+              <p className="text-text-muted">
+                Encontramos productos ya ingresados similares a <span className="font-semibold text-text">"{editName}"</span>.
+                {' '}Tocá el que se repite, o seguí de largo si ninguno es igual.
+              </p>
             </div>
 
             <div className="space-y-2 mb-6">
-              {similarProducts.map(product => (
-                <div key={product.id} className="p-4 rounded-xl bg-bg border border-border">
-                  <div className="font-semibold text-text">{product.name}</div>
-                  <div className="text-sm text-text-muted mt-1">
-                    {getCategoryName(product.category_id)}
-                    {product.location && ` • ${product.location}`}
-                  </div>
-                </div>
-              ))}
+              {similarProducts.map(product => {
+                const selected = selectedDuplicateId === product.id
+                return (
+                  <button
+                    key={product.id}
+                    onClick={() => setSelectedDuplicateId(selected ? null : product.id)}
+                    className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+                      selected ? 'border-primary bg-primary/5' : 'border-border bg-bg'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center ${
+                        selected ? 'border-primary bg-primary' : 'border-border'
+                      }`}>
+                        {selected && (
+                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-semibold text-text">{product.name}</div>
+                        <div className="text-sm text-text-muted mt-1">
+                          {getCategoryName(product.category_id)}
+                          {product.location && ` • ${product.location}`}
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
             </div>
 
-            <div className="flex gap-3">
-              <button 
-                onClick={() => setShowSimilarModal(false)}
-                className="btn btn-outline flex-1"
-              >
-                Sí, es el mismo
-              </button>
+            {selectedDuplicateId ? (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-text-muted text-center mb-1">
+                  Es el mismo producto, ¿qué querés hacer?
+                </p>
+                <button
+                  onClick={() => {
+                    const old = similarProducts.find(p => p.id === selectedDuplicateId)
+                    if (old) replaceOldWithNew(old)
+                  }}
+                  disabled={resolvingDuplicate}
+                  className="btn btn-primary w-full"
+                >
+                  {resolvingDuplicate ? 'Aplicando...' : '🔄 Reemplazar el anterior con este'}
+                </button>
+                <button
+                  onClick={discardNewKeepOld}
+                  disabled={resolvingDuplicate}
+                  className="btn btn-outline w-full !text-red-600 !border-red-200 hover:!bg-red-50"
+                >
+                  {resolvingDuplicate ? 'Eliminando...' : '🗑️ Eliminar este nuevo (mantener el anterior)'}
+                </button>
+                <button
+                  onClick={() => setSelectedDuplicateId(null)}
+                  className="text-sm text-text-muted text-center w-full py-2"
+                >
+                  Cancelar selección
+                </button>
+              </div>
+            ) : (
               <button 
                 onClick={performSave}
                 disabled={saving}
-                className="btn btn-primary flex-1"
+                className="btn btn-primary w-full"
               >
-                {saving ? 'Guardando...' : 'No, es diferente'}
+                {saving ? 'Guardando...' : 'Ninguno es igual, continuar guardando'}
               </button>
-            </div>
+            )}
           </div>
         </div>
       )}
