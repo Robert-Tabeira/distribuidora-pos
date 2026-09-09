@@ -628,6 +628,28 @@ export default function ProductosPage() {
     }
   }
 
+  // Oculta/muestra un producto en el catálogo público, sin borrarlo
+  async function toggleCatalogVisibility(product: Product) {
+    const willBeVisible = (product as any).visible_in_catalog === false
+
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({ visible_in_catalog: willBeVisible })
+        .eq('id', product.id)
+
+      if (error) throw error
+
+      setProducts(products.map(p =>
+        p.id === product.id ? { ...p, visible_in_catalog: willBeVisible } : p
+      ))
+      if (navigator.vibrate) navigator.vibrate(30)
+    } catch (error) {
+      console.error('Error al cambiar visibilidad:', error)
+      alert('Error al actualizar la visibilidad en el catálogo. Verificá que la columna "visible_in_catalog" ya exista en Supabase.')
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-[100dvh] flex items-center justify-center bg-bg">
@@ -835,7 +857,7 @@ export default function ProductosPage() {
                   key={product.id}
                   className={`flex items-center gap-4 p-4 ${
                     idx !== filteredCompleteProducts.length - 1 ? 'border-b border-border-light' : ''
-                  }`}
+                  } ${(product as any).visible_in_catalog === false ? 'opacity-50' : ''}`}
                 >
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center overflow-hidden p-1">
                     {product.gallery && product.gallery.length > 0 ? (
@@ -853,9 +875,32 @@ export default function ProductosPage() {
                     <div className="text-sm text-text-muted">
                       {getCategoryName(product.category_id)}
                       {product.location && ` • ${product.location}`}
+                      {(product as any).visible_in_catalog === false && (
+                        <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gray-200 text-gray-600 align-middle">OCULTO</span>
+                      )}
                     </div>
                   </div>
                   <div className="flex gap-2">
+                    <button
+                      onClick={() => toggleCatalogVisibility(product)}
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center active:scale-90 transition-transform ${
+                        (product as any).visible_in_catalog === false
+                          ? 'bg-gray-200 text-gray-500'
+                          : 'bg-green-500/10 text-green-600'
+                      }`}
+                      title={(product as any).visible_in_catalog === false ? 'Mostrar en catálogo' : 'Ocultar del catálogo'}
+                    >
+                      {(product as any).visible_in_catalog === false ? (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      )}
+                    </button>
                     <button
                       onClick={() => openEditModal(product)}
                       className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center active:scale-90 transition-transform"

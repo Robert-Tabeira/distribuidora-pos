@@ -40,7 +40,7 @@ export default function CatalogPage() {
   async function loadData() {
     try {
       const [productsRes, categoriesRes, discountsRes] = await Promise.all([
-        supabase.from('products').select('*').eq('status', 'complete'),
+        supabase.from('products').select('*').eq('status', 'complete').eq('visible_in_catalog', true),
         supabase.from('categories').select('*').order('order_position'),
         supabase.from('discounts').select('*').eq('is_active', true)
       ])
