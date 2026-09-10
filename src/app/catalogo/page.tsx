@@ -357,20 +357,6 @@ export default function CatalogPage() {
                           -{product.discount.percentage}%
                         </div>
                       )}
-
-                      {/* Agregado rápido, sin abrir el detalle */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          addToCart(product.id)
-                        }}
-                        className="absolute bottom-2 right-2 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-blue-900 text-white flex items-center justify-center shadow-lg hover:bg-blue-800 active:scale-90 transition-all"
-                        title="Agregar al carrito"
-                      >
-                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                        </svg>
-                      </button>
                     </div>
 
                     {/* Info - Altura fija */}
@@ -392,83 +378,6 @@ export default function CatalogPage() {
           </div>
         </div>
       </div>
-
-      {/* CARRITO FLOTANTE */}
-      {showCart && cartTotal > 0 && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center md:justify-end p-4 md:p-6">
-          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-slide-up">
-            <div className="p-6 border-b border-gray-200 bg-blue-900 text-white">
-              <h3 className="font-black text-lg">Mi Carrito</h3>
-              <p className="text-sm text-blue-100">{cartTotal} productos</p>
-            </div>
-
-            <div className="max-h-64 overflow-y-auto p-4 space-y-2">
-              {cartItems.map(item => {
-                const product = products.find(p => p.id === item.productId)
-                if (!product) return null
-                return (
-                  <div key={product.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                    <div className="flex-1">
-                      <div className="font-semibold text-sm text-gray-900">{product.name}</div>
-                      {product.discount && (
-                        <div className="text-xs text-red-600">-{product.discount.percentage}%</div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => updateCartQuantity(product.id, item.quantity - 1)}
-                        className="w-6 h-6 flex items-center justify-center bg-gray-300 rounded hover:bg-gray-400 text-xs font-bold"
-                      >
-                        −
-                      </button>
-                      <span className="w-4 text-center text-xs font-bold">{item.quantity}</span>
-                      <button
-                        onClick={() => updateCartQuantity(product.id, item.quantity + 1)}
-                        className="w-6 h-6 flex items-center justify-center bg-gray-300 rounded hover:bg-gray-400 text-xs font-bold"
-                      >
-                        +
-                      </button>
-                      <button
-                        onClick={() => removeFromCart(product.id)}
-                        className="ml-2 text-red-500 hover:text-red-700 text-xs font-bold"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-
-            <div className="p-6 border-t border-gray-200 space-y-3">
-              <a
-                href={`https://wa.me/?text=${encodeURIComponent(
-                  `🛒 Pedido desde Los Primos\n\n${cartItems
-                    .map(item => {
-                      const product = products.find(p => p.id === item.productId)
-                      return `• ${product?.name} x${item.quantity}`
-                    })
-                    .join('\n')}\n\nConfirmar disponibilidad`
-                )}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full py-3 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition-all flex items-center justify-center gap-2"
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.67-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.076 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421-7.403h-.004a9.87 9.87 0 00-5.031 1.378c-3.055 2.289-4.909 6.233-4.909 10.33 0 1.455.267 2.858.77 4.187L2.657 22.5l4.383-1.441c1.294.756 2.783 1.166 4.38 1.166 5.64 0 10.233-4.592 10.233-10.233 0-2.65-.997-5.151-2.791-7.035A10.234 10.234 0 0011.052 6.979z" />
-                </svg>
-                Enviar Pedido
-              </a>
-              <button
-                onClick={() => setShowCart(false)}
-                className="w-full py-2 bg-gray-200 text-gray-900 rounded-lg font-bold hover:bg-gray-300"
-              >
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* DETALLE DE PRODUCTO */}
       {selectedProduct && (
@@ -566,18 +475,8 @@ export default function CatalogPage() {
               {/* Acá van a ir más adelante los emblemas (celíacos, dietético,
                   sin sal, sin lactosa, etc.) que se puedan cargar por producto */}
 
-              <button
-                onClick={() => {
-                  addToCart(selectedProduct.id)
-                  setSelectedProduct(null)
-                }}
-                className="w-full py-3.5 bg-blue-900 text-white rounded-xl font-bold hover:bg-blue-800 transition-all flex items-center justify-center gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                Agregar al carrito
-              </button>
+              {/* El botón "Agregar al carrito" se sacó temporalmente hasta
+                  que armemos la lista de compra para enviar por WhatsApp */}
             </div>
           </div>
         </div>

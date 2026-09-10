@@ -190,13 +190,15 @@ export default function ProductImagesPage() {
 
       const img = new Image()
       img.onload = async () => {
-        // Step 1: Renderizar en canvas grande (384px) tal como se ve
+        // Step 1: Renderizar en un canvas "grande" tal como se ve en pantalla,
+        // pero a 4x de resolución (EXPORT_SCALE) para que el resultado final
+        // use detalle real de la foto en vez de agrandar una imagen chica.
+        // Todo lo que es proporción (fitScale, cropSize) se recalcula solo al
+        // pasarle el largeSize ya escalado; lo único que hay que escalar a
+        // mano es el offset (está en px de pantalla, no es una proporción).
+        const EXPORT_SCALE = 4
+        const largeSize = 384 * EXPORT_SCALE
 
-        // Usamos la MISMA función (getFitSize) y el MISMO tamaño de caja (384)
-        // que usa el preview grande para posicionar la imagen en pantalla.
-        // Así el resultado guardado coincide siempre, sin depender de cómo
-        // el navegador decida (de forma ambigua) auto-ajustar el <img>.
-        const largeSize = 384
         const fit = getFitSize(editingImage.naturalWidth, editingImage.naturalHeight, largeSize)
         const fitScale = fit.ratio
 
@@ -212,14 +214,14 @@ export default function ProductImagesPage() {
         // Dibujar exactamente como se ve en pantalla:
         // 1) rotar, 2) aplicar el zoom del usuario (igual que el CSS
         //    "scale(editingImage.scale)"), 3) mover según offset X/Y
-        //    (en ese mismo espacio, igual que hace el navegador),
+        //    (escalado x4 porque está en px de la pantalla de 384px),
         //    4) recién ahí aplicar el ajuste a tamaño real (fitScale)
         //    solo para dibujar la imagen a su tamaño correcto.
         largeCtx.save()
         largeCtx.translate(largeSize / 2, largeSize / 2)
         largeCtx.rotate((editingImage.rotation * Math.PI) / 180)
         largeCtx.scale(editingImage.scale, editingImage.scale)
-        largeCtx.translate(editingImage.offsetX, editingImage.offsetY)
+        largeCtx.translate(editingImage.offsetX * EXPORT_SCALE, editingImage.offsetY * EXPORT_SCALE)
         largeCtx.scale(fitScale, fitScale)
         largeCtx.drawImage(img, -img.width / 2, -img.height / 2)
         largeCtx.restore()
@@ -245,15 +247,20 @@ export default function ProductImagesPage() {
           cropSize
         )
 
-        // Step 3: Redimensionar a 192px
+        // Step 3: Redimensionar al tamaño final de exportación (800px).
+        // El crop de arriba ya tiene resolución real de sobra (usa la foto
+        // original en base a EXPORT_SCALE), así que este resize sí conserva
+        // detalle genuino en vez de agrandar una imagen chica.
         const finalCanvas = document.createElement('canvas')
-        const finalSize = 192
+        const finalSize = 800
 
         finalCanvas.width = finalSize
         finalCanvas.height = finalSize
 
         const finalCtx = finalCanvas.getContext('2d')!
         // Sin fillRect: mantenemos transparencia (antes quedaba blanco sólido)
+        finalCtx.imageSmoothingEnabled = true
+        finalCtx.imageSmoothingQuality = 'high'
 
         // Dibujar imagen recortada redimensionada
         finalCtx.drawImage(croppedCanvas, 0, 0, finalSize, finalSize)
@@ -394,7 +401,7 @@ export default function ProductImagesPage() {
             <div className="grid sm:grid-cols-3 gap-6 mb-2">
               {/* Preview PEQUEÑO - Lo que se verá en catálogo */}
               <div>
-                <h4 className="font-bold text-sm mb-4 text-gray-700">Resultado Final (192x192px)</h4>
+                <h4 className="font-bold text-sm mb-4 text-gray-700">Resultado Final (se guarda en 800x800px)</h4>
                 
                 <div className="relative rounded-lg p-4 border-2 border-green-500 w-48 h-48 mx-auto flex items-center justify-center overflow-hidden" style={{ backgroundImage: 'repeating-conic-gradient(#e5e7eb 0% 25%, #ffffff 0% 50%)', backgroundSize: '16px 16px' }}>
                   <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-0 pointer-events-none opacity-20">
