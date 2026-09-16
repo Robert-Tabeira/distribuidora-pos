@@ -62,11 +62,18 @@ export default function AdminDashboard() {
             <p className="text-sm text-gray-600">Crea ofertas</p>
           </button>
 
-          {/* CATÁLOGO */}
-          <button onClick={() => router.push('/catalogo')} className="p-6 bg-gradient-to-br from-indigo-50 to-indigo-100 border-2 border-indigo-200 rounded-2xl hover:shadow-lg transition-all text-left">
-            <div className="text-4xl mb-3">📋</div>
-            <h3 className="font-bold text-lg text-gray-900">Catálogo</h3>
-            <p className="text-sm text-gray-600">Gestiona categorías</p>
+          {/* CATEGORÍAS */}
+          <button onClick={() => router.push('/admin/categorias')} className="p-6 bg-gradient-to-br from-indigo-50 to-indigo-100 border-2 border-indigo-200 rounded-2xl hover:shadow-lg transition-all text-left">
+            <div className="text-4xl mb-3">🗂️</div>
+            <h3 className="font-bold text-lg text-gray-900">Categorías</h3>
+            <p className="text-sm text-gray-600">Organizá categorías y subcategorías</p>
+          </button>
+
+          {/* CLIENTES */}
+          <button onClick={() => router.push('/admin/clientes')} className="p-6 bg-gradient-to-br from-teal-50 to-teal-100 border-2 border-teal-200 rounded-2xl hover:shadow-lg transition-all text-left">
+            <div className="text-4xl mb-3">🧑‍🤝‍🧑</div>
+            <h3 className="font-bold text-lg text-gray-900">Clientes</h3>
+            <p className="text-sm text-gray-600">Ver clientes y resetear códigos</p>
           </button>
 
           {/* EDICIÓN WEB - PRINCIPAL */}
