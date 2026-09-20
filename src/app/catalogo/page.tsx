@@ -10,6 +10,16 @@ interface ProductWithDiscount extends Product {
   discount?: Discount
 }
 
+// La tabla "categories" ya tiene estas columnas (parent_id, color,
+// show_in_catalog), pero el tipo Category en @/types/database todavía
+// no las declara. Extendemos el tipo acá mismo en vez de tocar ese
+// archivo compartido.
+interface CategoryExt extends Category {
+  parent_id: string | null
+  color: string | null
+  show_in_catalog: boolean
+}
+
 // Normaliza texto para comparar sin importar tildes/diacríticos
 // ("azucar" debe coincidir con "azúcar")
 function normalizeText(text: string) {
@@ -154,13 +164,15 @@ export default function CatalogPage() {
   // una, por subcategoría si corresponde), respetando el orden y color
   // que se definieron en Admin → Categorías.
   const groupedSections = useMemo(() => {
-    const mainCategories = categories
+    const cats = categories as CategoryExt[]
+
+    const mainCategories = cats
       .filter(c => !c.parent_id && c.show_in_catalog !== false)
       .sort((a, b) => a.order_position - b.order_position)
 
     const sections = mainCategories
       .map(category => {
-        const subcategories = categories
+        const subcategories = cats
           .filter(c => c.parent_id === category.id && c.show_in_catalog !== false)
           .sort((a, b) => a.order_position - b.order_position)
 
@@ -285,8 +297,8 @@ export default function CatalogPage() {
               <div className="mb-8">
                 <h4 className="font-bold text-gray-900 mb-4 text-sm uppercase">Categorías</h4>
                 <div className="space-y-3">
-                  {categories
-                    .filter(c => !c.parent_id && (c as any).show_in_catalog !== false)
+                  {(categories as CategoryExt[])
+                    .filter(c => !c.parent_id && c.show_in_catalog !== false)
                     .sort((a, b) => a.order_position - b.order_position)
                     .map(category => (
                       <div key={category.id}>
@@ -302,8 +314,8 @@ export default function CatalogPage() {
                           </span>
                         </label>
 
-                        {categories
-                          .filter(c => c.parent_id === category.id && (c as any).show_in_catalog !== false)
+                        {(categories as CategoryExt[])
+                          .filter(c => c.parent_id === category.id && c.show_in_catalog !== false)
                           .sort((a, b) => a.order_position - b.order_position)
                           .map(sub => (
                             <label key={sub.id} className="flex items-center gap-3 cursor-pointer group pl-8 mt-2">
