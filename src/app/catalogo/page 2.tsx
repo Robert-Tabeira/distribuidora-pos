@@ -1,13 +1,22 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { PublicLayout } from '@/components/public-layout'
+import { Header } from '@/components/header'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import type { Product, Category, Discount } from '@/types/database'
 
 interface ProductWithDiscount extends Product {
   discount?: Discount
+}
+
+// Normaliza texto para comparar sin importar tildes/diacríticos
+// ("azucar" debe coincidir con "azúcar")
+function normalizeText(text: string) {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
 }
 
 export default function CatalogPage() {
@@ -20,7 +29,10 @@ export default function CatalogPage() {
   const [showOnlyDiscounts, setShowOnlyDiscounts] = useState(false)
   const [cartItems, setCartItems] = useState<{ productId: string; quantity: number }[]>([])
   const [showCart, setShowCart] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState<ProductWithDiscount | null>(null)
+  const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sortOption, setSortOption] = useState<'default' | 'name_asc' | 'name_desc' | 'recent'>('default')
 
   useEffect(() => {
     loadData()
@@ -30,7 +42,7 @@ export default function CatalogPage() {
   async function loadData() {
     try {
       const [productsRes, categoriesRes, discountsRes] = await Promise.all([
-        supabase.from('products').select('*').eq('status', 'complete'),
+        supabase.from('products').select('*').eq('status', 'complete').eq('visible_in_catalog', true),
         supabase.from('categories').select('*').order('order_position'),
         supabase.from('discounts').select('*').eq('is_active', true)
       ])
@@ -102,11 +114,11 @@ export default function CatalogPage() {
 
     // Filtrar por búsqueda
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase()
+      const query = normalizeText(searchQuery)
       filtered = filtered.filter(p =>
-        p.name.toLowerCase().includes(query) ||
-        p.product_code?.toLowerCase().includes(query) ||
-        p.description?.toLowerCase().includes(query)
+        normalizeText(p.name).includes(query) ||
+        (p.product_code && normalizeText(p.product_code).includes(query)) ||
+        (p.description && normalizeText(p.description).includes(query))
       )
     }
 
@@ -120,10 +132,22 @@ export default function CatalogPage() {
       filtered = filtered.filter(p => p.discount)
     }
 
+    // Ordenar
+    if (sortOption === 'name_asc') {
+      filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name, 'es'))
+    } else if (sortOption === 'name_desc') {
+      filtered = [...filtered].sort((a, b) => b.name.localeCompare(a.name, 'es'))
+    } else if (sortOption === 'recent') {
+      filtered = [...filtered].sort((a, b) =>
+        new Date((b as any).created_at).getTime() - new Date((a as any).created_at).getTime()
+      )
+    }
+
     return filtered
-  }, [products, searchQuery, selectedCategories, showOnlyDiscounts])
+  }, [products, searchQuery, selectedCategories, showOnlyDiscounts, sortOption])
 
   const cartTotal = cartItems.reduce((sum, item) => sum + item.quantity, 0)
+  const activeFilterCount = selectedCategories.length + (showOnlyDiscounts ? 1 : 0)
 
   const toggleCategory = (categoryId: string) => {
     setSelectedCategories(prev =>
@@ -134,8 +158,10 @@ export default function CatalogPage() {
   }
 
   return (
-    <PublicLayout>
     <div className="min-h-screen bg-gray-50">
+      {/* HEADER */}
+      <Header />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {/* SIDEBAR FILTROS */}
@@ -144,8 +170,18 @@ export default function CatalogPage() {
               sidebarOpen ? 'block' : 'hidden'
             } md:col-span-1`}
           >
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm sticky top-24">
-              <h3 className="font-black text-lg text-gray-900 mb-6">Filtros</h3>
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm md:sticky md:top-24">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-black text-lg text-gray-900">Filtros</h3>
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  className="md:hidden w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
 
               {/* Limpiar Filtros */}
               {(selectedCategories.length > 0 || showOnlyDiscounts || searchQuery.trim()) && (
@@ -204,14 +240,14 @@ export default function CatalogPage() {
             {/* Info y Búsqueda */}
             <div className="mb-6">
               <div className="mb-4">
-                <h2 className="text-3xl font-black text-gray-900">Productos</h2>
+                <h2 className="text-2xl sm:text-3xl font-black text-gray-900">Productos</h2>
                 <p className="text-sm text-gray-600 mt-1">
                   {filteredProducts.length} producto{filteredProducts.length !== 1 ? 's' : ''} disponible{filteredProducts.length !== 1 ? 's' : ''}
                 </p>
               </div>
 
               {/* Buscador */}
-              <div className="relative">
+              <div className="relative mb-3">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -236,6 +272,35 @@ export default function CatalogPage() {
                     </svg>
                   </button>
                 )}
+              </div>
+
+              {/* Fila de controles: filtros (mobile) + orden */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="md:hidden flex-shrink-0 flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-xl font-semibold text-sm text-gray-700 bg-white active:scale-95 transition-all"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                  </svg>
+                  Filtros
+                  {activeFilterCount > 0 && (
+                    <span className="w-5 h-5 flex items-center justify-center bg-blue-900 text-white text-xs rounded-full">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </button>
+
+                <select
+                  value={sortOption}
+                  onChange={(e) => setSortOption(e.target.value as typeof sortOption)}
+                  className="flex-1 min-w-0 px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-900"
+                >
+                  <option value="default">Ordenar: relevancia</option>
+                  <option value="recent">Recién agregados</option>
+                  <option value="name_asc">Nombre (A-Z)</option>
+                  <option value="name_desc">Nombre (Z-A)</option>
+                </select>
               </div>
             </div>
 
@@ -266,15 +331,18 @@ export default function CatalogPage() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                 {filteredProducts.map(product => (
                   <div
                     key={product.id}
-                    className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col h-full cursor-pointer group"
-                    onClick={() => addToCart(product.id)}
+                    className="relative bg-white rounded-xl sm:rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col h-full cursor-pointer group"
+                    onClick={() => {
+                      setSelectedProduct(product)
+                      setActiveImageIndex(0)
+                    }}
                   >
                     {/* Imagen */}
-                    <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+                    <div className="relative h-28 sm:h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
                       {product.gallery?.[0] ? (
                         <img
                           src={product.gallery[0]}
@@ -285,26 +353,22 @@ export default function CatalogPage() {
                         <div className="w-full h-full flex items-center justify-center text-5xl">📦</div>
                       )}
                       {product.discount && (
-                        <div className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1 rounded-full font-black text-sm shadow-lg">
+                        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-red-500 text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full font-black text-[10px] sm:text-sm shadow-lg">
                           -{product.discount.percentage}%
                         </div>
                       )}
                     </div>
 
                     {/* Info - Altura fija */}
-                    <div className="p-4 flex flex-col flex-1">
-                      {product.product_code && (
-                        <p className="text-xs text-blue-600 font-semibold mb-1">#{product.product_code}</p>
-                      )}
-
-                      <h3 className="font-bold text-gray-900 line-clamp-2 mb-2 flex-1">{product.name}</h3>
+                    <div className="p-2.5 sm:p-4 flex flex-col flex-1">
+                      <h3 className="font-bold text-gray-900 text-sm sm:text-base line-clamp-2 mb-1 sm:mb-2 flex-1">{product.name}</h3>
 
                       {product.description && (
-                        <p className="text-xs text-gray-600 line-clamp-2 mb-2">{product.description}</p>
+                        <p className="hidden sm:block text-xs text-gray-600 line-clamp-2 mb-2">{product.description}</p>
                       )}
 
                       {product.discount && (
-                        <p className="text-xs text-red-600 font-semibold">🎁 {product.discount.name}</p>
+                        <p className="text-[10px] sm:text-xs text-red-600 font-semibold">🎁 {product.discount.name}</p>
                       )}
                     </div>
                   </div>
@@ -315,83 +379,108 @@ export default function CatalogPage() {
         </div>
       </div>
 
-      {/* CARRITO FLOTANTE */}
-      {showCart && cartTotal > 0 && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center md:justify-end p-4 md:p-6">
-          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-slide-up">
-            <div className="p-6 border-b border-gray-200 bg-blue-900 text-white">
-              <h3 className="font-black text-lg">Mi Carrito</h3>
-              <p className="text-sm text-blue-100">{cartTotal} productos</p>
-            </div>
+      {/* DETALLE DE PRODUCTO */}
+      {selectedProduct && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={() => setSelectedProduct(null)}
+        >
+          <div
+            className="bg-white w-full sm:max-w-lg sm:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col animate-slide-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Galería */}
+            <div className="relative h-64 sm:h-80 bg-gradient-to-br from-gray-100 to-gray-200 flex-shrink-0">
+              {selectedProduct.gallery && selectedProduct.gallery.length > 0 ? (
+                <img
+                  src={selectedProduct.gallery[activeImageIndex]}
+                  alt={selectedProduct.name}
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-7xl">📦</div>
+              )}
 
-            <div className="max-h-64 overflow-y-auto p-4 space-y-2">
-              {cartItems.map(item => {
-                const product = products.find(p => p.id === item.productId)
-                if (!product) return null
-                return (
-                  <div key={product.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                    <div className="flex-1">
-                      <div className="font-semibold text-sm text-gray-900">{product.name}</div>
-                      {product.discount && (
-                        <div className="text-xs text-red-600">-{product.discount.percentage}%</div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => updateCartQuantity(product.id, item.quantity - 1)}
-                        className="w-6 h-6 flex items-center justify-center bg-gray-300 rounded hover:bg-gray-400 text-xs font-bold"
-                      >
-                        −
-                      </button>
-                      <span className="w-4 text-center text-xs font-bold">{item.quantity}</span>
-                      <button
-                        onClick={() => updateCartQuantity(product.id, item.quantity + 1)}
-                        className="w-6 h-6 flex items-center justify-center bg-gray-300 rounded hover:bg-gray-400 text-xs font-bold"
-                      >
-                        +
-                      </button>
-                      <button
-                        onClick={() => removeFromCart(product.id)}
-                        className="ml-2 text-red-500 hover:text-red-700 text-xs font-bold"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+              {selectedProduct.discount && (
+                <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full font-black text-sm shadow-lg">
+                  -{selectedProduct.discount.percentage}%
+                </div>
+              )}
 
-            <div className="p-6 border-t border-gray-200 space-y-3">
-              <a
-                href={`https://wa.me/?text=${encodeURIComponent(
-                  `🛒 Pedido desde Los Primos\n\n${cartItems
-                    .map(item => {
-                      const product = products.find(p => p.id === item.productId)
-                      return `• ${product?.name} x${item.quantity}`
-                    })
-                    .join('\n')}\n\nConfirmar disponibilidad`
-                )}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full py-3 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition-all flex items-center justify-center gap-2"
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.67-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.076 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421-7.403h-.004a9.87 9.87 0 00-5.031 1.378c-3.055 2.289-4.909 6.233-4.909 10.33 0 1.455.267 2.858.77 4.187L2.657 22.5l4.383-1.441c1.294.756 2.783 1.166 4.38 1.166 5.64 0 10.233-4.592 10.233-10.233 0-2.65-.997-5.151-2.791-7.035A10.234 10.234 0 0011.052 6.979z" />
-                </svg>
-                Enviar Pedido
-              </a>
               <button
-                onClick={() => setShowCart(false)}
-                className="w-full py-2 bg-gray-200 text-gray-900 rounded-lg font-bold hover:bg-gray-300"
+                onClick={() => setSelectedProduct(null)}
+                className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-lg transition-all"
               >
-                Cerrar
+                <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
+
+              {/* Flechas prev/next, solo si hay más de una foto */}
+              {selectedProduct.gallery && selectedProduct.gallery.length > 1 && (
+                <>
+                  <button
+                    onClick={() =>
+                      setActiveImageIndex(i => (i === 0 ? selectedProduct.gallery!.length - 1 : i - 1))
+                    }
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-lg transition-all"
+                  >
+                    <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() =>
+                      setActiveImageIndex(i => (i === selectedProduct.gallery!.length - 1 ? 0 : i + 1))
+                    }
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-lg transition-all"
+                  >
+                    <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Miniaturas */}
+            {selectedProduct.gallery && selectedProduct.gallery.length > 1 && (
+              <div className="flex gap-2 px-4 pt-3 overflow-x-auto flex-shrink-0">
+                {selectedProduct.gallery.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveImageIndex(idx)}
+                    className={`flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all ${
+                      idx === activeImageIndex ? 'border-blue-900' : 'border-transparent opacity-60'
+                    }`}
+                  >
+                    <img src={img} alt="" className="w-full h-full object-contain bg-gray-50" />
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Info */}
+            <div className="p-5 overflow-y-auto">
+              <h3 className="font-black text-xl text-gray-900 mb-2">{selectedProduct.name}</h3>
+
+              {selectedProduct.description && (
+                <p className="text-sm text-gray-600 mb-4 leading-relaxed">{selectedProduct.description}</p>
+              )}
+
+              {selectedProduct.discount && (
+                <p className="text-sm text-red-600 font-semibold mb-4">🎁 {selectedProduct.discount.name}</p>
+              )}
+
+              {/* Acá van a ir más adelante los emblemas (celíacos, dietético,
+                  sin sal, sin lactosa, etc.) que se puedan cargar por producto */}
+
+              {/* El botón "Agregar al carrito" se sacó temporalmente hasta
+                  que armemos la lista de compra para enviar por WhatsApp */}
             </div>
           </div>
         </div>
       )}
     </div>
-    </PublicLayout>
   )
 }

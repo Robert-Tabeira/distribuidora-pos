@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Header } from '@/components/header'
+import { PublicLayout } from '@/components/public-layout'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import type { Product, Category, Discount } from '@/types/database'
@@ -122,9 +122,13 @@ export default function CatalogPage() {
       )
     }
 
-    // Filtrar por categorías
+    // Filtrar por categorías (matchea tanto si es la categoría principal
+    // seleccionada como si es una subcategoría seleccionada)
     if (selectedCategories.length > 0) {
-      filtered = filtered.filter(p => selectedCategories.includes(p.category_id || ''))
+      filtered = filtered.filter(p =>
+        selectedCategories.includes(p.category_id || '') ||
+        selectedCategories.includes((p as any).subcategory_id || '')
+      )
     }
 
     // Filtrar por descuentos
@@ -146,6 +150,43 @@ export default function CatalogPage() {
     return filtered
   }, [products, searchQuery, selectedCategories, showOnlyDiscounts, sortOption])
 
+  // Agrupa filteredProducts en secciones por categoría (y, dentro de cada
+  // una, por subcategoría si corresponde), respetando el orden y color
+  // que se definieron en Admin → Categorías.
+  const groupedSections = useMemo(() => {
+    const mainCategories = categories
+      .filter(c => !c.parent_id && c.show_in_catalog !== false)
+      .sort((a, b) => a.order_position - b.order_position)
+
+    const sections = mainCategories
+      .map(category => {
+        const subcategories = categories
+          .filter(c => c.parent_id === category.id && c.show_in_catalog !== false)
+          .sort((a, b) => a.order_position - b.order_position)
+
+        const directProducts = filteredProducts.filter(
+          p => p.category_id === category.id && !(p as any).subcategory_id
+        )
+
+        const subGroups = subcategories
+          .map(sub => ({
+            subcategory: sub,
+            products: filteredProducts.filter(p => (p as any).subcategory_id === sub.id)
+          }))
+          .filter(g => g.products.length > 0)
+
+        return { category, directProducts, subGroups }
+      })
+      .filter(s => s.directProducts.length > 0 || s.subGroups.length > 0)
+
+    const categorizedIds = new Set(mainCategories.map(c => c.id))
+    const uncategorized = filteredProducts.filter(
+      p => !p.category_id || !categorizedIds.has(p.category_id)
+    )
+
+    return { sections, uncategorized }
+  }, [filteredProducts, categories])
+
   const cartTotal = cartItems.reduce((sum, item) => sum + item.quantity, 0)
   const activeFilterCount = selectedCategories.length + (showOnlyDiscounts ? 1 : 0)
 
@@ -157,11 +198,54 @@ export default function CatalogPage() {
     )
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* HEADER */}
-      <Header />
+  // Card de producto, reutilizada en cada sección/subsección del catálogo
+  function renderProductCard(product: ProductWithDiscount) {
+    return (
+      <div
+        key={product.id}
+        className="relative bg-white rounded-xl sm:rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col h-full cursor-pointer group"
+        onClick={() => {
+          setSelectedProduct(product)
+          setActiveImageIndex(0)
+        }}
+      >
+        {/* Imagen */}
+        <div className="relative h-28 sm:h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+          {product.gallery?.[0] ? (
+            <img
+              src={product.gallery[0]}
+              alt={product.name}
+              className="w-full h-full object-contain group-hover:opacity-90 transition-opacity"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-5xl">📦</div>
+          )}
+          {product.discount && (
+            <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-red-500 text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full font-black text-[10px] sm:text-sm shadow-lg">
+              -{product.discount.percentage}%
+            </div>
+          )}
+        </div>
 
+        {/* Info - Altura fija */}
+        <div className="p-2.5 sm:p-4 flex flex-col flex-1">
+          <h3 className="font-bold text-gray-900 text-sm sm:text-base line-clamp-2 mb-1 sm:mb-2 flex-1">{product.name}</h3>
+
+          {product.description && (
+            <p className="hidden sm:block text-xs text-gray-600 line-clamp-2 mb-2">{product.description}</p>
+          )}
+
+          {product.discount && (
+            <p className="text-[10px] sm:text-xs text-red-600 font-semibold">🎁 {product.discount.name}</p>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <PublicLayout>
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {/* SIDEBAR FILTROS */}
@@ -201,19 +285,41 @@ export default function CatalogPage() {
               <div className="mb-8">
                 <h4 className="font-bold text-gray-900 mb-4 text-sm uppercase">Categorías</h4>
                 <div className="space-y-3">
-                  {categories.map(category => (
-                    <label key={category.id} className="flex items-center gap-3 cursor-pointer group">
-                      <input
-                        type="checkbox"
-                        checked={selectedCategories.includes(category.id)}
-                        onChange={() => toggleCategory(category.id)}
-                        className="w-5 h-5 rounded border-gray-300 text-blue-900 cursor-pointer"
-                      />
-                      <span className="text-gray-700 group-hover:text-blue-900 transition-colors text-sm">
-                        {category.name}
-                      </span>
-                    </label>
-                  ))}
+                  {categories
+                    .filter(c => !c.parent_id && (c as any).show_in_catalog !== false)
+                    .sort((a, b) => a.order_position - b.order_position)
+                    .map(category => (
+                      <div key={category.id}>
+                        <label className="flex items-center gap-3 cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            checked={selectedCategories.includes(category.id)}
+                            onChange={() => toggleCategory(category.id)}
+                            className="w-5 h-5 rounded border-gray-300 text-blue-900 cursor-pointer"
+                          />
+                          <span className="text-gray-700 group-hover:text-blue-900 transition-colors text-sm font-semibold">
+                            {category.name}
+                          </span>
+                        </label>
+
+                        {categories
+                          .filter(c => c.parent_id === category.id && (c as any).show_in_catalog !== false)
+                          .sort((a, b) => a.order_position - b.order_position)
+                          .map(sub => (
+                            <label key={sub.id} className="flex items-center gap-3 cursor-pointer group pl-8 mt-2">
+                              <input
+                                type="checkbox"
+                                checked={selectedCategories.includes(sub.id)}
+                                onChange={() => toggleCategory(sub.id)}
+                                className="w-4 h-4 rounded border-gray-300 text-blue-900 cursor-pointer"
+                              />
+                              <span className="text-gray-600 group-hover:text-blue-900 transition-colors text-sm">
+                                {sub.name}
+                              </span>
+                            </label>
+                          ))}
+                      </div>
+                    ))}
                 </div>
               </div>
 
@@ -331,48 +437,48 @@ export default function CatalogPage() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
-                {filteredProducts.map(product => (
-                  <div
-                    key={product.id}
-                    className="relative bg-white rounded-xl sm:rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col h-full cursor-pointer group"
-                    onClick={() => {
-                      setSelectedProduct(product)
-                      setActiveImageIndex(0)
-                    }}
-                  >
-                    {/* Imagen */}
-                    <div className="relative h-28 sm:h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
-                      {product.gallery?.[0] ? (
-                        <img
-                          src={product.gallery[0]}
-                          alt={product.name}
-                          className="w-full h-full object-contain group-hover:opacity-90 transition-opacity"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-5xl">📦</div>
-                      )}
-                      {product.discount && (
-                        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-red-500 text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full font-black text-[10px] sm:text-sm shadow-lg">
-                          -{product.discount.percentage}%
+              <div>
+                {groupedSections.sections.map(section => (
+                  <div key={section.category.id} className="mb-10">
+                    <div
+                      className="rounded-2xl px-4 py-3 sm:px-5 sm:py-4 mb-4"
+                      style={{ backgroundColor: (section.category as any).color || '#f3f4f6' }}
+                    >
+                      <h2 className="text-lg sm:text-2xl font-black text-gray-900">{section.category.name}</h2>
+                    </div>
+
+                    {section.directProducts.length > 0 && (
+                      <div className={`grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 ${section.subGroups.length > 0 ? 'mb-6' : ''}`}>
+                        {section.directProducts.map(product => renderProductCard(product))}
+                      </div>
+                    )}
+
+                    {section.subGroups.map((group, idx) => (
+                      <div key={group.subcategory.id} className={idx !== section.subGroups.length - 1 ? 'mb-6' : ''}>
+                        <h3
+                          className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3 pl-3 border-l-4"
+                          style={{ borderColor: (group.subcategory as any).color || '#9ca3af' }}
+                        >
+                          {group.subcategory.name}
+                        </h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+                          {group.products.map(product => renderProductCard(product))}
                         </div>
-                      )}
-                    </div>
-
-                    {/* Info - Altura fija */}
-                    <div className="p-2.5 sm:p-4 flex flex-col flex-1">
-                      <h3 className="font-bold text-gray-900 text-sm sm:text-base line-clamp-2 mb-1 sm:mb-2 flex-1">{product.name}</h3>
-
-                      {product.description && (
-                        <p className="hidden sm:block text-xs text-gray-600 line-clamp-2 mb-2">{product.description}</p>
-                      )}
-
-                      {product.discount && (
-                        <p className="text-[10px] sm:text-xs text-red-600 font-semibold">🎁 {product.discount.name}</p>
-                      )}
-                    </div>
+                      </div>
+                    ))}
                   </div>
                 ))}
+
+                {groupedSections.uncategorized.length > 0 && (
+                  <div className="mb-10">
+                    <div className="rounded-2xl px-4 py-3 sm:px-5 sm:py-4 mb-4 bg-gray-100">
+                      <h2 className="text-lg sm:text-2xl font-black text-gray-900">Otros productos</h2>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+                      {groupedSections.uncategorized.map(product => renderProductCard(product))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -482,5 +588,6 @@ export default function CatalogPage() {
         </div>
       )}
     </div>
+    </PublicLayout>
   )
 }

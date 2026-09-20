@@ -96,7 +96,6 @@ export default function ProductosPage() {
   const [editName, setEditName] = useState('')
   const [editUnits, setEditUnits] = useState<string[]>(['unidad'])
   const [editCategory, setEditCategory] = useState<string | null>(null)
-  const [editSubcategory, setEditSubcategory] = useState<string | null>(null)
   const [editLocation, setEditLocation] = useState('')
   const [editDescription, setEditDescription] = useState('')
   const [editProductCode, setEditProductCode] = useState('')
@@ -162,13 +161,6 @@ export default function ProductosPage() {
     if (!categoryId) return 'Sin categoría'
     const cat = categories.find(c => c.id === categoryId)
     return cat?.name || 'Sin categoría'
-  }
-
-  const getFullCategoryLabel = (product: any) => {
-    const main = getCategoryName(product.category_id)
-    if (!product.subcategory_id) return main
-    const sub = categories.find(c => c.id === product.subcategory_id)
-    return sub ? `${main} › ${sub.name}` : main
   }
 
   // Genera un código automático tipo "Q1", "F2" (letra de la categoría +
@@ -237,7 +229,6 @@ export default function ProductosPage() {
     const units = Array.isArray(product.unit) ? product.unit : [product.unit]
     setEditUnits(units.length > 0 ? units : ['unidad'])
     setEditCategory(product.category_id)
-    setEditSubcategory((product as any).subcategory_id || null)
     setEditLocation(product.location || '')
     setEditDescription(product.description || '')
     setEditProductCode(product.product_code || generateProductCode(product.category_id))
@@ -479,7 +470,6 @@ export default function ProductosPage() {
           name: editName.trim(),
           unit: editUnits,
           category_id: editCategory,
-          subcategory_id: editSubcategory,
           location: newLocation,
           description: editDescription.trim() || null,
           product_code: editProductCode.trim() || null,
@@ -497,7 +487,6 @@ export default function ProductosPage() {
               name: editName.trim(), 
               unit: editUnits, 
               category_id: editCategory, 
-              subcategory_id: editSubcategory,
               location: newLocation,
               description: editDescription.trim() || null,
               product_code: editProductCode.trim() || null,
@@ -539,7 +528,6 @@ export default function ProductosPage() {
           name: editName.trim(),
           unit: editUnits,
           category_id: editCategory,
-          subcategory_id: editSubcategory,
           location: newLocation,
           description: editDescription.trim() || null,
           product_code: editProductCode.trim() || null,
@@ -566,7 +554,6 @@ export default function ProductosPage() {
                 name: editName.trim(),
                 unit: editUnits,
                 category_id: editCategory,
-                subcategory_id: editSubcategory,
                 location: newLocation,
                 description: editDescription.trim() || null,
                 product_code: editProductCode.trim() || null,
@@ -886,7 +873,7 @@ export default function ProductosPage() {
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-text truncate">{product.name}</div>
                     <div className="text-sm text-text-muted">
-                      {getFullCategoryLabel(product)}
+                      {getCategoryName(product.category_id)}
                       {product.location && ` • ${product.location}`}
                       {(product as any).visible_in_catalog === false && (
                         <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gray-200 text-gray-600 align-middle">OCULTO</span>
@@ -1048,37 +1035,15 @@ export default function ProductosPage() {
               <label className="block text-sm font-semibold text-text-muted mb-2">Categoría</label>
               <select
                 value={editCategory || ''}
-                onChange={(e) => {
-                  setEditCategory(e.target.value || null)
-                  setEditSubcategory(null) // la subcategoría vieja puede no pertenecer a la nueva categoría
-                }}
+                onChange={(e) => setEditCategory(e.target.value || null)}
                 className="input"
               >
                 <option value="">Sin categoría</option>
-                {categories.filter(cat => !cat.parent_id).map(cat => (
+                {categories.map(cat => (
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
                 ))}
               </select>
             </div>
-
-            {/* Subcategoría (solo si la categoría elegida tiene) */}
-            {editCategory && categories.some(c => c.parent_id === editCategory) && (
-              <div className="mb-4">
-                <label className="block text-sm font-semibold text-text-muted mb-2">
-                  Subcategoría <span className="text-text-light font-normal">(opcional)</span>
-                </label>
-                <select
-                  value={editSubcategory || ''}
-                  onChange={(e) => setEditSubcategory(e.target.value || null)}
-                  className="input"
-                >
-                  <option value="">Sin subcategoría</option>
-                  {categories.filter(cat => cat.parent_id === editCategory).map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
 
             {/* Ubicación */}
             <div className="mb-4 relative">
@@ -1191,7 +1156,7 @@ export default function ProductosPage() {
                       <div>
                         <div className="font-semibold text-text">{product.name}</div>
                         <div className="text-sm text-text-muted mt-1">
-                          {getFullCategoryLabel(product)}
+                          {getCategoryName(product.category_id)}
                           {product.location && ` • ${product.location}`}
                         </div>
                       </div>
