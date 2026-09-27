@@ -119,7 +119,7 @@ export default function CustomerRegisterPage() {
                 placeholder="tu@email.com"
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-900"
               />
-              <p className="text-xs text-gray-500 mt-1">Para avisos y promociones, si querés recibirlas</p>
+              <p className="text-xs text-gray-500 mt-1">Si olvidás tu código de acceso, te enviaremos uno nuevo a este correo.</p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
