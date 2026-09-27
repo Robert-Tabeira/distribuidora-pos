@@ -22,6 +22,7 @@ export default function CustomerAccountPage() {
   const [pinError, setPinError] = useState('')
   const [pinSuccess, setPinSuccess] = useState('')
   const [changingPin, setChangingPin] = useState(false)
+  const [shoppingLists, setShoppingLists] = useState<{ id: string; created_at: string; items: { product_id: string; product_name: string; quantity: number }[] }[]>([])
 
   useEffect(() => {
     const session = getCustomerSession()
@@ -32,6 +33,9 @@ export default function CustomerAccountPage() {
     setCustomer(session)
     setName(session.name)
     setEmail(session.email || '')
+    supabase.from('customer_shopping_lists').select('id, created_at, items').eq('customer_id', session.id).order('created_at', { ascending: false }).then(({ data }) => {
+      if (data) setShoppingLists(data as typeof shoppingLists)
+    })
   }, [router])
 
   async function handleSave(e: React.FormEvent) {
@@ -117,6 +121,11 @@ export default function CustomerAccountPage() {
     router.push('/catalogo')
   }
 
+  function repeatShoppingList(list: typeof shoppingLists[number]) {
+    localStorage.setItem('los_primos_cart', JSON.stringify(list.items.map(item => ({ productId: item.product_id, quantity: item.quantity }))))
+    router.push('/catalogo')
+  }
+
   if (!customer) {
     return (
       <PublicLayout>
@@ -131,6 +140,12 @@ export default function CustomerAccountPage() {
         <div className="max-w-md mx-auto space-y-4">
           <h1 className="text-2xl font-black text-gray-900 mb-1">Mi Cuenta</h1>
           <p className="text-sm text-gray-600 mb-4">Tus datos y acceso</p>
+
+          <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+            <h2 className="font-bold text-gray-900 text-lg">Mis listas de compras</h2>
+            <p className="text-sm text-gray-500 mt-1 mb-4">Guardá una lista para armarla de nuevo cuando quieras.</p>
+            {shoppingLists.length === 0 ? <p className="text-sm text-gray-500">Todavía no guardaste listas desde el catálogo.</p> : <div className="space-y-3">{shoppingLists.map(list => <div key={list.id} className="border rounded-xl p-3"><div className="flex justify-between items-center gap-3"><p className="font-semibold">{new Date(list.created_at).toLocaleDateString('es-UY')}</p><button onClick={() => repeatShoppingList(list)} className="px-3 py-2 bg-blue-900 text-white rounded-lg text-sm font-semibold">Repetir lista</button></div><ul className="mt-2 text-sm text-gray-600">{list.items.map(item => <li key={item.product_id}>{item.quantity} × {item.product_name}</li>)}</ul></div>)}</div>}
+          </section>
 
           {/* Datos personales */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">

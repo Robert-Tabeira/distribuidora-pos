@@ -5,6 +5,7 @@ import { PublicLayout } from '@/components/public-layout'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import type { Product, Category, Discount } from '@/types/database'
+import { getCustomerSession } from '@/lib/customer-auth'
 
 interface ProductWithDiscount extends Product {
   discount?: Discount
@@ -43,10 +44,16 @@ export default function CatalogPage() {
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sortOption, setSortOption] = useState<'default' | 'name_asc' | 'name_desc' | 'recent'>('default')
+  const [businessPhone, setBusinessPhone] = useState('')
+  const [cartMessage, setCartMessage] = useState('')
+  const [savingList, setSavingList] = useState(false)
 
   useEffect(() => {
     loadData()
     loadCart()
+    supabase.from('website_settings').select('phone_number').single().then(({ data }) => {
+      if (data?.phone_number) setBusinessPhone(data.phone_number.replace(/\\D/g, ''))
+    })
   }, [])
 
   async function loadData() {
@@ -117,6 +124,35 @@ export default function CatalogPage() {
         item.productId === productId ? { ...item, quantity } : item
       ))
     }
+  }
+
+  const cartProducts = cartItems.flatMap(item => {
+    const product = products.find(p => p.id === item.productId)
+    return product ? [{ product, quantity: item.quantity }] : []
+  })
+
+  async function saveShoppingList() {
+    const customer = getCustomerSession()
+    if (!customer) {
+      router.push('/cliente/login?redirect=/catalogo')
+      return
+    }
+    setSavingList(true)
+    setCartMessage('')
+    const { error } = await supabase.from('customer_shopping_lists').insert({
+      customer_id: customer.id,
+      items: cartProducts.map(({ product, quantity }) => ({ product_id: product.id, product_name: product.name, quantity }))
+    })
+    setSavingList(false)
+    setCartMessage(error ? 'No pudimos guardar la lista. Revisá la configuración de la base de datos.' : 'Lista guardada en tu cuenta.')
+  }
+
+  function sendCartToWhatsApp() {
+    const customer = getCustomerSession()
+    const lines = cartProducts.map(({ product, quantity }) => `• ${quantity} x ${product.name}`)
+    const message = `Hola, quiero hacer este pedido${customer ? ` a nombre de ${customer.name}` : ''}:\\n\\n${lines.join('\\n')}`
+    const url = `https://wa.me/${businessPhone}?text=${encodeURIComponent(message)}`
+    window.open(url, '_blank', 'noopener,noreferrer')
   }
 
   const filteredProducts = useMemo(() => {
@@ -379,10 +415,14 @@ export default function CatalogPage() {
             {/* Info y Búsqueda */}
             <div className="mb-6">
               <div className="mb-4">
-                <h2 className="text-2xl sm:text-3xl font-black text-gray-900">Productos</h2>
+                <div className="flex items-start justify-between gap-3">
+                  <div><h2 className="text-2xl sm:text-3xl font-black text-gray-900">Productos</h2>
                 <p className="text-sm text-gray-600 mt-1">
                   {filteredProducts.length} producto{filteredProducts.length !== 1 ? 's' : ''} disponible{filteredProducts.length !== 1 ? 's' : ''}
                 </p>
+                  </div>
+                  <button onClick={() => setShowCart(true)} className="shrink-0 px-4 py-2.5 rounded-xl bg-blue-900 text-white font-bold shadow-sm hover:bg-blue-800">🛒 Lista ({cartTotal})</button>
+                </div>
               </div>
 
               {/* Buscador */}
@@ -614,10 +654,27 @@ export default function CatalogPage() {
               {/* Acá van a ir más adelante los emblemas (celíacos, dietético,
                   sin sal, sin lactosa, etc.) que se puedan cargar por producto */}
 
-              {/* El botón "Agregar al carrito" se sacó temporalmente hasta
-                  que armemos la lista de compra para enviar por WhatsApp */}
+              <button onClick={() => { addToCart(selectedProduct.id); setCartMessage('Agregado a tu lista de compras'); setSelectedProduct(null); setShowCart(true) }} className="w-full mt-2 py-3 rounded-xl bg-blue-900 text-white font-bold hover:bg-blue-800">
+                Agregar a la lista
+              </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {showCart && (
+        <div className="fixed inset-0 z-[60] bg-black/60 flex items-end sm:items-center justify-center sm:p-4" onClick={() => setShowCart(false)}>
+          <section className="bg-white w-full sm:max-w-xl rounded-t-3xl sm:rounded-3xl max-h-[90vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b flex items-center justify-between"><div><h2 className="text-xl font-black">Mi lista de compras</h2><p className="text-sm text-gray-500">{cartTotal} producto{cartTotal !== 1 ? 's' : ''}</p></div><button onClick={() => setShowCart(false)} className="text-2xl text-gray-500" aria-label="Cerrar">×</button></div>
+            <div className="p-5 overflow-y-auto flex-1">
+              {cartProducts.length === 0 ? <p className="text-center text-gray-500 py-10">Todavía no agregaste productos.</p> : <ul className="divide-y">{cartProducts.map(({ product, quantity }) => <li key={product.id} className="py-3 flex items-center gap-3"><div className="flex-1 font-semibold">{product.name}</div><div className="flex items-center gap-2"><button onClick={() => updateCartQuantity(product.id, quantity - 1)} className="w-8 h-8 rounded-lg border">−</button><span className="w-6 text-center">{quantity}</span><button onClick={() => updateCartQuantity(product.id, quantity + 1)} className="w-8 h-8 rounded-lg border">+</button></div><button onClick={() => removeFromCart(product.id)} className="text-red-600 text-sm ml-2">Quitar</button></li>)}</ul>}
+              {cartMessage && <p className="mt-4 text-sm text-blue-800">{cartMessage}</p>}
+            </div>
+            <div className="p-5 border-t space-y-2">
+              <button onClick={saveShoppingList} disabled={!cartProducts.length || savingList} className="w-full py-3 rounded-xl border border-blue-900 text-blue-900 font-bold disabled:opacity-50">{savingList ? 'Guardando…' : 'Guardar lista en mi cuenta'}</button>
+              <button onClick={sendCartToWhatsApp} disabled={!cartProducts.length} className="w-full py-3 rounded-xl bg-green-600 text-white font-bold disabled:opacity-50">Enviar por WhatsApp</button>
+            </div>
+          </section>
         </div>
       )}
     </div>
