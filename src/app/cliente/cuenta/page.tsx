@@ -22,7 +22,7 @@ export default function CustomerAccountPage() {
   const [pinError, setPinError] = useState('')
   const [pinSuccess, setPinSuccess] = useState('')
   const [changingPin, setChangingPin] = useState(false)
-  const [shoppingLists, setShoppingLists] = useState<{ id: string; created_at: string; items: { product_id: string; product_name: string; quantity: number }[] }[]>([])
+  const [shoppingLists, setShoppingLists] = useState<{ id: string; created_at: string; items: { product_id: string; product_name: string; quantity: number; unit?: string; notes?: string }[] }[]>([])
   const [activeSection, setActiveSection] = useState<'lists' | 'details'>('lists')
   const [listsPage, setListsPage] = useState(1)
 
@@ -134,7 +134,7 @@ export default function CustomerAccountPage() {
   }
 
   function repeatShoppingList(list: typeof shoppingLists[number]) {
-    localStorage.setItem('los_primos_cart', JSON.stringify(list.items.map(item => ({ productId: item.product_id, quantity: item.quantity }))))
+    localStorage.setItem('los_primos_cart', JSON.stringify(list.items.map((item, index) => ({ itemId: `${item.product_id}-${item.unit || 'unidad'}-${index}`, productId: item.product_id, quantity: item.quantity, unit: item.unit || 'unidad', notes: item.notes || '' }))))
     router.push('/catalogo')
   }
 
@@ -166,7 +166,7 @@ export default function CustomerAccountPage() {
               <h2 className="font-bold text-gray-900 text-lg">Mis listas de compras</h2>
               <p className="text-sm text-gray-500 mt-1 mb-4">Guardá una lista para armarla de nuevo cuando quieras.</p>
               {shoppingLists.length === 0 ? <p className="text-sm text-gray-500">Todavía no guardaste listas desde el catálogo.</p> : <>
-                <div className="space-y-3">{visibleLists.map(list => <div key={list.id} className="border border-gray-200 rounded-xl p-3 sm:p-4"><div className="flex justify-between items-center gap-3"><p className="font-semibold">{new Date(list.created_at).toLocaleDateString('es-UY')}</p><button onClick={() => repeatShoppingList(list)} className="px-3 py-2 bg-blue-900 text-white rounded-lg text-sm font-semibold hover:bg-blue-800">Repetir lista</button></div><ul className="mt-2 text-sm text-gray-600">{list.items.map((item, index) => <li key={`${item.product_id}-${index}`}>{item.quantity} × {item.product_name}</li>)}</ul></div>)}</div>
+                <div className="space-y-3">{visibleLists.map(list => <div key={list.id} className="border border-gray-200 rounded-xl p-3 sm:p-4"><div className="flex justify-between items-center gap-3"><p className="font-semibold">{new Date(list.created_at).toLocaleDateString('es-UY')}</p><button onClick={() => repeatShoppingList(list)} className="px-3 py-2 bg-blue-900 text-white rounded-lg text-sm font-semibold hover:bg-blue-800">Repetir lista</button></div><ul className="mt-2 text-sm text-gray-600">{list.items.map((item, index) => <li key={`${item.product_id}-${index}`}>{item.quantity} × {item.product_name} <span className="text-gray-400">({item.unit || 'unidad'})</span>{item.notes && <p className="ml-3 text-xs text-gray-500">Nota: {item.notes}</p>}</li>)}</ul></div>)}</div>
                 {totalListPages > 1 && <nav className="flex flex-wrap justify-center items-center gap-1.5 mt-6" aria-label="Páginas de listas">
                   <button disabled={listsPage === 1} onClick={() => setListsPage(page => Math.max(1, page - 1))} className="px-3 py-2 rounded-lg border text-sm disabled:opacity-40">Anterior</button>
                   {getPageNumbers().map((page, index, pages) => <span key={page} className="flex items-center gap-1.5">{index > 0 && page - pages[index - 1] > 1 && <span className="px-1 text-gray-400">…</span>}<button aria-current={page === listsPage ? 'page' : undefined} onClick={() => setListsPage(page)} className={`min-w-9 px-3 py-2 rounded-lg border text-sm font-semibold ${page === listsPage ? 'bg-blue-900 border-blue-900 text-white' : 'hover:bg-gray-50'}`}>{page}</button></span>)}

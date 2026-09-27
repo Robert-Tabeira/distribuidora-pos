@@ -38,7 +38,7 @@ export default function CatalogPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [showOnlyDiscounts, setShowOnlyDiscounts] = useState(false)
-  const [cartItems, setCartItems] = useState<{ productId: string; quantity: number }[]>([])
+  const [cartItems, setCartItems] = useState<{ itemId: string; productId: string; quantity: number; unit: string; notes: string }[]>([])
   const [showCart, setShowCart] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<ProductWithDiscount | null>(null)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
@@ -47,12 +47,14 @@ export default function CatalogPage() {
   const [businessPhone, setBusinessPhone] = useState('')
   const [cartMessage, setCartMessage] = useState('')
   const [savingList, setSavingList] = useState(false)
+  const [selectedProductUnit, setSelectedProductUnit] = useState('unidad')
+  const [productNotes, setProductNotes] = useState('')
 
   useEffect(() => {
     loadData()
     loadCart()
     supabase.from('website_settings').select('phone_number').single().then(({ data }) => {
-      if (data?.phone_number) setBusinessPhone(data.phone_number.replace(/\\D/g, ''))
+      if (data?.phone_number) setBusinessPhone(data.phone_number.replace(/\D/g, ''))
     })
   }, [])
 
@@ -93,7 +95,18 @@ export default function CatalogPage() {
 
   function loadCart() {
     const saved = localStorage.getItem('los_primos_cart')
-    if (saved) setCartItems(JSON.parse(saved))
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed)) setCartItems(parsed.map((item, index) => ({
+          itemId: item.itemId || `${item.productId}-${item.unit || 'unidad'}-${index}`,
+          productId: item.productId,
+          quantity: Number(item.quantity) || 1,
+          unit: item.unit || 'unidad',
+          notes: item.notes || ''
+        })))
+      } catch { localStorage.removeItem('los_primos_cart') }
+    }
   }
 
   function saveCart(items: typeof cartItems) {
@@ -101,34 +114,34 @@ export default function CatalogPage() {
     setCartItems(items)
   }
 
-  function addToCart(productId: string) {
-    const existing = cartItems.find(item => item.productId === productId)
+  function addToCart(productId: string, unit: string, notes: string) {
+    const existing = cartItems.find(item => item.productId === productId && item.unit === unit && item.notes === notes)
     if (existing) {
       saveCart(cartItems.map(item =>
-        item.productId === productId ? { ...item, quantity: item.quantity + 1 } : item
+        item.itemId === existing.itemId ? { ...item, quantity: item.quantity + 1 } : item
       ))
     } else {
-      saveCart([...cartItems, { productId, quantity: 1 }])
+      saveCart([...cartItems, { itemId: `${productId}-${Date.now()}`, productId, quantity: 1, unit, notes }])
     }
   }
 
-  function removeFromCart(productId: string) {
-    saveCart(cartItems.filter(item => item.productId !== productId))
+  function removeFromCart(itemId: string) {
+    saveCart(cartItems.filter(item => item.itemId !== itemId))
   }
 
-  function updateCartQuantity(productId: string, quantity: number) {
+  function updateCartQuantity(itemId: string, quantity: number) {
     if (quantity <= 0) {
-      removeFromCart(productId)
+      removeFromCart(itemId)
     } else {
       saveCart(cartItems.map(item =>
-        item.productId === productId ? { ...item, quantity } : item
+        item.itemId === itemId ? { ...item, quantity } : item
       ))
     }
   }
 
   const cartProducts = cartItems.flatMap(item => {
     const product = products.find(p => p.id === item.productId)
-    return product ? [{ product, quantity: item.quantity }] : []
+    return product ? [{ ...item, product, quantity: item.quantity }] : []
   })
 
   async function saveShoppingList() {
@@ -141,7 +154,7 @@ export default function CatalogPage() {
     setCartMessage('')
     const { error } = await supabase.from('customer_shopping_lists').insert({
       customer_id: customer.id,
-      items: cartProducts.map(({ product, quantity }) => ({ product_id: product.id, product_name: product.name, quantity }))
+      items: cartProducts.map(({ product, quantity, unit, notes }) => ({ product_id: product.id, product_name: product.name, quantity, unit, notes }))
     })
     setSavingList(false)
     setCartMessage(error ? 'No pudimos guardar la lista. Revisá la configuración de la base de datos.' : 'Lista guardada en tu cuenta.')
@@ -149,8 +162,8 @@ export default function CatalogPage() {
 
   function sendCartToWhatsApp() {
     const customer = getCustomerSession()
-    const lines = cartProducts.map(({ product, quantity }) => `• ${quantity} x ${product.name}`)
-    const message = `Hola, quiero hacer este pedido${customer ? ` a nombre de ${customer.name}` : ''}:\\n\\n${lines.join('\\n')}`
+    const lines = cartProducts.map(({ product, quantity, unit, notes }) => `• ${quantity} ${unit === 'caja' ? (quantity === 1 ? 'caja' : 'cajas') : unit === 'funda' ? (quantity === 1 ? 'funda' : 'fundas') : unit === 'unidad' ? (quantity === 1 ? 'unidad' : 'unidades') : unit} de ${product.name}${notes ? `\n  Nota: ${notes}` : ''}`)
+    const message = `Hola, quiero hacer este pedido${customer ? ` a nombre de ${customer.name}` : ''}:\n\n${lines.join('\n')}`
     const url = `https://wa.me/${businessPhone}?text=${encodeURIComponent(message)}`
     window.open(url, '_blank', 'noopener,noreferrer')
   }
@@ -276,6 +289,9 @@ export default function CatalogPage() {
         onClick={() => {
           setSelectedProduct(product)
           setActiveImageIndex(0)
+          const units = Array.isArray(product.unit) ? product.unit : [product.unit]
+          setSelectedProductUnit(units.includes('unidad') ? 'unidad' : units[0] || 'unidad')
+          setProductNotes('')
         }}
       >
         {/* Imagen */}
@@ -651,10 +667,18 @@ export default function CatalogPage() {
                 <p className="text-sm text-red-600 font-semibold mb-4">🎁 {selectedProduct.discount.name}</p>
               )}
 
-              {/* Acá van a ir más adelante los emblemas (celíacos, dietético,
-                  sin sal, sin lactosa, etc.) que se puedan cargar por producto */}
+              {(() => {
+                const units = Array.isArray(selectedProduct.unit) ? selectedProduct.unit : [selectedProduct.unit]
+                const saleOptions = [...new Set(['unidad', ...(units.includes('caja') ? ['caja'] : []), ...(units.includes('funda') ? ['funda'] : [])])]
+                return <div className="mb-4">
+                  <p className="text-sm font-semibold text-gray-700 mb-2">¿Cómo lo querés?</p>
+                  <div className="grid grid-cols-2 gap-2">{saleOptions.map(unit => <button key={unit} onClick={() => setSelectedProductUnit(unit)} className={`py-2.5 px-3 rounded-xl border font-semibold capitalize ${selectedProductUnit === unit ? 'border-blue-900 bg-blue-50 text-blue-900' : 'border-gray-300 text-gray-700'}`}>{unit === 'unidad' ? 'Por unidad' : `Por ${unit}`}</button>)}</div>
+                </div>
+              })()}
+              <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="catalog-product-notes">Anotación para este producto <span className="font-normal text-gray-400">(opcional)</span></label>
+              <textarea id="catalog-product-notes" value={productNotes} onChange={event => setProductNotes(event.target.value)} maxLength={300} rows={3} placeholder="Ej.: sabor, presentación o alguna indicación" className="w-full px-3 py-2 border border-gray-300 rounded-xl resize-y focus:outline-none focus:ring-2 focus:ring-blue-900" />
 
-              <button onClick={() => { addToCart(selectedProduct.id); setCartMessage('Agregado a tu lista de compras'); setSelectedProduct(null); setShowCart(true) }} className="w-full mt-2 py-3 rounded-xl bg-blue-900 text-white font-bold hover:bg-blue-800">
+              <button onClick={() => { addToCart(selectedProduct.id, selectedProductUnit, productNotes.trim()); setCartMessage('Agregado a tu lista de compras'); setSelectedProduct(null); setShowCart(true) }} className="w-full mt-4 py-3 rounded-xl bg-blue-900 text-white font-bold hover:bg-blue-800">
                 Agregar a la lista
               </button>
             </div>
@@ -667,7 +691,7 @@ export default function CatalogPage() {
           <section className="bg-white w-full sm:max-w-xl rounded-t-3xl sm:rounded-3xl max-h-[90vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="p-5 border-b flex items-center justify-between"><div><h2 className="text-xl font-black">Mi lista de compras</h2><p className="text-sm text-gray-500">{cartTotal} producto{cartTotal !== 1 ? 's' : ''}</p></div><button onClick={() => setShowCart(false)} className="text-2xl text-gray-500" aria-label="Cerrar">×</button></div>
             <div className="p-5 overflow-y-auto flex-1">
-              {cartProducts.length === 0 ? <p className="text-center text-gray-500 py-10">Todavía no agregaste productos.</p> : <ul className="divide-y">{cartProducts.map(({ product, quantity }) => <li key={product.id} className="py-3 flex items-center gap-3"><div className="flex-1 font-semibold">{product.name}</div><div className="flex items-center gap-2"><button onClick={() => updateCartQuantity(product.id, quantity - 1)} className="w-8 h-8 rounded-lg border">−</button><span className="w-6 text-center">{quantity}</span><button onClick={() => updateCartQuantity(product.id, quantity + 1)} className="w-8 h-8 rounded-lg border">+</button></div><button onClick={() => removeFromCart(product.id)} className="text-red-600 text-sm ml-2">Quitar</button></li>)}</ul>}
+              {cartProducts.length === 0 ? <p className="text-center text-gray-500 py-10">Todavía no agregaste productos.</p> : <ul className="divide-y">{cartProducts.map(({ itemId, product, quantity, unit, notes }) => <li key={itemId} className="py-3"><div className="flex items-center gap-3"><div className="flex-1 min-w-0"><p className="font-semibold">{product.name}</p><p className="text-xs text-gray-500 capitalize">Por {unit}</p></div><div className="flex items-center gap-2"><button onClick={() => updateCartQuantity(itemId, quantity - 1)} className="w-8 h-8 rounded-lg border">−</button><span className="w-6 text-center">{quantity}</span><button onClick={() => updateCartQuantity(itemId, quantity + 1)} className="w-8 h-8 rounded-lg border">+</button></div><button onClick={() => removeFromCart(itemId)} className="text-red-600 text-sm ml-2">Quitar</button></div>{notes && <p className="text-sm text-gray-600 mt-2">Nota: {notes}</p>}</li>)}</ul>}
               {cartMessage && <p className="mt-4 text-sm text-blue-800">{cartMessage}</p>}
             </div>
             <div className="p-5 border-t space-y-2">
