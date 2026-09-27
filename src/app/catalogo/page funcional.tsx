@@ -165,25 +165,6 @@ export default function CatalogPage() {
   // que se definieron en Admin → Categorías.
   const groupedSections = useMemo(() => {
     const cats = categories as CategoryExt[]
-    const catsById = new Map(cats.map(c => [c.id, c]))
-
-    // Productos cargados ANTES de que existieran las subcategorías pueden
-    // tener category_id apuntando directo a lo que hoy es una subcategoría
-    // (en vez de usar category_id=padre + subcategory_id=hijo). Acá lo
-    // "traducimos" al vuelo, sin tener que re-editar esos productos.
-    function resolveProductCategory(p: ProductWithDiscount) {
-      let categoryId = p.category_id
-      let subcategoryId = (p as any).subcategory_id || null
-
-      if (categoryId) {
-        const catRow = catsById.get(categoryId)
-        if (catRow?.parent_id) {
-          subcategoryId = subcategoryId || categoryId
-          categoryId = catRow.parent_id
-        }
-      }
-      return { categoryId, subcategoryId }
-    }
 
     const mainCategories = cats
       .filter(c => !c.parent_id && c.show_in_catalog !== false)
@@ -193,17 +174,16 @@ export default function CatalogPage() {
       .map(category => {
         const subcategories = cats
           .filter(c => c.parent_id === category.id && c.show_in_catalog !== false)
-          .sort((a, b) => a.name.localeCompare(b.name, 'es')) // orden alfabético
+          .sort((a, b) => a.order_position - b.order_position)
 
-        const directProducts = filteredProducts.filter(p => {
-          const r = resolveProductCategory(p)
-          return r.categoryId === category.id && !r.subcategoryId
-        })
+        const directProducts = filteredProducts.filter(
+          p => p.category_id === category.id && !(p as any).subcategory_id
+        )
 
         const subGroups = subcategories
           .map(sub => ({
             subcategory: sub,
-            products: filteredProducts.filter(p => resolveProductCategory(p).subcategoryId === sub.id)
+            products: filteredProducts.filter(p => (p as any).subcategory_id === sub.id)
           }))
           .filter(g => g.products.length > 0)
 
@@ -212,10 +192,9 @@ export default function CatalogPage() {
       .filter(s => s.directProducts.length > 0 || s.subGroups.length > 0)
 
     const categorizedIds = new Set(mainCategories.map(c => c.id))
-    const uncategorized = filteredProducts.filter(p => {
-      const r = resolveProductCategory(p)
-      return !r.categoryId || !categorizedIds.has(r.categoryId)
-    })
+    const uncategorized = filteredProducts.filter(
+      p => !p.category_id || !categorizedIds.has(p.category_id)
+    )
 
     return { sections, uncategorized }
   }, [filteredProducts, categories])
@@ -287,7 +266,7 @@ export default function CatalogPage() {
               sidebarOpen ? 'block' : 'hidden'
             } md:col-span-1`}
           >
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm md:sticky md:top-24 md:max-h-[calc(100vh-7rem)] md:overflow-y-auto">
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm md:sticky md:top-24">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-black text-lg text-gray-900">Filtros</h3>
                 <button
