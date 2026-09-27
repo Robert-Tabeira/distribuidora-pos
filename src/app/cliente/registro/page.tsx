@@ -1,21 +1,21 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { PublicLayout } from '@/components/public-layout'
 import { supabase } from '@/lib/supabase'
-import { hashPin, normalizePhone, saveCustomerSession } from '@/lib/customer-auth'
+import { hashPin, normalizePhone } from '@/lib/customer-auth'
 import Link from 'next/link'
 
 export default function CustomerRegisterPage() {
-  const router = useRouter()
   const [name, setName] = useState('')
+  const [businessName, setBusinessName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [pin, setPin] = useState('')
   const [pinConfirm, setPinConfirm] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [submitted, setSubmitted] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -24,6 +24,7 @@ export default function CustomerRegisterPage() {
     const cleanPhone = normalizePhone(phone)
 
     if (!name.trim()) return setError('Ingresá tu nombre')
+    if (!businessName.trim()) return setError('Ingresá el nombre del comercio')
     if (cleanPhone.length < 8) return setError('Ingresá un teléfono válido')
     if (pin.length < 4 || pin.length > 6 || !/^\d+$/.test(pin)) {
       return setError('El código debe tener entre 4 y 6 números')
@@ -38,9 +39,11 @@ export default function CustomerRegisterPage() {
         .from('customers')
         .insert([{
           name: name.trim(),
+          business_name: businessName.trim(),
           phone: cleanPhone,
           email: email.trim() || null,
-          pin_hash: pinHash
+          pin_hash: pinHash,
+          approval_status: 'pending'
         }])
         .select()
         .single()
@@ -54,8 +57,7 @@ export default function CustomerRegisterPage() {
         return
       }
 
-      saveCustomerSession(data)
-      router.push('/catalogo')
+      setSubmitted(true)
     } catch (err) {
       console.error('Error al registrar:', err)
       setError('No pudimos crear tu cuenta. Intentá de nuevo.')
@@ -68,8 +70,14 @@ export default function CustomerRegisterPage() {
     <PublicLayout>
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
+          {submitted ? <>
+            <div className="text-4xl mb-3">🕒</div>
+            <h1 className="text-2xl font-black text-gray-900 mb-3">Solicitud recibida</h1>
+            <p className="text-sm text-gray-700 leading-relaxed">Revisaremos los datos del comercio y el teléfono indicado. La respuesta puede demorar hasta 24 horas. El acceso para realizar pedidos queda sujeto a la evaluación y aprobación de Distribuidora Los Primos; el envío de la solicitud no garantiza su aprobación.</p>
+            <Link href="/catalogo" className="block text-center mt-6 w-full py-3 bg-blue-900 text-white rounded-xl font-bold hover:bg-blue-800">Volver al catálogo</Link>
+          </> : <>
           <h1 className="text-2xl font-black text-gray-900 mb-1">Creá tu cuenta</h1>
-          <p className="text-sm text-gray-600 mb-6">Para armar y guardar tus pedidos</p>
+          <p className="text-sm text-gray-600 mb-6">Solicitá acceso para realizar pedidos como comercio.</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -84,6 +92,11 @@ export default function CustomerRegisterPage() {
             </div>
 
             <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nombre del comercio</label>
+              <input type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="Almacén, kiosco, restaurante..." className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-900" />
+            </div>
+
+            <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Teléfono</label>
               <input
                 type="tel"
@@ -92,7 +105,7 @@ export default function CustomerRegisterPage() {
                 placeholder="099 123 456"
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-900"
               />
-              <p className="text-xs text-gray-500 mt-1">Con esto vas a iniciar sesión</p>
+              <p className="text-xs text-gray-500 mt-1">Usá el teléfono desde el que habitualmente enviás los pedidos.</p>
             </div>
 
             <div>
@@ -155,6 +168,7 @@ export default function CustomerRegisterPage() {
               Iniciar sesión
             </Link>
           </p>
+          </>}
         </div>
       </div>
     </PublicLayout>

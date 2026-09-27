@@ -40,6 +40,13 @@ export default function CustomerLoginPage() {
         return
       }
 
+      if (data.approval_status !== 'approved') {
+        setError(data.approval_status === 'rejected'
+          ? 'La solicitud de acceso de este comercio no fue aprobada. Si necesitás más información, comunicate con Distribuidora Los Primos.'
+          : 'La solicitud de este comercio está pendiente de revisión. La aprobación puede demorar hasta 24 horas.')
+        return
+      }
+
       await supabase
         .from('customers')
         .update({ last_login_at: new Date().toISOString() })

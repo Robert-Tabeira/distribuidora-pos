@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { PublicLayout } from '@/components/public-layout'
-import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import type { Product, Category, Discount } from '@/types/database'
 import { getCustomerSession } from '@/lib/customer-auth'
@@ -31,7 +31,6 @@ function normalizeText(text: string) {
 }
 
 export default function CatalogPage() {
-  const router = useRouter()
   const [products, setProducts] = useState<ProductWithDiscount[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
@@ -125,6 +124,38 @@ export default function CatalogPage() {
     }
   }
 
+  async function getOrderAccess() {
+    const customer = getCustomerSession()
+    if (!customer) return { status: 'anonymous' }
+    const { data, error } = await supabase.from('customers').select('approval_status').eq('id', customer.id).single()
+    if (error) return { status: 'check_failed' }
+    return { status: data?.approval_status || 'pending' }
+  }
+
+  function showAccessMessage(status: string) {
+    setCartMessage(status === 'anonymous'
+      ? 'Para realizar pedidos, necesitás registrarte como comercio y esperar la aprobación.'
+      : status === 'rejected'
+        ? 'La solicitud de este comercio no fue aprobada. Comunicate con Distribuidora Los Primos si necesitás más información.'
+        : status === 'check_failed'
+          ? 'No pudimos verificar el acceso. Intentá de nuevo más tarde.'
+          : 'La solicitud del comercio está pendiente de revisión. La aprobación puede demorar hasta 24 horas.')
+    setShowCart(true)
+  }
+
+  async function handleAddToCart() {
+    const access = await getOrderAccess()
+    if (access.status !== 'approved') {
+      setSelectedProduct(null)
+      showAccessMessage(access.status)
+      return
+    }
+    if (selectedProduct) addToCart(selectedProduct.id, selectedProductUnit, productNotes.trim())
+    setCartMessage('Agregado a tu lista de compras')
+    setSelectedProduct(null)
+    setShowCart(true)
+  }
+
   function removeFromCart(itemId: string) {
     saveCart(cartItems.filter(item => item.itemId !== itemId))
   }
@@ -145,11 +176,12 @@ export default function CatalogPage() {
   })
 
   async function saveShoppingList() {
-    const customer = getCustomerSession()
-    if (!customer) {
-      router.push('/cliente/login?redirect=/catalogo')
+    const access = await getOrderAccess()
+    if (access.status !== 'approved') {
+      showAccessMessage(access.status)
       return
     }
+    const customer = getCustomerSession()!
     setSavingList(true)
     setCartMessage('')
     const { error } = await supabase.from('customer_shopping_lists').insert({
@@ -161,11 +193,21 @@ export default function CatalogPage() {
   }
 
   function sendCartToWhatsApp() {
-    const customer = getCustomerSession()
-    const lines = cartProducts.map(({ product, quantity, unit, notes }) => `• ${quantity} ${unit === 'caja' ? (quantity === 1 ? 'caja' : 'cajas') : unit === 'funda' ? (quantity === 1 ? 'funda' : 'fundas') : unit === 'unidad' ? (quantity === 1 ? 'unidad' : 'unidades') : unit} de ${product.name}${notes ? `\n  Nota: ${notes}` : ''}`)
-    const message = `Hola, quiero hacer este pedido${customer ? ` a nombre de ${customer.name}` : ''}:\n\n${lines.join('\n')}`
-    const url = `https://wa.me/${businessPhone}?text=${encodeURIComponent(message)}`
-    window.open(url, '_blank', 'noopener,noreferrer')
+    const popup = window.open('about:blank', '_blank')
+    void (async () => {
+      const access = await getOrderAccess()
+      if (access.status !== 'approved') {
+        popup?.close()
+        showAccessMessage(access.status)
+        return
+      }
+      const customer = getCustomerSession()
+      const lines = cartProducts.map(({ product, quantity, unit, notes }) => `• ${quantity} ${unit === 'caja' ? (quantity === 1 ? 'caja' : 'cajas') : unit === 'funda' ? (quantity === 1 ? 'funda' : 'fundas') : unit === 'unidad' ? (quantity === 1 ? 'unidad' : 'unidades') : unit} de ${product.name}${notes ? `\n  Nota: ${notes}` : ''}`)
+      const message = `Hola, quiero hacer este pedido a nombre de ${customer?.name || ''}${customer?.business_name ? `, del comercio ${customer.business_name}` : ''}:\n\n${lines.join('\n')}`
+      const url = `https://wa.me/${businessPhone}?text=${encodeURIComponent(message)}`
+      if (popup) popup.location.href = url
+      else window.location.href = url
+    })()
   }
 
   const filteredProducts = useMemo(() => {
@@ -678,7 +720,7 @@ export default function CatalogPage() {
               <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="catalog-product-notes">Anotación para este producto <span className="font-normal text-gray-400">(opcional)</span></label>
               <textarea id="catalog-product-notes" value={productNotes} onChange={event => setProductNotes(event.target.value)} maxLength={300} rows={3} placeholder="Ej.: sabor, presentación o alguna indicación" className="w-full px-3 py-2 border border-gray-300 rounded-xl resize-y focus:outline-none focus:ring-2 focus:ring-blue-900" />
 
-              <button onClick={() => { addToCart(selectedProduct.id, selectedProductUnit, productNotes.trim()); setCartMessage('Agregado a tu lista de compras'); setSelectedProduct(null); setShowCart(true) }} className="w-full mt-4 py-3 rounded-xl bg-blue-900 text-white font-bold hover:bg-blue-800">
+              <button onClick={handleAddToCart} className="w-full mt-4 py-3 rounded-xl bg-blue-900 text-white font-bold hover:bg-blue-800">
                 Agregar a la lista
               </button>
             </div>
@@ -692,7 +734,7 @@ export default function CatalogPage() {
             <div className="p-5 border-b flex items-center justify-between"><div><h2 className="text-xl font-black">Mi lista de compras</h2><p className="text-sm text-gray-500">{cartTotal} producto{cartTotal !== 1 ? 's' : ''}</p></div><button onClick={() => setShowCart(false)} className="text-2xl text-gray-500" aria-label="Cerrar">×</button></div>
             <div className="p-5 overflow-y-auto flex-1">
               {cartProducts.length === 0 ? <p className="text-center text-gray-500 py-10">Todavía no agregaste productos.</p> : <ul className="divide-y">{cartProducts.map(({ itemId, product, quantity, unit, notes }) => <li key={itemId} className="py-3"><div className="flex items-center gap-3"><div className="flex-1 min-w-0"><p className="font-semibold">{product.name}</p><p className="text-xs text-gray-500 capitalize">Por {unit}</p></div><div className="flex items-center gap-2"><button onClick={() => updateCartQuantity(itemId, quantity - 1)} className="w-8 h-8 rounded-lg border">−</button><span className="w-6 text-center">{quantity}</span><button onClick={() => updateCartQuantity(itemId, quantity + 1)} className="w-8 h-8 rounded-lg border">+</button></div><button onClick={() => removeFromCart(itemId)} className="text-red-600 text-sm ml-2">Quitar</button></div>{notes && <p className="text-sm text-gray-600 mt-2">Nota: {notes}</p>}</li>)}</ul>}
-              {cartMessage && <p className="mt-4 text-sm text-blue-800">{cartMessage}</p>}
+              {cartMessage && <div className="mt-4 text-sm text-blue-900 bg-blue-50 border border-blue-100 rounded-xl p-3"><p>{cartMessage}</p>{cartMessage.includes('registrarte') && <p className="mt-2"><Link href="/cliente/registro" className="font-bold underline">Solicitar acceso</Link>{' · '}<Link href="/cliente/login" className="font-bold underline">Iniciar sesión</Link></p>}{cartMessage.includes('pendiente') && <p className="mt-2"><Link href="/cliente/login" className="font-bold underline">Consultar estado</Link></p>}</div>}
             </div>
             <div className="p-5 border-t space-y-2">
               <button onClick={saveShoppingList} disabled={!cartProducts.length || savingList} className="w-full py-3 rounded-xl border border-blue-900 text-blue-900 font-bold disabled:opacity-50">{savingList ? 'Guardando…' : 'Guardar lista en mi cuenta'}</button>

@@ -9,10 +9,12 @@ export default function AdminClientesPage() {
   const router = useRouter()
   const [admin, setAdmin] = useState<any>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending')
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
   const [resettingId, setResettingId] = useState<string | null>(null)
   const [newPin, setNewPin] = useState<string | null>(null)
+  const [updatingApprovalId, setUpdatingApprovalId] = useState<string | null>(null)
 
   useEffect(() => {
     const stored = localStorage.getItem('employee')
@@ -58,11 +60,25 @@ export default function AdminClientesPage() {
     }
   }
 
+  async function setApproval(customer: Customer, status: 'approved' | 'rejected') {
+    setUpdatingApprovalId(customer.id)
+    const { error } = await supabase.from('customers').update({ approval_status: status }).eq('id', customer.id)
+    if (error) {
+      console.error('Error al actualizar aprobación:', error)
+      alert('No se pudo actualizar la solicitud')
+    } else {
+      setCustomers(current => current.map(item => item.id === customer.id ? { ...item, approval_status: status } : item))
+    }
+    setUpdatingApprovalId(null)
+  }
+
   const filtered = customers.filter(c => {
+    if (statusFilter !== 'all' && (c.approval_status || 'approved') !== statusFilter) return false
     const q = normalizePhone(searchQuery)
     if (!searchQuery.trim()) return true
     return (
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.business_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (q && normalizePhone(c.phone).includes(q))
     )
   })
@@ -78,7 +94,7 @@ export default function AdminClientesPage() {
           </button>
           <div>
             <h1 className="text-2xl font-black text-gray-900">Clientes</h1>
-            <p className="text-sm text-gray-600">Buscar y resetear códigos de acceso</p>
+            <p className="text-sm text-gray-600">Revisar solicitudes, aprobar comercios y gestionar accesos</p>
           </div>
         </div>
       </header>
@@ -92,6 +108,19 @@ export default function AdminClientesPage() {
           className="w-full px-4 py-3 border border-gray-300 rounded-xl mb-6 focus:outline-none focus:ring-2 focus:ring-blue-900"
         />
 
+        <div className="flex gap-2 overflow-x-auto mb-6">
+          {([
+            ['pending', 'Pendientes'],
+            ['approved', 'Aprobados'],
+            ['rejected', 'No aprobados'],
+            ['all', 'Todos']
+          ] as const).map(([status, label]) => (
+            <button key={status} onClick={() => setStatusFilter(status)} className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap ${statusFilter === status ? 'bg-blue-900 text-white' : 'bg-white border text-gray-700 hover:bg-gray-50'}`}>
+              {label}{status === 'pending' && <span className="ml-2">{customers.filter(customer => customer.approval_status === 'pending').length}</span>}
+            </button>
+          ))}
+        </div>
+
         {filtered.length === 0 ? (
           <p className="text-center text-gray-500 py-12">No hay clientes que coincidan</p>
         ) : (
@@ -99,16 +128,15 @@ export default function AdminClientesPage() {
             {filtered.map(customer => (
               <div key={customer.id} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="font-semibold text-gray-900">{customer.name}</p>
+                  <div className="flex items-center gap-2 flex-wrap"><p className="font-semibold text-gray-900">{customer.business_name || customer.name}</p><span className={`text-xs px-2 py-1 rounded-full font-semibold ${customer.approval_status === 'approved' ? 'bg-green-100 text-green-800' : customer.approval_status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>{customer.approval_status === 'approved' ? 'Aprobado' : customer.approval_status === 'rejected' ? 'No aprobado' : 'Pendiente'}</span></div>
+                  {customer.business_name && <p className="text-sm text-gray-700">Contacto: {customer.name}</p>}
                   <p className="text-sm text-gray-600">{customer.phone}{customer.email ? ` • ${customer.email}` : ''}</p>
                 </div>
-                <button
-                  onClick={() => resetPin(customer)}
-                  disabled={resettingId === customer.id}
-                  className="px-4 py-2 bg-blue-900 text-white rounded-lg font-semibold text-sm hover:bg-blue-800 disabled:opacity-50 flex-shrink-0"
-                >
-                  {resettingId === customer.id ? 'Generando...' : 'Restablecer código'}
-                </button>
+                <div className="flex flex-wrap justify-end gap-2 flex-shrink-0">
+                  {customer.approval_status !== 'approved' && <button onClick={() => setApproval(customer, 'approved')} disabled={updatingApprovalId === customer.id} className="px-3 py-2 bg-green-700 text-white rounded-lg font-semibold text-sm hover:bg-green-800 disabled:opacity-50">Aprobar</button>}
+                  {customer.approval_status !== 'rejected' && <button onClick={() => setApproval(customer, 'rejected')} disabled={updatingApprovalId === customer.id} className="px-3 py-2 border border-red-300 text-red-700 rounded-lg font-semibold text-sm hover:bg-red-50 disabled:opacity-50">No aprobar</button>}
+                  <button onClick={() => resetPin(customer)} disabled={resettingId === customer.id} className="px-3 py-2 bg-blue-900 text-white rounded-lg font-semibold text-sm hover:bg-blue-800 disabled:opacity-50">{resettingId === customer.id ? 'Generando...' : 'Restablecer código'}</button>
+                </div>
               </div>
             ))}
           </div>

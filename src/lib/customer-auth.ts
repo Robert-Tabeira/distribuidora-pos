@@ -19,9 +19,11 @@ export function normalizePhone(phone: string): string {
 export interface Customer {
   id: string
   name: string
+  business_name?: string | null
   phone: string
   email: string | null
   created_at: string
+  approval_status?: 'pending' | 'approved' | 'rejected'
 }
 
 const STORAGE_KEY = 'customer'
