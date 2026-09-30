@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { PublicLayout } from '@/components/public-layout'
 import { supabase } from '@/lib/supabase'
 import { getCustomerSession, saveCustomerSession, clearCustomerSession, hashPin, type Customer } from '@/lib/customer-auth'
+import { isCustomerOrderingEnabled } from '@/lib/customer-ordering'
+import { CustomerOrderingUnavailable } from '@/components/customer-ordering-unavailable'
 
 export default function CustomerAccountPage() {
   const router = useRouter()
@@ -25,6 +27,8 @@ export default function CustomerAccountPage() {
   const [shoppingLists, setShoppingLists] = useState<{ id: string; created_at: string; items: { product_id: string; product_name: string; quantity: number; unit?: string; notes?: string }[] }[]>([])
   const [activeSection, setActiveSection] = useState<'lists' | 'details'>('lists')
   const [listsPage, setListsPage] = useState(1)
+  const [featureChecked, setFeatureChecked] = useState(false)
+  const [featureEnabled, setFeatureEnabled] = useState(false)
 
   const listsPerPage = 10
   const totalListPages = Math.ceil(shoppingLists.length / listsPerPage)
@@ -37,6 +41,10 @@ export default function CustomerAccountPage() {
   }
 
   useEffect(() => {
+    isCustomerOrderingEnabled().then(enabled => {
+      setFeatureEnabled(enabled)
+      setFeatureChecked(true)
+    })
     const session = getCustomerSession()
     if (!session) {
       router.push('/cliente/login')
@@ -138,12 +146,18 @@ export default function CustomerAccountPage() {
     router.push('/catalogo')
   }
 
-  if (!customer) {
+  if (!featureChecked) {
     return (
       <PublicLayout>
-        <div className="min-h-screen flex items-center justify-center text-gray-500">Cargando...</div>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12 text-gray-500">Cargando...</div>
       </PublicLayout>
     )
+  }
+
+  if (!featureEnabled) return <PublicLayout><div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12"><CustomerOrderingUnavailable /></div></PublicLayout>
+
+  if (!customer) {
+    return <PublicLayout><div className="min-h-screen flex items-center justify-center text-gray-500">Cargando...</div></PublicLayout>
   }
 
   return (

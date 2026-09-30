@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { PublicLayout } from '@/components/public-layout'
 import { supabase } from '@/lib/supabase'
 import { hashPin, normalizePhone, saveCustomerSession } from '@/lib/customer-auth'
 import Link from 'next/link'
+import { isCustomerOrderingEnabled } from '@/lib/customer-ordering'
+import { CustomerOrderingUnavailable } from '@/components/customer-ordering-unavailable'
 
 export default function CustomerLoginPage() {
   const router = useRouter()
@@ -13,6 +15,15 @@ export default function CustomerLoginPage() {
   const [pin, setPin] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [featureChecked, setFeatureChecked] = useState(false)
+  const [featureEnabled, setFeatureEnabled] = useState(false)
+
+  useEffect(() => {
+    isCustomerOrderingEnabled().then(enabled => {
+      setFeatureEnabled(enabled)
+      setFeatureChecked(true)
+    })
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -65,7 +76,7 @@ export default function CustomerLoginPage() {
   return (
     <PublicLayout>
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
+        {!featureChecked ? <p className="text-gray-500">Cargando...</p> : !featureEnabled ? <CustomerOrderingUnavailable /> : <div className="w-full max-w-md bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
           <h1 className="text-2xl font-black text-gray-900 mb-1">Iniciar sesión</h1>
           <p className="text-sm text-gray-600 mb-6">Para armar y mandar tu pedido</p>
 
@@ -117,7 +128,7 @@ export default function CustomerLoginPage() {
               Registrate
             </Link>
           </p>
-        </div>
+        </div>}
       </div>
     </PublicLayout>
   )

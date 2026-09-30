@@ -22,6 +22,7 @@ interface WebsiteSettings {
   show_email?: boolean
   show_address?: boolean
   show_business_hours?: boolean
+  customer_orders_enabled?: boolean
   color_palette?: ColorSwatch[]
   site_name?: string
   site_tagline?: string
@@ -425,7 +426,8 @@ export default function WebsiteEditionPage() {
     show_phone: true,
     show_email: true,
     show_address: true,
-    show_business_hours: true
+    show_business_hours: true,
+    customer_orders_enabled: false
   })
   const [savingSettings, setSavingSettings] = useState(false)
   const [settingsMessage, setSettingsMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -580,7 +582,8 @@ export default function WebsiteEditionPage() {
           show_phone: settingsRes.data.show_phone !== false,
           show_email: settingsRes.data.show_email !== false,
           show_address: settingsRes.data.show_address !== false,
-          show_business_hours: settingsRes.data.show_business_hours !== false
+          show_business_hours: settingsRes.data.show_business_hours !== false,
+          customer_orders_enabled: settingsRes.data.customer_orders_enabled === true
         })
         if (settingsRes.data.color_palette && settingsRes.data.color_palette.length > 0) {
           setPalette(settingsRes.data.color_palette as ColorSwatch[])
@@ -670,6 +673,7 @@ export default function WebsiteEditionPage() {
         show_email: settingsForm.show_email,
         show_address: settingsForm.show_address,
         show_business_hours: settingsForm.show_business_hours,
+        customer_orders_enabled: settingsForm.customer_orders_enabled,
         updated_at: new Date().toISOString()
       }
 
@@ -1586,6 +1590,23 @@ export default function WebsiteEditionPage() {
                   className="input"
                 />
               </div>
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <h4 className="font-bold text-lg mb-2">Pedidos desde el catálogo</h4>
+              <p className="text-sm text-text-muted mb-4">Al desactivarlo, se ocultan el carrito, el envío por WhatsApp y las opciones para clientes. Los productos siguen visibles en el catálogo.</p>
+              <label className="flex items-start gap-3 cursor-pointer rounded-xl border border-border p-4">
+                <input
+                  type="checkbox"
+                  checked={settingsForm.customer_orders_enabled}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, customer_orders_enabled: e.target.checked })}
+                  className="w-5 h-5 rounded border-gray-300 mt-0.5"
+                />
+                <span>
+                  <span className="block font-semibold text-gray-800">Habilitar pedidos de clientes</span>
+                  <span className="block text-sm text-gray-500 mt-1">Desactivado por defecto. Podés volver a habilitarlo cuando quieras.</span>
+                </span>
+              </label>
             </div>
 
             {/* Visibilidad de Datos */}

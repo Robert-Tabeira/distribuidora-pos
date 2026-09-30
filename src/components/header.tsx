@@ -19,6 +19,7 @@ interface WebsiteSettings {
   logo_url: string | null
   use_logo_image: boolean
   logo_link_url: string
+  customer_orders_enabled?: boolean
 }
 
 interface MenuLink {
@@ -132,6 +133,7 @@ export function Header() {
 
   const siteName = settings?.site_name || 'Los Primos'
   const siteTagline = settings?.site_tagline || 'Distribuidora Oficial Sarubbi'
+  const visibleMenuLinks = menuLinks.filter(link => settings?.customer_orders_enabled === true || !/^\/cliente(?:\/|$)/.test(link.url))
 
   return (
     <header
@@ -170,7 +172,7 @@ export function Header() {
 
           {/* Nav Links - Desktop */}
           <nav className="hidden md:flex gap-7">
-            {menuLinks.map(link => {
+            {visibleMenuLinks.map(link => {
               const active = isActive(link.url)
               return (
                 <Link
@@ -284,7 +286,7 @@ export function Header() {
             </div>
 
             {/* Menú hamburguesa - Mobile */}
-            {(menuLinks.length > 0 || hasBusinessInfo) && (
+            {(visibleMenuLinks.length > 0 || hasBusinessInfo) && (
               <button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
                 className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg transition-all hover:opacity-70"
@@ -305,11 +307,11 @@ export function Header() {
         </div>
 
         {/* Menú - Mobile: tarjeta con links + info del negocio */}
-        {showMobileMenu && (menuLinks.length > 0 || hasBusinessInfo) && (
+        {showMobileMenu && (visibleMenuLinks.length > 0 || hasBusinessInfo) && (
           <div className="md:hidden mt-3 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-            {menuLinks.length > 0 && (
+            {visibleMenuLinks.length > 0 && (
               <nav className="p-2">
-                {menuLinks.map(link => {
+                {visibleMenuLinks.map(link => {
                   const active = isActive(link.url)
                   return (
                     <Link
@@ -333,7 +335,7 @@ export function Header() {
             )}
 
             {hasBusinessInfo && (
-              <div className={`p-4 space-y-4 ${menuLinks.length > 0 ? 'border-t border-gray-100' : ''}`}>
+              <div className={`p-4 space-y-4 ${visibleMenuLinks.length > 0 ? 'border-t border-gray-100' : ''}`}>
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">Datos del negocio</p>
 
                 {settings?.show_phone && settings?.phone_number && (

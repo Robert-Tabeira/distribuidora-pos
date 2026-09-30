@@ -1,10 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { PublicLayout } from '@/components/public-layout'
 import { supabase } from '@/lib/supabase'
 import { hashPin, normalizePhone } from '@/lib/customer-auth'
 import Link from 'next/link'
+import { isCustomerOrderingEnabled } from '@/lib/customer-ordering'
+import { CustomerOrderingUnavailable } from '@/components/customer-ordering-unavailable'
 
 export default function CustomerRegisterPage() {
   const [name, setName] = useState('')
@@ -16,6 +18,15 @@ export default function CustomerRegisterPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [featureChecked, setFeatureChecked] = useState(false)
+  const [featureEnabled, setFeatureEnabled] = useState(false)
+
+  useEffect(() => {
+    isCustomerOrderingEnabled().then(enabled => {
+      setFeatureEnabled(enabled)
+      setFeatureChecked(true)
+    })
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -69,7 +80,7 @@ export default function CustomerRegisterPage() {
   return (
     <PublicLayout>
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
+        {!featureChecked ? <p className="text-gray-500">Cargando...</p> : !featureEnabled ? <CustomerOrderingUnavailable /> : <div className="w-full max-w-md bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
           {submitted ? <>
             <div className="text-4xl mb-3">🕒</div>
             <h1 className="text-2xl font-black text-gray-900 mb-3">Solicitud recibida</h1>
@@ -169,7 +180,7 @@ export default function CustomerRegisterPage() {
             </Link>
           </p>
           </>}
-        </div>
+        </div>}
       </div>
     </PublicLayout>
   )

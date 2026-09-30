@@ -48,12 +48,14 @@ export default function CatalogPage() {
   const [savingList, setSavingList] = useState(false)
   const [selectedProductUnit, setSelectedProductUnit] = useState('unidad')
   const [productNotes, setProductNotes] = useState('')
+  const [customerOrderingEnabled, setCustomerOrderingEnabled] = useState(false)
 
   useEffect(() => {
     loadData()
     loadCart()
-    supabase.from('website_settings').select('phone_number').single().then(({ data }) => {
+    supabase.from('website_settings').select('phone_number, customer_orders_enabled').single().then(({ data }) => {
       if (data?.phone_number) setBusinessPhone(data.phone_number.replace(/\D/g, ''))
+      setCustomerOrderingEnabled(data?.customer_orders_enabled === true)
     })
   }, [])
 
@@ -479,7 +481,7 @@ export default function CatalogPage() {
                   {filteredProducts.length} producto{filteredProducts.length !== 1 ? 's' : ''} disponible{filteredProducts.length !== 1 ? 's' : ''}
                 </p>
                   </div>
-                  <button onClick={() => setShowCart(true)} className="shrink-0 px-4 py-2.5 rounded-xl bg-blue-900 text-white font-bold shadow-sm hover:bg-blue-800">🛒 Lista ({cartTotal})</button>
+                  {customerOrderingEnabled && <button onClick={() => setShowCart(true)} className="shrink-0 px-4 py-2.5 rounded-xl bg-blue-900 text-white font-bold shadow-sm hover:bg-blue-800">🛒 Lista ({cartTotal})</button>}
                 </div>
               </div>
 
@@ -709,7 +711,7 @@ export default function CatalogPage() {
                 <p className="text-sm text-red-600 font-semibold mb-4">🎁 {selectedProduct.discount.name}</p>
               )}
 
-              {(() => {
+              {customerOrderingEnabled && (() => {
                 const units = Array.isArray(selectedProduct.unit) ? selectedProduct.unit : [selectedProduct.unit]
                 const saleOptions = [...new Set(['unidad', ...(units.includes('caja') ? ['caja'] : []), ...(units.includes('funda') ? ['funda'] : [])])]
                 return <div className="mb-4">
@@ -717,18 +719,18 @@ export default function CatalogPage() {
                   <div className="grid grid-cols-2 gap-2">{saleOptions.map(unit => <button key={unit} onClick={() => setSelectedProductUnit(unit)} className={`py-2.5 px-3 rounded-xl border font-semibold capitalize ${selectedProductUnit === unit ? 'border-blue-900 bg-blue-50 text-blue-900' : 'border-gray-300 text-gray-700'}`}>{unit === 'unidad' ? 'Por unidad' : `Por ${unit}`}</button>)}</div>
                 </div>
               })()}
-              <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="catalog-product-notes">Anotación para este producto <span className="font-normal text-gray-400">(opcional)</span></label>
-              <textarea id="catalog-product-notes" value={productNotes} onChange={event => setProductNotes(event.target.value)} maxLength={300} rows={3} placeholder="Ej.: sabor, presentación o alguna indicación" className="w-full px-3 py-2 border border-gray-300 rounded-xl resize-y focus:outline-none focus:ring-2 focus:ring-blue-900" />
+              {customerOrderingEnabled && <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="catalog-product-notes">Anotación para este producto <span className="font-normal text-gray-400">(opcional)</span></label>}
+              {customerOrderingEnabled && <textarea id="catalog-product-notes" value={productNotes} onChange={event => setProductNotes(event.target.value)} maxLength={300} rows={3} placeholder="Ej.: sabor, presentación o alguna indicación" className="w-full px-3 py-2 border border-gray-300 rounded-xl resize-y focus:outline-none focus:ring-2 focus:ring-blue-900" />}
 
-              <button onClick={handleAddToCart} className="w-full mt-4 py-3 rounded-xl bg-blue-900 text-white font-bold hover:bg-blue-800">
+              {customerOrderingEnabled && <button onClick={handleAddToCart} className="w-full mt-4 py-3 rounded-xl bg-blue-900 text-white font-bold hover:bg-blue-800">
                 Agregar a la lista
-              </button>
+              </button>}
             </div>
           </div>
         </div>
       )}
 
-      {showCart && (
+      {customerOrderingEnabled && showCart && (
         <div className="fixed inset-0 z-[60] bg-black/60 flex items-end sm:items-center justify-center sm:p-4" onClick={() => setShowCart(false)}>
           <section className="bg-white w-full sm:max-w-xl rounded-t-3xl sm:rounded-3xl max-h-[90vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="p-5 border-b flex items-center justify-between"><div><h2 className="text-xl font-black">Mi lista de compras</h2><p className="text-sm text-gray-500">{cartTotal} producto{cartTotal !== 1 ? 's' : ''}</p></div><button onClick={() => setShowCart(false)} className="text-2xl text-gray-500" aria-label="Cerrar">×</button></div>

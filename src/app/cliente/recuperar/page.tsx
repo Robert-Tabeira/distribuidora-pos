@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { PublicLayout } from '@/components/public-layout'
 import { normalizePhone } from '@/lib/customer-auth'
 import Link from 'next/link'
+import { isCustomerOrderingEnabled } from '@/lib/customer-ordering'
+import { CustomerOrderingUnavailable } from '@/components/customer-ordering-unavailable'
 
 type Result = 'email' | 'whatsapp' | 'not_found' | null
 
@@ -12,6 +14,15 @@ export default function RecoverPinPage() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<Result>(null)
   const [error, setError] = useState('')
+  const [featureChecked, setFeatureChecked] = useState(false)
+  const [featureEnabled, setFeatureEnabled] = useState(false)
+
+  useEffect(() => {
+    isCustomerOrderingEnabled().then(enabled => {
+      setFeatureEnabled(enabled)
+      setFeatureChecked(true)
+    })
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -54,7 +65,7 @@ export default function RecoverPinPage() {
   return (
     <PublicLayout>
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
+        {!featureChecked ? <p className="text-gray-500">Cargando...</p> : !featureEnabled ? <CustomerOrderingUnavailable /> : <div className="w-full max-w-md bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
           <h1 className="text-2xl font-black text-gray-900 mb-1">Recuperar código</h1>
           <p className="text-sm text-gray-600 mb-6">Ingresá tu teléfono registrado</p>
 
@@ -142,7 +153,7 @@ export default function RecoverPinPage() {
               Volver a iniciar sesión
             </Link>
           </p>
-        </div>
+        </div>}
       </div>
     </PublicLayout>
   )
