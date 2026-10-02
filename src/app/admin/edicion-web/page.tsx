@@ -112,7 +112,7 @@ interface LandingSection {
   settings: LandingSectionSettings
 }
 
-type LandingBlockType = 'content' | 'categories' | 'banner' | 'feature_cards' | 'business_info' | 'image_carousel' | 'product_grid'
+type LandingBlockType = 'content' | 'categories' | 'banner' | 'feature_cards' | 'business_info' | 'location_map' | 'image_carousel' | 'product_grid'
 
 interface LandingFeatureCard {
   title: string
@@ -144,6 +144,8 @@ interface LandingSectionSettings {
   show_email?: boolean
   show_address?: boolean
   show_business_hours?: boolean
+  map_address?: string
+  map_link_text?: string
   category_icons?: Record<string, string>
   cards?: LandingFeatureCard[]
   slides?: LandingCarouselSlide[]
@@ -186,6 +188,7 @@ const LANDING_BLOCK_LABELS: Record<LandingBlockType, string> = {
   banner: 'Banner con botón',
   feature_cards: 'Tarjetas con imagen',
   business_info: 'Información del local',
+  location_map: 'Ubicación en mapa',
   image_carousel: 'Carrusel de imágenes',
   product_grid: 'Productos u ofertas'
 }
@@ -197,6 +200,7 @@ function defaultLandingSettings(type: LandingBlockType): LandingSectionSettings 
     { title: '', description: '', image_url: '', link_url: '', button_text: '' }
   ] }
   if (type === 'business_info') return { show_phone: true, show_email: true, show_address: true, show_business_hours: true }
+  if (type === 'location_map') return { map_address: '67P2+8WC Los Primos, Ruta Interbalnearia Gral. Líber Seregni, 15200 Las Toscas, Departamento de Canelones', map_link_text: 'Abrir en Google Maps' }
   if (type === 'categories') return { category_icons: {} }
   if (type === 'image_carousel') return { slides: [] }
   if (type === 'product_grid') return { mode: 'popular', limit: 5, button_text: 'Ver catálogo', button_url: '/catalogo' }
@@ -3263,6 +3267,21 @@ export default function WebsiteEditionPage() {
                     <label key={key} className="flex cursor-pointer items-center gap-3 text-sm font-medium text-text-muted"><input type="checkbox" checked={sectionForm.settings[key] !== false} onChange={e => updateLandingSettings({ [key]: e.target.checked })} className="h-4 w-4 rounded border-gray-300" />{label}</label>
                   ))}
                   <p className="text-xs text-text-muted">Los valores se toman de Configuración del negocio.</p>
+                </div>
+              )}
+
+              {sectionForm.block_type === 'location_map' && (
+                <div className="space-y-3 rounded-xl border border-border p-4">
+                  <h4 className="font-semibold text-text">Mapa y ubicación</h4>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-text-muted">Dirección que se mostrará y buscará en el mapa</label>
+                    <textarea className="input min-h-20" value={sectionForm.settings.map_address || ''} onChange={e => updateLandingSettings({ map_address: e.target.value })} placeholder="Dirección del local" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-text-muted">Texto del enlace</label>
+                    <input className="input" value={sectionForm.settings.map_link_text || ''} onChange={e => updateLandingSettings({ map_link_text: e.target.value })} placeholder="Abrir en Google Maps" />
+                  </div>
+                  <p className="text-xs text-text-muted">El mapa y el enlace se generan automáticamente con esta dirección.</p>
                 </div>
               )}
 
