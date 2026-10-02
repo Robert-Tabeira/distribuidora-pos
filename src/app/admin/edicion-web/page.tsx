@@ -23,6 +23,7 @@ interface WebsiteSettings {
   show_address?: boolean
   show_business_hours?: boolean
   customer_orders_enabled?: boolean
+  show_recent_product_badge?: boolean
   color_palette?: ColorSwatch[]
   site_name?: string
   site_tagline?: string
@@ -427,7 +428,8 @@ export default function WebsiteEditionPage() {
     show_email: true,
     show_address: true,
     show_business_hours: true,
-    customer_orders_enabled: false
+    customer_orders_enabled: false,
+    show_recent_product_badge: true
   })
   const [savingSettings, setSavingSettings] = useState(false)
   const [settingsMessage, setSettingsMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -583,7 +585,8 @@ export default function WebsiteEditionPage() {
           show_email: settingsRes.data.show_email !== false,
           show_address: settingsRes.data.show_address !== false,
           show_business_hours: settingsRes.data.show_business_hours !== false,
-          customer_orders_enabled: settingsRes.data.customer_orders_enabled === true
+          customer_orders_enabled: settingsRes.data.customer_orders_enabled === true,
+          show_recent_product_badge: settingsRes.data.show_recent_product_badge !== false
         })
         if (settingsRes.data.color_palette && settingsRes.data.color_palette.length > 0) {
           setPalette(settingsRes.data.color_palette as ColorSwatch[])
@@ -674,6 +677,7 @@ export default function WebsiteEditionPage() {
         show_address: settingsForm.show_address,
         show_business_hours: settingsForm.show_business_hours,
         customer_orders_enabled: settingsForm.customer_orders_enabled,
+        show_recent_product_badge: settingsForm.show_recent_product_badge,
         updated_at: new Date().toISOString()
       }
 
@@ -1605,6 +1609,23 @@ export default function WebsiteEditionPage() {
                 <span>
                   <span className="block font-semibold text-gray-800">Habilitar pedidos de clientes</span>
                   <span className="block text-sm text-gray-500 mt-1">Desactivado por defecto. Podés volver a habilitarlo cuando quieras.</span>
+                </span>
+              </label>
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <h4 className="font-bold text-lg mb-2">Novedades del catálogo</h4>
+              <p className="text-sm text-text-muted mb-4">Los productos creados en las últimas 48 horas pueden mostrar una etiqueta en su tarjeta.</p>
+              <label className="flex items-start gap-3 cursor-pointer rounded-xl border border-border p-4">
+                <input
+                  type="checkbox"
+                  checked={settingsForm.show_recent_product_badge}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, show_recent_product_badge: e.target.checked })}
+                  className="w-5 h-5 rounded border-gray-300 mt-0.5"
+                />
+                <span>
+                  <span className="block font-semibold text-gray-800">Mostrar “Recién agregado”</span>
+                  <span className="block text-sm text-gray-500 mt-1">Activado por defecto; podés ocultar todas las etiquetas desde acá.</span>
                 </span>
               </label>
             </div>

@@ -49,13 +49,15 @@ export default function CatalogPage() {
   const [selectedProductUnit, setSelectedProductUnit] = useState('unidad')
   const [productNotes, setProductNotes] = useState('')
   const [customerOrderingEnabled, setCustomerOrderingEnabled] = useState(false)
+  const [showRecentProductBadge, setShowRecentProductBadge] = useState(true)
 
   useEffect(() => {
     loadData()
     loadCart()
-    supabase.from('website_settings').select('phone_number, customer_orders_enabled').single().then(({ data }) => {
+    supabase.from('website_settings').select('phone_number, customer_orders_enabled, show_recent_product_badge').single().then(({ data }) => {
       if (data?.phone_number) setBusinessPhone(data.phone_number.replace(/\D/g, ''))
       setCustomerOrderingEnabled(data?.customer_orders_enabled === true)
+      setShowRecentProductBadge(data?.show_recent_product_badge !== false)
     })
   }, [])
 
@@ -326,6 +328,10 @@ export default function CatalogPage() {
 
   // Card de producto, reutilizada en cada sección/subsección del catálogo
   function renderProductCard(product: ProductWithDiscount) {
+    const createdAt = new Date(product.created_at).getTime()
+    const productAge = Date.now() - createdAt
+    const isRecentlyAdded = showRecentProductBadge && Number.isFinite(createdAt) && productAge >= 0 && productAge < 48 * 60 * 60 * 1000
+
     return (
       <div
         key={product.id}
@@ -352,6 +358,11 @@ export default function CatalogPage() {
           {product.discount && (
             <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-red-500 text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full font-black text-[10px] sm:text-sm shadow-lg">
               -{product.discount.percentage}%
+            </div>
+          )}
+          {isRecentlyAdded && (
+            <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-emerald-600 text-white px-2 py-1 rounded-full font-bold text-[10px] sm:text-xs shadow-lg">
+              Recién agregado
             </div>
           )}
         </div>
