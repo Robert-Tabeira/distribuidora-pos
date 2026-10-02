@@ -12,9 +12,20 @@ interface ProductWithDiscount extends Product {
   discount?: Discount
 }
 
+interface LandingSection {
+  id: string
+  section_name: string
+  title: string | null
+  subtitle: string | null
+  description: string | null
+  image_url: string | null
+  is_visible: boolean
+}
+
 export default function LandingPage() {
   const router = useRouter()
   const [products, setProducts] = useState<ProductWithDiscount[]>([])
+  const [landingSections, setLandingSections] = useState<LandingSection[]>([])
   const [loading, setLoading] = useState(true)
   const [cartTotal, setCartTotal] = useState(0)
 
@@ -25,10 +36,13 @@ export default function LandingPage() {
 
   async function loadData() {
     try {
-      const [productsRes, discountsRes] = await Promise.all([
+      const [productsRes, discountsRes, sectionsRes] = await Promise.all([
         supabase.from('products').select('*').eq('status', 'complete'),
-        supabase.from('discounts').select('*').eq('is_active', true)
+        supabase.from('discounts').select('*').eq('is_active', true),
+        supabase.from('landing_sections').select('*').eq('is_visible', true).order('section_name')
       ])
+
+      if (sectionsRes.data) setLandingSections(sectionsRes.data as LandingSection[])
 
       if (productsRes.data && discountsRes.data) {
         const productsWithDiscounts = await Promise.all(
@@ -88,6 +102,24 @@ export default function LandingPage() {
     <div className="min-h-screen bg-white">
       {/* HERO SLIDER */}
       <HeroSlider />
+
+      {/* BLOQUES EDITABLES DE LANDING */}
+      {landingSections.map((section, index) => (
+        <section key={section.id} className={`px-4 py-14 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+          <div className={`mx-auto grid max-w-6xl items-center gap-8 ${section.image_url ? 'md:grid-cols-2' : 'max-w-4xl text-center'}`}>
+            {section.image_url && (
+              <div className={`overflow-hidden rounded-2xl border border-gray-200 shadow-sm ${index % 2 === 1 ? 'md:order-2' : ''}`}>
+                <img src={section.image_url} alt={section.title || section.section_name} className="max-h-[28rem] min-h-56 w-full object-cover" />
+              </div>
+            )}
+            <div className="py-2">
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">{section.title || section.section_name}</h2>
+              {section.subtitle && <p className="mt-3 text-lg font-medium text-primary">{section.subtitle}</p>}
+              {section.description && <p className="mt-4 whitespace-pre-line text-base leading-7 text-gray-600">{section.description}</p>}
+            </div>
+          </div>
+        </section>
+      ))}
 
       {/* OFERTAS DESTACADAS */}
       {productsWithDiscount.length > 0 && (

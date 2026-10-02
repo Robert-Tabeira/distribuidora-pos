@@ -201,6 +201,7 @@ function SitePreviewPanel({
   logoForm,
   headerForm,
   menuLinks,
+  landingSections,
   editingPopupForm
 }: {
   sectionView: string | null
@@ -209,6 +210,7 @@ function SitePreviewPanel({
   logoForm: { site_name: string; site_tagline: string; logo_url: string; use_logo_image: boolean }
   headerForm: { bg_color: string; text_color: string; active_color: string; sticky: boolean; shadow: boolean; nav_uppercase: boolean; nav_underline: boolean; nav_letter_spacing: string; nav_font_weight: string }
   menuLinks: MenuLink[]
+  landingSections: LandingSection[]
   editingPopupForm?: any
 }) {
   const FONT_FAMILY_MAP: Record<string, string> = {
@@ -292,15 +294,30 @@ function SitePreviewPanel({
           </div>
         </div>
 
-        {/* Placeholder del resto de la página */}
-        <div className="bg-gray-50 p-4 space-y-2">
-          <div className="h-16 bg-gray-200 rounded-lg animate-pulse" />
-          <div className="grid grid-cols-3 gap-2">
-            <div className="h-10 bg-gray-200 rounded" />
-            <div className="h-10 bg-gray-200 rounded" />
-            <div className="h-10 bg-gray-200 rounded" />
+        {sectionView === 'landing' ? (
+          <div className="max-h-72 space-y-2 overflow-auto bg-gray-50 p-3">
+            {landingSections.filter(section => section.is_visible).length > 0 ? landingSections.filter(section => section.is_visible).map(section => (
+              <div key={section.id} className="flex min-h-16 items-center gap-2 rounded-lg border border-gray-100 bg-white p-2">
+                {section.image_url && <img src={section.image_url} alt="" className="h-12 w-14 rounded object-cover" />}
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-bold text-gray-800">{section.title || section.section_name}</p>
+                  {section.subtitle && <p className="truncate text-[10px] text-primary">{section.subtitle}</p>}
+                  {section.description && <p className="line-clamp-1 text-[9px] text-gray-500">{section.description}</p>}
+                </div>
+              </div>
+            )) : <p className="py-8 text-center text-xs text-gray-500">Los bloques visibles aparecerán aquí</p>}
           </div>
-        </div>
+        ) : (
+          /* Placeholder del resto de la página */
+          <div className="bg-gray-50 p-4 space-y-2">
+            <div className="h-16 bg-gray-200 rounded-lg animate-pulse" />
+            <div className="grid grid-cols-3 gap-2">
+              <div className="h-10 bg-gray-200 rounded" />
+              <div className="h-10 bg-gray-200 rounded" />
+              <div className="h-10 bg-gray-200 rounded" />
+            </div>
+          </div>
+        )}
 
         {/* Overlay: pop-up en construcción */}
         {editingPopupForm && (
@@ -343,7 +360,7 @@ function SitePreviewPanel({
         )}
       </div>
 
-      {sectionView && !['announcement', 'header', 'popups'].includes(sectionView) && (
+      {sectionView && ['hero', 'footer'].includes(sectionView) && (
         <p className="text-xs text-text-light mt-3 text-center">
           Esta sección todavía no tiene vista previa propia — arriba se ve el resto del sitio (barra + header) mientras tanto.
         </p>
@@ -447,7 +464,7 @@ export default function WebsiteEditionPage() {
   // Landing Sections
   const [sections, setSections] = useState<LandingSection[]>([])
   const [editingSection, setEditingSection] = useState<LandingSection | null>(null)
-  const [sectionForm, setSectionForm] = useState({ title: '', subtitle: '', description: '', image_url: '' })
+  const [sectionForm, setSectionForm] = useState({ section_name: '', title: '', subtitle: '', description: '', image_url: '', is_visible: true })
   const [savingSection, setSavingSection] = useState(false)
   const [showSectionModal, setShowSectionModal] = useState(false)
 
@@ -883,9 +900,24 @@ export default function WebsiteEditionPage() {
   }
 
   // ===== LANDING SECTIONS =====
+  async function uploadSectionImage(file: File | undefined) {
+    if (!file) return
+    setUploadingImage(true)
+    try {
+      const { url, error } = await uploadImageToSupabase(file, 'landing-sections')
+      if (error) throw new Error(error)
+      setSectionForm(current => ({ ...current, image_url: url }))
+    } catch (error) {
+      console.error('Error uploading landing block image:', error)
+      alert(error instanceof Error ? error.message : 'No se pudo subir la imagen')
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
   async function saveSection() {
-    if (!sectionForm.title.trim()) {
-      alert('El título es requerido')
+    if (!sectionForm.section_name.trim() || !sectionForm.title.trim()) {
+      alert('El nombre del bloque y el título son obligatorios')
       return
     }
 
@@ -895,27 +927,47 @@ export default function WebsiteEditionPage() {
         const { error } = await supabase
           .from('landing_sections')
           .update({
+            section_name: sectionForm.section_name.trim(),
             title: sectionForm.title.trim(),
             subtitle: sectionForm.subtitle.trim() || null,
             description: sectionForm.description.trim() || null,
             image_url: sectionForm.image_url.trim() || null,
+            is_visible: sectionForm.is_visible,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingSection.id)
 
         if (error) throw error
 
-        setSections(sections.map(s =>
+        setSections(current => current.map(s =>
           s.id === editingSection.id
             ? {
                 ...s,
+                section_name: sectionForm.section_name.trim(),
                 title: sectionForm.title.trim(),
                 subtitle: sectionForm.subtitle.trim() || null,
                 description: sectionForm.description.trim() || null,
-                image_url: sectionForm.image_url.trim() || null
+                image_url: sectionForm.image_url.trim() || null,
+                is_visible: sectionForm.is_visible
               }
             : s
-        ))
+        ).sort((a, b) => a.section_name.localeCompare(b.section_name)))
+      } else {
+        const { data, error } = await supabase
+          .from('landing_sections')
+          .insert({
+            section_name: sectionForm.section_name.trim(),
+            title: sectionForm.title.trim(),
+            subtitle: sectionForm.subtitle.trim() || null,
+            description: sectionForm.description.trim() || null,
+            image_url: sectionForm.image_url.trim() || null,
+            is_visible: sectionForm.is_visible
+          })
+          .select('*')
+          .single()
+
+        if (error) throw error
+        setSections(current => [...current, data as LandingSection].sort((a, b) => a.section_name.localeCompare(b.section_name)))
       }
 
       setShowSectionModal(false)
@@ -932,16 +984,33 @@ export default function WebsiteEditionPage() {
     if (section) {
       setEditingSection(section)
       setSectionForm({
+        section_name: section.section_name || '',
         title: section.title || '',
         subtitle: section.subtitle || '',
         description: section.description || '',
-        image_url: section.image_url || ''
+        image_url: section.image_url || '',
+        is_visible: section.is_visible
       })
     } else {
       setEditingSection(null)
-      setSectionForm({ title: '', subtitle: '', description: '', image_url: '' })
+      setSectionForm({ section_name: '', title: '', subtitle: '', description: '', image_url: '', is_visible: true })
     }
     setShowSectionModal(true)
+  }
+
+  async function toggleLandingSection(section: LandingSection) {
+    const nextVisible = !section.is_visible
+    try {
+      const { error } = await supabase
+        .from('landing_sections')
+        .update({ is_visible: nextVisible, updated_at: new Date().toISOString() })
+        .eq('id', section.id)
+      if (error) throw error
+      setSections(current => current.map(item => item.id === section.id ? { ...item, is_visible: nextVisible } : item))
+    } catch (error) {
+      console.error('Error updating landing block visibility:', error)
+      alert('No se pudo actualizar la visibilidad del bloque')
+    }
   }
 
   // ===== ANNOUNCEMENT BAR =====
@@ -2274,27 +2343,54 @@ export default function WebsiteEditionPage() {
         {/* BLOQUES DE LANDING */}
         {activeTab === 'sections' && sectionView === 'landing' && (
           <div>
-            <h3 className="font-bold text-xl mb-6">Bloques de Landing</h3>
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="font-bold text-xl">Bloques de Landing</h3>
+                <p className="mt-1 text-sm text-text-muted">Administrá los bloques informativos que aparecen debajo del hero.</p>
+              </div>
+              <button onClick={() => openSectionModal()} className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 font-semibold text-white shadow-sm transition hover:bg-primary/90">
+                <span aria-hidden="true">+</span>Nuevo bloque
+              </button>
+            </div>
 
-            <div className="space-y-4">
+            {sections.length === 0 ? (
+              <div className="card max-w-2xl py-10 text-center">
+                <Icon name="document" className="mx-auto mb-3 h-10 w-10 text-gray-300" />
+                <p className="font-semibold text-text">Todavía no hay bloques</p>
+                <p className="mt-1 text-sm text-text-muted">Creá uno para agregar contenido propio a la landing.</p>
+              </div>
+            ) : <div className="space-y-3">
               {sections.map(section => (
-                <div key={section.id} className="card">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h4 className="font-bold text-text">{section.section_name}</h4>
-                      <p className="text-sm text-text-muted">{section.title}</p>
-                      <p className="text-xs text-gray-600 mt-2 line-clamp-2">{section.description}</p>
+                <div key={section.id} className={`card !p-4 transition-opacity ${!section.is_visible ? 'opacity-60' : ''}`}>
+                  <div className="flex items-start gap-4">
+                    {section.image_url ? (
+                      <img src={section.image_url} alt="" className="h-20 w-24 shrink-0 rounded-xl border border-border object-cover" />
+                    ) : (
+                      <div className="flex h-20 w-24 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-400"><Icon name="image" className="h-7 w-7" /></div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h4 className="font-bold text-text">{section.section_name}</h4>
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${section.is_visible ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                          {section.is_visible ? 'Visible' : 'Oculto'}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm font-medium text-text-muted">{section.title || 'Sin título'}</p>
+                      {section.subtitle && <p className="text-sm text-text-muted">{section.subtitle}</p>}
+                      {section.description && <p className="mt-2 line-clamp-2 text-sm text-gray-600">{section.description}</p>}
                     </div>
-                    <button
-                      onClick={() => openSectionModal(section)}
-                      className="px-4 py-2 bg-primary/10 text-primary rounded-lg font-semibold hover:bg-primary/20"
-                    >
-                      Editar
-                    </button>
+                    <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                      <button onClick={() => toggleLandingSection(section)} className="rounded-lg border border-border px-3 py-2 text-sm font-semibold text-text-muted transition hover:bg-gray-50">
+                        {section.is_visible ? 'Ocultar' : 'Mostrar'}
+                      </button>
+                      <button onClick={() => openSectionModal(section)} className="rounded-lg bg-primary/10 px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/20">
+                        Editar
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
-            </div>
+            </div>}
           </div>
         )}
 
@@ -2763,6 +2859,7 @@ export default function WebsiteEditionPage() {
           logoForm={logoForm}
           headerForm={headerForm}
           menuLinks={menuLinks}
+          landingSections={sections}
           editingPopupForm={sectionView === 'popups' && showPopupModal ? popupForm : null}
         />
       </div>
@@ -2886,9 +2983,21 @@ export default function WebsiteEditionPage() {
           <div className="bg-surface w-full max-w-lg rounded-t-3xl p-6 animate-slide-up max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
             <div className="w-12 h-1.5 bg-border rounded-full mx-auto mb-6" />
 
-            <h3 className="font-bold text-xl mb-6">Editar Sección</h3>
+            <h3 className="font-bold text-xl mb-6">{editingSection ? 'Editar bloque' : 'Nuevo bloque de landing'}</h3>
 
             <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-semibold text-text-muted mb-2">Nombre interno *</label>
+                <input
+                  type="text"
+                  value={sectionForm.section_name}
+                  onChange={(e) => setSectionForm({ ...sectionForm, section_name: e.target.value })}
+                  placeholder="Ej.: Quiénes somos"
+                  className="input"
+                />
+                <p className="mt-1 text-xs text-text-muted">Se usa para identificar este bloque en el editor.</p>
+              </div>
+
               <div>
                 <label className="block text-sm font-semibold text-text-muted mb-2">Título *</label>
                 <input
@@ -2919,7 +3028,13 @@ export default function WebsiteEditionPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-text-muted mb-2">URL Imagen</label>
+                <label className="block text-sm font-semibold text-text-muted mb-2">Imagen del bloque</label>
+                <label className="mb-3 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-primary/40 bg-primary/5 px-4 py-4 text-sm font-semibold text-primary transition hover:bg-primary/10">
+                  <Icon name="image" className="h-5 w-5" />
+                  {uploadingImage ? 'Subiendo imagen…' : 'Elegir imagen desde el equipo'}
+                  <input type="file" accept="image/*" className="hidden" disabled={uploadingImage} onChange={(e) => { void uploadSectionImage(e.target.files?.[0]); e.currentTarget.value = '' }} />
+                </label>
+                <label className="mb-2 block text-xs font-medium text-text-muted">O pegá una URL</label>
                 <input
                   type="url"
                   value={sectionForm.image_url}
@@ -2927,15 +3042,29 @@ export default function WebsiteEditionPage() {
                   placeholder="https://..."
                   className="input"
                 />
+                {sectionForm.image_url && <img src={sectionForm.image_url} alt="Vista previa del bloque" className="mt-3 max-h-40 w-full rounded-xl border border-border object-cover" />}
               </div>
+
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border p-4">
+                <input
+                  type="checkbox"
+                  checked={sectionForm.is_visible}
+                  onChange={(e) => setSectionForm({ ...sectionForm, is_visible: e.target.checked })}
+                  className="mt-0.5 h-5 w-5 rounded border-gray-300"
+                />
+                <span>
+                  <span className="block font-semibold text-text">Mostrar este bloque en la landing</span>
+                  <span className="mt-1 block text-sm text-text-muted">Podés ocultarlo temporalmente sin borrar su contenido.</span>
+                </span>
+              </label>
             </div>
 
             <div className="flex gap-3">
               <button onClick={() => setShowSectionModal(false)} className="btn btn-outline flex-1">
                 Cancelar
               </button>
-              <button onClick={saveSection} disabled={savingSection} className="btn btn-primary flex-1">
-                {savingSection ? 'Guardando...' : 'Guardar'}
+              <button onClick={saveSection} disabled={savingSection || uploadingImage} className="btn btn-primary flex-1">
+                {savingSection ? 'Guardando...' : uploadingImage ? 'Subiendo imagen…' : 'Guardar'}
               </button>
             </div>
           </div>
