@@ -106,6 +106,38 @@ interface LandingSection {
   description: string | null
   image_url: string | null
   is_visible: boolean
+  block_type: LandingBlockType
+  order_position: number
+  settings: LandingSectionSettings
+}
+
+type LandingBlockType = 'content' | 'categories' | 'banner' | 'feature_cards' | 'business_info' | 'image_carousel' | 'product_grid'
+
+interface LandingFeatureCard {
+  title: string
+  description: string
+  image_url: string
+  link_url: string
+  button_text: string
+}
+
+interface LandingCarouselSlide {
+  image_url: string
+  link_url: string
+}
+
+interface LandingSectionSettings {
+  button_text?: string
+  button_url?: string
+  background_color?: string
+  mode?: 'popular' | 'discounts'
+  limit?: number
+  show_phone?: boolean
+  show_email?: boolean
+  show_address?: boolean
+  show_business_hours?: boolean
+  cards?: LandingFeatureCard[]
+  slides?: LandingCarouselSlide[]
 }
 
 interface AnnouncementMessage {
@@ -138,6 +170,28 @@ const DEFAULT_PALETTE: ColorSwatch[] = [
   { name: 'Éxito', hex: '#16a34a' },
   { name: 'Alerta', hex: '#dc2626' }
 ]
+
+const LANDING_BLOCK_LABELS: Record<LandingBlockType, string> = {
+  content: 'Contenido e imagen',
+  categories: 'Categorías principales',
+  banner: 'Banner con botón',
+  feature_cards: 'Tarjetas con imagen',
+  business_info: 'Información del local',
+  image_carousel: 'Carrusel de imágenes',
+  product_grid: 'Productos u ofertas'
+}
+
+function defaultLandingSettings(type: LandingBlockType): LandingSectionSettings {
+  if (type === 'banner') return { button_text: 'Ver catálogo', button_url: '/catalogo', background_color: '#fff7ed' }
+  if (type === 'feature_cards') return { cards: [
+    { title: '', description: '', image_url: '', link_url: '', button_text: '' },
+    { title: '', description: '', image_url: '', link_url: '', button_text: '' }
+  ] }
+  if (type === 'business_info') return { show_phone: true, show_email: true, show_address: true, show_business_hours: true }
+  if (type === 'image_carousel') return { slides: [] }
+  if (type === 'product_grid') return { mode: 'popular', limit: 5, button_text: 'Ver catálogo', button_url: '/catalogo' }
+  return {}
+}
 
 // Genera una versión más clara/oscura de un color hex (para previews de degradado)
 function shadeColor(hex: string, percent: number) {
@@ -464,7 +518,7 @@ export default function WebsiteEditionPage() {
   // Landing Sections
   const [sections, setSections] = useState<LandingSection[]>([])
   const [editingSection, setEditingSection] = useState<LandingSection | null>(null)
-  const [sectionForm, setSectionForm] = useState({ section_name: '', title: '', subtitle: '', description: '', image_url: '', is_visible: true })
+  const [sectionForm, setSectionForm] = useState({ section_name: '', title: '', subtitle: '', description: '', image_url: '', is_visible: true, block_type: 'content' as LandingBlockType, settings: {} as LandingSectionSettings })
   const [savingSection, setSavingSection] = useState(false)
   const [showSectionModal, setShowSectionModal] = useState(false)
 
@@ -584,7 +638,7 @@ export default function WebsiteEditionPage() {
       const [settingsRes, heroRes, sectionsRes, announcementsRes, barSettingsRes, menuLinksRes, headerSettingsRes, popupsRes] = await Promise.all([
         supabase.from('website_settings').select('*').single(),
         supabase.from('hero_slides').select('*').order('order_position'),
-        supabase.from('landing_sections').select('*').order('section_name'),
+        supabase.from('landing_sections').select('*').order('order_position').order('section_name'),
         supabase.from('announcement_messages').select('*').order('order_position'),
         supabase.from('announcement_bar_settings').select('*').single(),
         supabase.from('menu_links').select('*').order('order_position'),
@@ -900,19 +954,41 @@ export default function WebsiteEditionPage() {
   }
 
   // ===== LANDING SECTIONS =====
-  async function uploadSectionImage(file: File | undefined) {
+  async function uploadLandingAsset(file: File | undefined, onUploaded: (url: string) => void) {
     if (!file) return
     setUploadingImage(true)
     try {
       const { url, error } = await uploadImageToSupabase(file, 'landing-sections')
       if (error) throw new Error(error)
-      setSectionForm(current => ({ ...current, image_url: url }))
+      onUploaded(url)
     } catch (error) {
       console.error('Error uploading landing block image:', error)
       alert(error instanceof Error ? error.message : 'No se pudo subir la imagen')
     } finally {
       setUploadingImage(false)
     }
+  }
+
+  async function uploadSectionImage(file: File | undefined) {
+    await uploadLandingAsset(file, url => setSectionForm(current => ({ ...current, image_url: url })))
+  }
+
+  function updateLandingCard(index: number, changes: Partial<LandingFeatureCard>) {
+    setSectionForm(current => {
+      const cards = current.settings.cards || []
+      return { ...current, settings: { ...current.settings, cards: cards.map((card, cardIndex) => cardIndex === index ? { ...card, ...changes } : card) } }
+    })
+  }
+
+  function updateLandingSettings(changes: Partial<LandingSectionSettings>) {
+    setSectionForm(current => ({ ...current, settings: { ...current.settings, ...changes } }))
+  }
+
+  function updateLandingSlide(index: number, changes: Partial<LandingCarouselSlide>) {
+    setSectionForm(current => {
+      const slides = current.settings.slides || []
+      return { ...current, settings: { ...current.settings, slides: slides.map((slide, slideIndex) => slideIndex === index ? { ...slide, ...changes } : slide) } }
+    })
   }
 
   async function saveSection() {
@@ -928,6 +1004,8 @@ export default function WebsiteEditionPage() {
           .from('landing_sections')
           .update({
             section_name: sectionForm.section_name.trim(),
+            block_type: sectionForm.block_type,
+            settings: sectionForm.settings,
             title: sectionForm.title.trim(),
             subtitle: sectionForm.subtitle.trim() || null,
             description: sectionForm.description.trim() || null,
@@ -944,6 +1022,9 @@ export default function WebsiteEditionPage() {
             ? {
                 ...s,
                 section_name: sectionForm.section_name.trim(),
+                block_type: sectionForm.block_type,
+                settings: sectionForm.settings,
+                order_position: s.order_position,
                 title: sectionForm.title.trim(),
                 subtitle: sectionForm.subtitle.trim() || null,
                 description: sectionForm.description.trim() || null,
@@ -951,12 +1032,15 @@ export default function WebsiteEditionPage() {
                 is_visible: sectionForm.is_visible
               }
             : s
-        ).sort((a, b) => a.section_name.localeCompare(b.section_name)))
+        ).sort((a, b) => a.order_position - b.order_position))
       } else {
         const { data, error } = await supabase
           .from('landing_sections')
           .insert({
             section_name: sectionForm.section_name.trim(),
+            block_type: sectionForm.block_type,
+            settings: sectionForm.settings,
+            order_position: sections.length ? Math.max(...sections.map(section => section.order_position)) + 10 : 10,
             title: sectionForm.title.trim(),
             subtitle: sectionForm.subtitle.trim() || null,
             description: sectionForm.description.trim() || null,
@@ -967,7 +1051,7 @@ export default function WebsiteEditionPage() {
           .single()
 
         if (error) throw error
-        setSections(current => [...current, data as LandingSection].sort((a, b) => a.section_name.localeCompare(b.section_name)))
+        setSections(current => [...current, data as LandingSection].sort((a, b) => a.order_position - b.order_position))
       }
 
       setShowSectionModal(false)
@@ -989,11 +1073,14 @@ export default function WebsiteEditionPage() {
         subtitle: section.subtitle || '',
         description: section.description || '',
         image_url: section.image_url || '',
-        is_visible: section.is_visible
+        is_visible: section.is_visible,
+        block_type: section.block_type || 'content',
+        settings: { ...defaultLandingSettings(section.block_type || 'content'), ...(section.settings || {}) }
       })
     } else {
       setEditingSection(null)
-      setSectionForm({ section_name: '', title: '', subtitle: '', description: '', image_url: '', is_visible: true })
+      const block_type: LandingBlockType = 'content'
+      setSectionForm({ section_name: '', title: '', subtitle: '', description: '', image_url: '', is_visible: true, block_type, settings: defaultLandingSettings(block_type) })
     }
     setShowSectionModal(true)
   }
@@ -1010,6 +1097,37 @@ export default function WebsiteEditionPage() {
     } catch (error) {
       console.error('Error updating landing block visibility:', error)
       alert('No se pudo actualizar la visibilidad del bloque')
+    }
+  }
+
+  async function deleteLandingSection(section: LandingSection) {
+    if (!confirm(`¿Eliminar el bloque "${section.section_name}"? Esta acción no se puede deshacer.`)) return
+    try {
+      const { error } = await supabase.from('landing_sections').delete().eq('id', section.id)
+      if (error) throw error
+      setSections(current => current.filter(item => item.id !== section.id))
+    } catch (error) {
+      console.error('Error deleting landing block:', error)
+      alert('No se pudo eliminar el bloque')
+    }
+  }
+
+  async function moveLandingSection(section: LandingSection, direction: -1 | 1) {
+    const currentIndex = sections.findIndex(item => item.id === section.id)
+    const targetIndex = currentIndex + direction
+    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= sections.length) return
+    const reordered = [...sections]
+    ;[reordered[currentIndex], reordered[targetIndex]] = [reordered[targetIndex], reordered[currentIndex]]
+    const positioned = reordered.map((item, index) => ({ ...item, order_position: (index + 1) * 10 }))
+    setSections(positioned)
+    const results = await Promise.all(positioned.map(item =>
+      supabase.from('landing_sections').update({ order_position: item.order_position }).eq('id', item.id)
+    ))
+    const failed = results.find(result => result.error)
+    if (failed?.error) {
+      console.error('Error reordering landing blocks:', failed.error)
+      alert('No se pudo guardar el nuevo orden. Recargá la página e intentá de nuevo.')
+      loadData()
     }
   }
 
@@ -2371,6 +2489,7 @@ export default function WebsiteEditionPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <h4 className="font-bold text-text">{section.section_name}</h4>
+                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">{LANDING_BLOCK_LABELS[section.block_type] || LANDING_BLOCK_LABELS.content}</span>
                         <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${section.is_visible ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
                           {section.is_visible ? 'Visible' : 'Oculto'}
                         </span>
@@ -2379,12 +2498,19 @@ export default function WebsiteEditionPage() {
                       {section.subtitle && <p className="text-sm text-text-muted">{section.subtitle}</p>}
                       {section.description && <p className="mt-2 line-clamp-2 text-sm text-gray-600">{section.description}</p>}
                     </div>
-                    <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                    <div className="flex shrink-0 flex-col gap-2">
+                      <div className="flex gap-1">
+                        <button type="button" aria-label="Mover bloque hacia arriba" disabled={sections[0]?.id === section.id} onClick={() => void moveLandingSection(section, -1)} className="rounded-lg border border-border px-2.5 py-1.5 text-sm font-bold text-text-muted hover:bg-gray-50 disabled:opacity-40">↑</button>
+                        <button type="button" aria-label="Mover bloque hacia abajo" disabled={sections[sections.length - 1]?.id === section.id} onClick={() => void moveLandingSection(section, 1)} className="rounded-lg border border-border px-2.5 py-1.5 text-sm font-bold text-text-muted hover:bg-gray-50 disabled:opacity-40">↓</button>
+                      </div>
                       <button onClick={() => toggleLandingSection(section)} className="rounded-lg border border-border px-3 py-2 text-sm font-semibold text-text-muted transition hover:bg-gray-50">
                         {section.is_visible ? 'Ocultar' : 'Mostrar'}
                       </button>
                       <button onClick={() => openSectionModal(section)} className="rounded-lg bg-primary/10 px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/20">
                         Editar
+                      </button>
+                      <button onClick={() => void deleteLandingSection(section)} className="rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100">
+                        Eliminar
                       </button>
                     </div>
                   </div>
@@ -2999,6 +3125,36 @@ export default function WebsiteEditionPage() {
               </div>
 
               <div>
+                <label className="block text-sm font-semibold text-text-muted mb-2">Tipo de sección</label>
+                <select
+                  value={sectionForm.block_type}
+                  onChange={(e) => {
+                    const block_type = e.target.value as LandingBlockType
+                    setSectionForm(current => ({ ...current, block_type, settings: defaultLandingSettings(block_type) }))
+                  }}
+                  className="input"
+                >
+                  {Object.entries(LANDING_BLOCK_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </select>
+                <p className="mt-1 text-xs text-text-muted">El tipo define cómo se presenta este bloque en la landing.</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-text-muted mb-2">Tipo de sección</label>
+                <select
+                  value={sectionForm.block_type}
+                  onChange={(e) => {
+                    const block_type = e.target.value as LandingBlockType
+                    setSectionForm(current => ({ ...current, block_type, settings: defaultLandingSettings(block_type) }))
+                  }}
+                  className="input"
+                >
+                  {Object.entries(LANDING_BLOCK_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </select>
+                <p className="mt-1 text-xs text-text-muted">El tipo define cómo se presenta este bloque en la landing.</p>
+              </div>
+
+              <div>
                 <label className="block text-sm font-semibold text-text-muted mb-2">Título *</label>
                 <input
                   type="text"
@@ -3027,7 +3183,70 @@ export default function WebsiteEditionPage() {
                 />
               </div>
 
-              <div>
+              {sectionForm.block_type === 'banner' && (
+                <div className="space-y-3 rounded-xl border border-border p-4">
+                  <h4 className="font-semibold text-text">Botón y estilo del banner</h4>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div><label className="mb-1 block text-xs font-medium text-text-muted">Texto del botón</label><input className="input" value={sectionForm.settings.button_text || ''} onChange={e => updateLandingSettings({ button_text: e.target.value })} placeholder="Ver catálogo" /></div>
+                    <div><label className="mb-1 block text-xs font-medium text-text-muted">Enlace del botón</label><input className="input" value={sectionForm.settings.button_url || ''} onChange={e => updateLandingSettings({ button_url: e.target.value })} placeholder="/catalogo" /></div>
+                  </div>
+                  <div><label className="mb-1 block text-xs font-medium text-text-muted">Color de fondo</label><input type="color" className="h-11 w-full cursor-pointer rounded-lg border border-border p-1" value={sectionForm.settings.background_color || '#fff7ed'} onChange={e => updateLandingSettings({ background_color: e.target.value })} /></div>
+                </div>
+              )}
+
+              {sectionForm.block_type === 'feature_cards' && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-text">Tarjetas destacadas</h4>
+                  {(sectionForm.settings.cards || []).map((card, index) => (
+                    <div key={index} className="space-y-3 rounded-xl border border-border p-4">
+                      <div className="flex items-center justify-between"><h5 className="font-semibold">Tarjeta {index + 1}</h5><button type="button" onClick={() => updateLandingSettings({ cards: (sectionForm.settings.cards || []).filter((_, i) => i !== index) })} className="text-sm font-semibold text-red-600">Quitar</button></div>
+                      <input className="input" value={card.title} onChange={e => updateLandingCard(index, { title: e.target.value })} placeholder="Título" />
+                      <textarea className="input min-h-20" value={card.description} onChange={e => updateLandingCard(index, { description: e.target.value })} placeholder="Descripción" />
+                      <div className="grid gap-2 sm:grid-cols-2"><input className="input" value={card.image_url} onChange={e => updateLandingCard(index, { image_url: e.target.value })} placeholder="URL de la imagen" /><label className="flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-primary/40 px-3 py-2 text-sm font-semibold text-primary">{uploadingImage ? 'Subiendo…' : 'Subir imagen'}<input type="file" accept="image/*" className="hidden" disabled={uploadingImage} onChange={e => { void uploadLandingAsset(e.target.files?.[0], url => updateLandingCard(index, { image_url: url })); e.currentTarget.value = '' }} /></label></div>
+                      <div className="grid gap-2 sm:grid-cols-2"><input className="input" value={card.link_url} onChange={e => updateLandingCard(index, { link_url: e.target.value })} placeholder="Enlace (ej. /catalogo)" /><input className="input" value={card.button_text} onChange={e => updateLandingCard(index, { button_text: e.target.value })} placeholder="Texto del botón" /></div>
+                    </div>
+                  ))}
+                  <button type="button" onClick={() => updateLandingSettings({ cards: [...(sectionForm.settings.cards || []), { title: '', description: '', image_url: '', link_url: '', button_text: '' }] })} className="w-full rounded-xl border border-dashed border-primary/40 py-3 text-sm font-semibold text-primary hover:bg-primary/5">+ Agregar tarjeta</button>
+                </div>
+              )}
+
+              {sectionForm.block_type === 'business_info' && (
+                <div className="space-y-3 rounded-xl border border-border p-4">
+                  <h4 className="font-semibold text-text">Datos a mostrar</h4>
+                  {([
+                    ['show_business_hours', 'Horarios'], ['show_address', 'Dirección'], ['show_phone', 'Teléfono y WhatsApp'], ['show_email', 'Email']
+                  ] as const).map(([key, label]) => (
+                    <label key={key} className="flex cursor-pointer items-center gap-3 text-sm font-medium text-text-muted"><input type="checkbox" checked={sectionForm.settings[key] !== false} onChange={e => updateLandingSettings({ [key]: e.target.checked })} className="h-4 w-4 rounded border-gray-300" />{label}</label>
+                  ))}
+                  <p className="text-xs text-text-muted">Los valores se toman de Configuración del negocio.</p>
+                </div>
+              )}
+
+              {sectionForm.block_type === 'image_carousel' && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-text">Fotos del carrusel</h4>
+                  {(sectionForm.settings.slides || []).map((slide, index) => (
+                    <div key={index} className="grid gap-2 rounded-xl border border-border p-3 sm:grid-cols-[1fr_1fr_auto]">
+                      <input className="input" value={slide.image_url} onChange={e => updateLandingSlide(index, { image_url: e.target.value })} placeholder="URL de imagen" />
+                      <input className="input" value={slide.link_url} onChange={e => updateLandingSlide(index, { link_url: e.target.value })} placeholder="Enlace opcional" />
+                      <button type="button" onClick={() => updateLandingSettings({ slides: (sectionForm.settings.slides || []).filter((_, i) => i !== index) })} className="rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-600">Quitar</button>
+                      <label className="cursor-pointer text-xs font-semibold text-primary">Subir imagen<input type="file" accept="image/*" className="hidden" disabled={uploadingImage} onChange={e => { void uploadLandingAsset(e.target.files?.[0], url => updateLandingSlide(index, { image_url: url })); e.currentTarget.value = '' }} /></label>
+                    </div>
+                  ))}
+                  <button type="button" onClick={() => updateLandingSettings({ slides: [...(sectionForm.settings.slides || []), { image_url: '', link_url: '' }] })} className="w-full rounded-xl border border-dashed border-primary/40 py-3 text-sm font-semibold text-primary hover:bg-primary/5">+ Agregar foto</button>
+                </div>
+              )}
+
+              {sectionForm.block_type === 'product_grid' && (
+                <div className="grid gap-3 rounded-xl border border-border p-4 sm:grid-cols-2">
+                  <div><label className="mb-1 block text-sm font-semibold text-text-muted">Contenido</label><select className="input" value={sectionForm.settings.mode || 'popular'} onChange={e => updateLandingSettings({ mode: e.target.value as 'popular' | 'discounts' })}><option value="popular">Productos destacados</option><option value="discounts">Productos con descuento</option></select></div>
+                  <div><label className="mb-1 block text-sm font-semibold text-text-muted">Cantidad de productos</label><input type="number" min={1} max={12} className="input" value={sectionForm.settings.limit || 5} onChange={e => updateLandingSettings({ limit: Math.max(1, Math.min(12, Number(e.target.value) || 1)) })} /></div>
+                  <div><label className="mb-1 block text-sm font-semibold text-text-muted">Texto del botón</label><input className="input" value={sectionForm.settings.button_text || ''} onChange={e => updateLandingSettings({ button_text: e.target.value })} /></div>
+                  <div><label className="mb-1 block text-sm font-semibold text-text-muted">Enlace del botón</label><input className="input" value={sectionForm.settings.button_url || '/catalogo'} onChange={e => updateLandingSettings({ button_url: e.target.value })} /></div>
+                </div>
+              )}
+
+              {['content', 'banner'].includes(sectionForm.block_type) && <div>
                 <label className="block text-sm font-semibold text-text-muted mb-2">Imagen del bloque</label>
                 <label className="mb-3 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-primary/40 bg-primary/5 px-4 py-4 text-sm font-semibold text-primary transition hover:bg-primary/10">
                   <Icon name="image" className="h-5 w-5" />
@@ -3043,7 +3262,7 @@ export default function WebsiteEditionPage() {
                   className="input"
                 />
                 {sectionForm.image_url && <img src={sectionForm.image_url} alt="Vista previa del bloque" className="mt-3 max-h-40 w-full rounded-xl border border-border object-cover" />}
-              </div>
+              </div>}
 
               <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border p-4">
                 <input

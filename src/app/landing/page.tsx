@@ -5,13 +5,28 @@ import { PublicLayout } from '@/components/public-layout'
 import { useRouter } from 'next/navigation'
 import { HeroSlider } from '@/components/hero-slider'
 import { supabase } from '@/lib/supabase'
-import type { Product, Discount } from '@/types/database'
+import type { Category, Product, Discount } from '@/types/database'
 import { Icon } from '@/components/ui/icon'
+import Link from 'next/link'
 
 interface ProductWithDiscount extends Product {
   discount?: Discount
 }
 
+type LandingBlockType = 'content' | 'categories' | 'banner' | 'feature_cards' | 'business_info' | 'image_carousel' | 'product_grid'
+interface LandingSectionSettings {
+  button_text?: string
+  button_url?: string
+  background_color?: string
+  mode?: 'popular' | 'discounts'
+  limit?: number
+  show_phone?: boolean
+  show_email?: boolean
+  show_address?: boolean
+  show_business_hours?: boolean
+  cards?: Array<{ title: string; description: string; image_url: string; link_url: string; button_text: string }>
+  slides?: Array<{ image_url: string; link_url: string }>
+}
 interface LandingSection {
   id: string
   section_name: string
@@ -20,29 +35,198 @@ interface LandingSection {
   description: string | null
   image_url: string | null
   is_visible: boolean
+  block_type: LandingBlockType
+  order_position: number
+  settings: LandingSectionSettings
+}
+interface CategoryForLanding extends Category {
+  parent_id: string | null
+  show_in_catalog: boolean
+}
+interface BusinessSettings {
+  phone_number: string | null
+  email: string | null
+  address: string | null
+  business_hours: string | null
+}
+
+function LandingBlockRenderer({
+  section,
+  categories,
+  products,
+  businessSettings
+}: {
+  section: LandingSection
+  categories: CategoryForLanding[]
+  products: ProductWithDiscount[]
+  businessSettings: BusinessSettings | null
+}) {
+  const settings = section.settings || {}
+  const heading = section.title || section.section_name
+
+  if (section.block_type === 'categories') {
+    const mainCategories = categories.filter(category => !category.parent_id && category.show_in_catalog !== false)
+    if (mainCategories.length === 0) return null
+    return (
+      <section className="bg-white px-4 py-14">
+        <div className="mx-auto max-w-7xl">
+          <h2 className="text-center text-3xl font-bold text-gray-900 sm:text-4xl">{heading}</h2>
+          {section.subtitle && <p className="mt-2 text-center text-gray-600">{section.subtitle}</p>}
+          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {mainCategories.map(category => (
+              <Link key={category.id} href="/catalogo" className="group flex min-h-28 flex-col items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-4 text-center transition hover:-translate-y-1 hover:border-primary/40 hover:bg-white hover:shadow-md">
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-white"><Icon name="grid" className="h-5 w-5" /></span>
+                <span className="text-sm font-semibold text-gray-800">{category.name}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (section.block_type === 'banner') {
+    return (
+      <section className="px-4 py-10" style={{ backgroundColor: settings.background_color || '#fff7ed' }}>
+        <div className={`mx-auto flex max-w-7xl flex-col overflow-hidden rounded-3xl bg-white/60 shadow-sm md:flex-row ${section.image_url ? 'items-stretch' : 'items-center text-center'}`}>
+          {section.image_url && <img src={section.image_url} alt={heading} className="max-h-72 min-h-48 w-full object-cover md:w-2/5" />}
+          <div className="flex flex-1 flex-col items-center justify-center p-7 md:p-10">
+            <h2 className="text-3xl font-black text-gray-900 sm:text-4xl">{heading}</h2>
+            {section.subtitle && <p className="mt-2 text-lg font-semibold text-gray-700">{section.subtitle}</p>}
+            {section.description && <p className="mt-3 max-w-2xl whitespace-pre-line text-gray-600">{section.description}</p>}
+            {settings.button_text && <Link href={settings.button_url || '/catalogo'} className="mt-5 rounded-xl bg-primary px-6 py-3 font-bold text-white shadow-sm transition hover:brightness-95">{settings.button_text}</Link>}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (section.block_type === 'feature_cards') {
+    return (
+      <section className="bg-white px-4 py-14">
+        <div className="mx-auto max-w-7xl">
+          <h2 className="text-center text-3xl font-bold text-gray-900 sm:text-4xl">{heading}</h2>
+          {section.subtitle && <p className="mt-2 text-center text-gray-600">{section.subtitle}</p>}
+          <div className="mt-8 grid gap-5 md:grid-cols-2">
+            {(settings.cards || []).filter(card => card.title || card.image_url || card.description).map((card, index) => (
+              <article key={`${section.id}-${index}`} className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                {card.image_url && <img src={card.image_url} alt={card.title} className="h-56 w-full object-cover" />}
+                <div className="p-6">
+                  <h3 className="text-xl font-bold text-gray-900">{card.title}</h3>
+                  {card.description && <p className="mt-2 whitespace-pre-line leading-6 text-gray-600">{card.description}</p>}
+                  {card.button_text && <Link href={card.link_url || '/catalogo'} className="mt-4 inline-flex font-semibold text-primary hover:underline">{card.button_text}<span className="ml-1" aria-hidden="true">→</span></Link>}
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (section.block_type === 'business_info') {
+    const details = [
+      settings.show_business_hours !== false && businessSettings?.business_hours ? { icon: 'clock' as const, label: 'Horarios', value: businessSettings.business_hours } : null,
+      settings.show_address !== false && businessSettings?.address ? { icon: 'location' as const, label: 'Ubicación', value: businessSettings.address } : null,
+      settings.show_phone !== false && businessSettings?.phone_number ? { icon: 'phone' as const, label: 'Contacto', value: businessSettings.phone_number, href: `https://wa.me/${businessSettings.phone_number.replace(/\D/g, '')}` } : null,
+      settings.show_email !== false && businessSettings?.email ? { icon: 'mail' as const, label: 'Email', value: businessSettings.email, href: `mailto:${businessSettings.email}` } : null
+    ].filter(Boolean) as Array<{ icon: 'clock' | 'location' | 'phone' | 'mail'; label: string; value: string; href?: string }>
+    return (
+      <section className="bg-gray-50 px-4 py-14">
+        <div className="mx-auto max-w-6xl">
+          <h2 className="text-center text-3xl font-bold text-gray-900 sm:text-4xl">{heading}</h2>
+          {section.subtitle && <p className="mt-2 text-center text-gray-600">{section.subtitle}</p>}
+          {section.description && <p className="mx-auto mt-4 max-w-3xl whitespace-pre-line text-center text-gray-600">{section.description}</p>}
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {details.map(detail => (
+              <div key={detail.label} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <Icon name={detail.icon} className="h-6 w-6 text-primary" />
+                <h3 className="mt-3 font-bold text-gray-900">{detail.label}</h3>
+                {detail.href ? <a href={detail.href} className="mt-1 block whitespace-pre-line text-sm text-gray-600 hover:text-primary">{detail.value}</a> : <p className="mt-1 whitespace-pre-line text-sm text-gray-600">{detail.value}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (section.block_type === 'image_carousel') {
+    const slides = (settings.slides || []).filter(slide => slide.image_url)
+    if (slides.length === 0) return null
+    return (
+      <section className="bg-white px-4 py-14">
+        <div className="mx-auto max-w-7xl">
+          <h2 className="text-center text-3xl font-bold text-gray-900 sm:text-4xl">{heading}</h2>
+          {section.subtitle && <p className="mt-2 text-center text-gray-600">{section.subtitle}</p>}
+          {section.description && <p className="mt-3 text-center text-gray-600">{section.description}</p>}
+          <div className="mt-8 flex snap-x gap-4 overflow-x-auto pb-4">
+            {slides.map((slide, index) => (
+              <a key={`${section.id}-${index}`} href={slide.link_url || undefined} className="w-[78%] shrink-0 snap-start overflow-hidden rounded-2xl border border-gray-200 shadow-sm sm:w-[46%] lg:w-[30%]">
+                <img src={slide.image_url} alt={`${heading} ${index + 1}`} className="h-56 w-full object-cover transition hover:scale-[1.02]" />
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (section.block_type === 'product_grid') {
+    const shownProducts = settings.mode === 'discounts' ? products.filter(product => product.discount) : products
+    if (shownProducts.length === 0) return null
+    return (
+      <section className="bg-white px-4 py-14">
+        <div className="mx-auto max-w-7xl">
+          <h2 className="text-center text-3xl font-bold text-gray-900 sm:text-4xl">{heading}</h2>
+          {section.subtitle && <p className="mt-2 text-center text-gray-600">{section.subtitle}</p>}
+          <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+            {shownProducts.slice(0, settings.limit || 5).map(product => (
+              <Link key={product.id} href="/catalogo" className="overflow-hidden rounded-2xl border border-gray-200 bg-white transition hover:-translate-y-1 hover:shadow-lg">
+                <div className="h-36 bg-gray-100">{product.gallery?.[0] ? <img src={product.gallery[0]} alt={product.name} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-gray-300"><Icon name="box" className="h-9 w-9" /></div>}</div>
+                <div className="p-3"><h3 className="line-clamp-2 text-sm font-bold text-gray-900">{product.name}</h3>{product.discount && <p className="mt-1 text-xs font-semibold text-red-600">{product.discount.name}</p>}</div>
+              </Link>
+            ))}
+          </div>
+          {settings.button_text && <div className="mt-8 text-center"><Link href={settings.button_url || '/catalogo'} className="inline-flex rounded-xl bg-primary px-6 py-3 font-bold text-white transition hover:brightness-95">{settings.button_text}</Link></div>}
+        </div>
+      </section>
+    )
+  }
+
+  return (
+    <section className="bg-white px-4 py-14">
+      <div className={`mx-auto grid max-w-6xl items-center gap-8 ${section.image_url ? 'md:grid-cols-2' : 'max-w-4xl text-center'}`}>
+        {section.image_url && <img src={section.image_url} alt={heading} className="max-h-[28rem] min-h-56 w-full rounded-2xl object-cover" />}
+        <div><h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">{heading}</h2>{section.subtitle && <p className="mt-3 text-lg font-medium text-primary">{section.subtitle}</p>}{section.description && <p className="mt-4 whitespace-pre-line leading-7 text-gray-600">{section.description}</p>}</div>
+      </div>
+    </section>
+  )
 }
 
 export default function LandingPage() {
-  const router = useRouter()
   const [products, setProducts] = useState<ProductWithDiscount[]>([])
   const [landingSections, setLandingSections] = useState<LandingSection[]>([])
-  const [loading, setLoading] = useState(true)
-  const [cartTotal, setCartTotal] = useState(0)
+  const [categories, setCategories] = useState<CategoryForLanding[]>([])
+  const [businessSettings, setBusinessSettings] = useState<BusinessSettings | null>(null)
 
   useEffect(() => {
     loadData()
-    loadCart()
   }, [])
 
   async function loadData() {
     try {
-      const [productsRes, discountsRes, sectionsRes] = await Promise.all([
+      const [productsRes, discountsRes, sectionsRes, categoriesRes, settingsRes] = await Promise.all([
         supabase.from('products').select('*').eq('status', 'complete'),
         supabase.from('discounts').select('*').eq('is_active', true),
-        supabase.from('landing_sections').select('*').eq('is_visible', true).order('section_name')
+        supabase.from('landing_sections').select('*').order('order_position').order('section_name'),
+        supabase.from('categories').select('*').order('order_position'),
+        supabase.from('website_settings').select('phone_number,email,address,business_hours').single()
       ])
 
-      if (sectionsRes.data) setLandingSections(sectionsRes.data as LandingSection[])
+      if (sectionsRes.data) setLandingSections((sectionsRes.data as LandingSection[]).filter(section => section.is_visible))
+      if (categoriesRes.data) setCategories(categoriesRes.data as CategoryForLanding[])
+      if (settingsRes.data) setBusinessSettings(settingsRes.data as BusinessSettings)
 
       if (productsRes.data && discountsRes.data) {
         const productsWithDiscounts = await Promise.all(
@@ -64,38 +248,8 @@ export default function LandingPage() {
       }
     } catch (error) {
       console.error('Error loading data:', error)
-    } finally {
-      setLoading(false)
     }
   }
-
-  function loadCart() {
-    const saved = localStorage.getItem('los_primos_cart')
-    if (saved) {
-      const items = JSON.parse(saved)
-      const total = items.reduce((sum: number, item: any) => sum + item.quantity, 0)
-      setCartTotal(total)
-    }
-  }
-
-  function addToCart(productId: string) {
-    const saved = localStorage.getItem('los_primos_cart') || '[]'
-    const items = JSON.parse(saved)
-    const existing = items.find((item: any) => item.productId === productId)
-    
-    if (existing) {
-      existing.quantity += 1
-    } else {
-      items.push({ productId, quantity: 1 })
-    }
-    
-    localStorage.setItem('los_primos_cart', JSON.stringify(items))
-    const total = items.reduce((sum: number, item: any) => sum + item.quantity, 0)
-    setCartTotal(total)
-  }
-
-  const productsWithDiscount = products.filter(p => p.discount)
-  const topProducts = products.slice(0, 5)
 
   return (
     <PublicLayout>
@@ -104,134 +258,9 @@ export default function LandingPage() {
       <HeroSlider />
 
       {/* BLOQUES EDITABLES DE LANDING */}
-      {landingSections.map((section, index) => (
-        <section key={section.id} className={`px-4 py-14 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
-          <div className={`mx-auto grid max-w-6xl items-center gap-8 ${section.image_url ? 'md:grid-cols-2' : 'max-w-4xl text-center'}`}>
-            {section.image_url && (
-              <div className={`overflow-hidden rounded-2xl border border-gray-200 shadow-sm ${index % 2 === 1 ? 'md:order-2' : ''}`}>
-                <img src={section.image_url} alt={section.title || section.section_name} className="max-h-[28rem] min-h-56 w-full object-cover" />
-              </div>
-            )}
-            <div className="py-2">
-              <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">{section.title || section.section_name}</h2>
-              {section.subtitle && <p className="mt-3 text-lg font-medium text-primary">{section.subtitle}</p>}
-              {section.description && <p className="mt-4 whitespace-pre-line text-base leading-7 text-gray-600">{section.description}</p>}
-            </div>
-          </div>
-        </section>
+      {landingSections.map(section => (
+        <LandingBlockRenderer key={section.id} section={section} categories={categories} products={products} businessSettings={businessSettings} />
       ))}
-
-      {/* OFERTAS DESTACADAS */}
-      {productsWithDiscount.length > 0 && (
-        <section className="py-16 bg-gradient-to-r from-red-50 via-orange-50 to-red-50 px-4">
-          <div className="max-w-7xl mx-auto">
-            <h2 className="mb-2 flex items-center justify-center gap-3 text-4xl font-black text-gray-900"><Icon name="tag" className="h-8 w-8 text-primary" />Ofertas Especiales</h2>
-            <p className="text-gray-600 mb-8 text-lg">No te pierdas nuestras mejores promociones</p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {productsWithDiscount.slice(0, 4).map(product => (
-                <div
-                  key={product.id}
-                  className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border border-gray-200 cursor-pointer group"
-                  onClick={() => {
-                    addToCart(product.id)
-                    router.push('/catalogo')
-                  }}
-                >
-                  <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
-                    {product.gallery?.[0] ? (
-                      <img src={product.gallery[0]} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-300"><Icon name="box" className="h-12 w-12" /></div>
-                    )}
-                    {product.discount && (
-                      <div className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1 rounded-full font-black text-sm shadow-lg">
-                        -{product.discount.percentage}%
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-bold text-gray-900 line-clamp-2 mb-2">{product.name}</h3>
-                    {product.discount && (
-                      <p className="text-xs text-red-600 font-semibold">{product.discount.name}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* TOP PRODUCTOS */}
-      <section className="py-16 bg-white px-4">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="mb-12 flex items-center justify-center gap-3 text-4xl font-black text-gray-900"><Icon name="sparkles" className="h-8 w-8 text-primary" />Lo Más Vendido</h2>
-
-          {loading ? (
-            <div className="flex justify-center py-20">
-              <svg className="w-12 h-12 text-blue-900 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-              {topProducts.map(product => (
-                <div 
-                  key={product.id} 
-                  className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all cursor-pointer group h-full flex flex-col"
-                  onClick={() => {
-                    addToCart(product.id)
-                    router.push('/catalogo')
-                  }}
-                >
-                  <div className="relative h-40 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
-                    {product.gallery?.[0] ? (
-                      <img src={product.gallery[0]} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-300"><Icon name="box" className="h-10 w-10" /></div>
-                    )}
-                    {product.discount && (
-                      <div className="absolute top-2 right-2 bg-red-500 text-white px-2.5 py-1 rounded-full font-black text-xs">
-                        -{product.discount.percentage}%
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-4 flex flex-col flex-1">
-                    <h3 className="font-bold text-gray-900 line-clamp-2 mb-2">{product.name}</h3>
-                    {product.description && (
-                      <p className="text-xs text-gray-600 line-clamp-1">{product.description}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="text-center mt-12">
-            <button
-              onClick={() => router.push('/catalogo')}
-              className="px-8 py-3 bg-blue-900 text-white rounded-xl font-bold hover:bg-blue-800 transition-all text-lg"
-            >
-              Ver Todos los Productos
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="py-16 bg-gradient-to-r from-blue-900 to-blue-800 text-white px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-black mb-4">¿Listo para tu pedido?</h2>
-          <p className="text-xl text-blue-100 mb-8">Explora nuestro catálogo completo con filtros avanzados</p>
-          <button
-            onClick={() => router.push('/catalogo')}
-            className="inline-block px-8 py-4 bg-white text-blue-900 rounded-xl font-bold text-lg hover:bg-gray-100 transition-all"
-          >
-            <span className="inline-flex items-center gap-2"><Icon name="box" className="h-5 w-5" />Ir al Catálogo</span>
-          </button>
-        </div>
-      </section>
 
       {/* FOOTER */}
       <footer className="bg-gray-900 text-gray-300 py-12 px-4">
