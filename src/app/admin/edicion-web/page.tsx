@@ -1480,61 +1480,52 @@ export default function WebsiteEditionPage() {
         <div className="h-6 bg-bg rounded-t-[2rem]"></div>
       </header>
 
-      {/* Tabs */}
-      <div className="px-4 -mt-2 mb-6 sticky top-20 z-10">
-        <div className="flex gap-2 p-1.5 bg-surface rounded-2xl card">
-          <button
-            onClick={() => setActiveTab('settings')}
-            className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
-              activeTab === 'settings'
-                ? 'bg-primary text-white shadow-lg'
-                : 'text-text-muted'
-            }`}
-          >
-            ⚙️ Configuración
-          </button>
-          <button
-            onClick={() => setActiveTab('sections')}
-            className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
-              activeTab === 'sections'
-                ? 'bg-primary text-white shadow-lg'
-                : 'text-text-muted'
-            }`}
-          >
-            🧩 Secciones
-          </button>
-        </div>
-
-        {/* Sub-navegación de Secciones */}
-        {activeTab === 'sections' && (
-          <div className="flex gap-2 mt-3 overflow-x-auto pb-1 -mx-1 px-1">
-            {[
-              { key: 'announcement', label: '📢 Barra de anuncios' },
-              { key: 'header', label: '🧭 Header / Menú' },
-              { key: 'hero', label: '🎨 Hero' },
-              { key: 'landing', label: '📄 Bloques de Landing' },
-              { key: 'popups', label: '💬 Pop-ups' },
-              { key: 'footer', label: '🦶 Footer' },
-            ].map(item => (
-              <button
-                key={item.key}
-                onClick={() => setSectionView(item.key as typeof sectionView)}
-                className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all ${
-                  sectionView === item.key
-                    ? 'bg-primary text-white border-primary'
-                    : 'bg-white text-text-muted border-border'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* Contenido */}
-      <div className="lg:grid lg:grid-cols-5 lg:gap-8 lg:items-start lg:px-4 lg:pb-6">
-      <div className="flex-1 px-4 pb-6 max-w-3xl lg:px-0 lg:pb-0 lg:col-span-3 lg:max-w-none">
+      <div className="flex-1 lg:grid lg:grid-cols-12 lg:gap-6 lg:items-start lg:px-5 lg:pb-8">
+      <aside className="px-4 pt-2 pb-4 lg:px-0 lg:pt-0 lg:pb-0 lg:col-span-2 lg:sticky lg:top-24">
+        <nav aria-label="Navegación de edición web" className="rounded-2xl border border-border bg-surface p-2 shadow-sm">
+          <p className="hidden lg:block px-3 pt-2 pb-3 text-[11px] font-bold uppercase tracking-wider text-text-muted">Editor del sitio</p>
+          <div className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
+            <button
+              onClick={() => setActiveTab('settings')}
+              aria-current={activeTab === 'settings' ? 'page' : undefined}
+              className={`flex shrink-0 items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold transition-colors lg:w-full ${activeTab === 'settings' ? 'bg-primary text-white shadow-sm' : 'text-text-muted hover:bg-gray-100 hover:text-text'}`}
+            >
+              <span aria-hidden="true">⚙️</span><span>Configuración</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('sections')}
+              aria-current={activeTab === 'sections' ? 'page' : undefined}
+              className={`flex shrink-0 items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold transition-colors lg:w-full ${activeTab === 'sections' ? 'bg-primary text-white shadow-sm' : 'text-text-muted hover:bg-gray-100 hover:text-text'}`}
+            >
+              <span aria-hidden="true">🧩</span><span>Secciones</span>
+            </button>
+          </div>
+          {activeTab === 'sections' && (
+            <div className="mt-2 flex gap-1 overflow-x-auto border-t border-border pt-2 lg:flex-col lg:overflow-visible">
+              {[
+                { key: 'announcement', label: 'Barra de anuncios', icon: '📢' },
+                { key: 'header', label: 'Header y menú', icon: '🧭' },
+                { key: 'hero', label: 'Hero', icon: '🎨' },
+                { key: 'landing', label: 'Bloques de landing', icon: '📄' },
+                { key: 'popups', label: 'Pop-ups', icon: '💬' },
+                { key: 'footer', label: 'Footer', icon: '🦶' },
+              ].map(item => (
+                <button
+                  key={item.key}
+                  onClick={() => setSectionView(item.key as typeof sectionView)}
+                  aria-current={sectionView === item.key ? 'page' : undefined}
+                  className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm transition-colors lg:w-full ${sectionView === item.key ? 'bg-blue-50 font-semibold text-primary' : 'text-text-muted hover:bg-gray-50 hover:text-text'}`}
+                >
+                  <span aria-hidden="true">{item.icon}</span><span>{item.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </nav>
+      </aside>
+
+      <div className="flex-1 px-4 pb-6 max-w-3xl lg:px-0 lg:pb-0 lg:col-span-6 lg:max-w-none">
         {/* SETTINGS TAB */}
         {activeTab === 'settings' && (
           <div className="card max-w-2xl">
@@ -2763,7 +2754,7 @@ export default function WebsiteEditionPage() {
       </div>
 
       {/* Panel de vista previa del sitio (solo desktop) */}
-      <div className="hidden lg:block lg:col-span-2 sticky top-24 self-start">
+      <div className="hidden lg:block lg:col-span-4 sticky top-24 self-start">
         <SitePreviewPanel
           sectionView={activeTab === 'sections' ? sectionView : null}
           barForm={barForm}
