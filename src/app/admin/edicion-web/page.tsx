@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { uploadImageToSupabase } from '@/lib/image-upload-helper'
 import { PopupFrame } from '@/components/popup-frame'
 import { Icon, type IconName } from '@/components/ui/icon'
+import { CATEGORY_ICON_OPTIONS, getCategoryIconName } from '@/lib/category-icons'
 import type { Employee } from '@/types/database'
 
 interface ColorSwatch {
@@ -126,6 +127,13 @@ interface LandingCarouselSlide {
   link_url: string
 }
 
+interface EditableLandingCategory {
+  id: string
+  name: string
+  parent_id: string | null
+  show_in_catalog: boolean
+}
+
 interface LandingSectionSettings {
   button_text?: string
   button_url?: string
@@ -136,6 +144,7 @@ interface LandingSectionSettings {
   show_email?: boolean
   show_address?: boolean
   show_business_hours?: boolean
+  category_icons?: Record<string, string>
   cards?: LandingFeatureCard[]
   slides?: LandingCarouselSlide[]
 }
@@ -188,6 +197,7 @@ function defaultLandingSettings(type: LandingBlockType): LandingSectionSettings 
     { title: '', description: '', image_url: '', link_url: '', button_text: '' }
   ] }
   if (type === 'business_info') return { show_phone: true, show_email: true, show_address: true, show_business_hours: true }
+  if (type === 'categories') return { category_icons: {} }
   if (type === 'image_carousel') return { slides: [] }
   if (type === 'product_grid') return { mode: 'popular', limit: 5, button_text: 'Ver catálogo', button_url: '/catalogo' }
   return {}
@@ -517,6 +527,7 @@ export default function WebsiteEditionPage() {
 
   // Landing Sections
   const [sections, setSections] = useState<LandingSection[]>([])
+  const [landingCategories, setLandingCategories] = useState<EditableLandingCategory[]>([])
   const [editingSection, setEditingSection] = useState<LandingSection | null>(null)
   const [sectionForm, setSectionForm] = useState({ section_name: '', title: '', subtitle: '', description: '', image_url: '', is_visible: true, block_type: 'content' as LandingBlockType, settings: {} as LandingSectionSettings })
   const [savingSection, setSavingSection] = useState(false)
@@ -635,7 +646,7 @@ export default function WebsiteEditionPage() {
 
   async function loadData() {
     try {
-      const [settingsRes, heroRes, sectionsRes, announcementsRes, barSettingsRes, menuLinksRes, headerSettingsRes, popupsRes] = await Promise.all([
+      const [settingsRes, heroRes, sectionsRes, announcementsRes, barSettingsRes, menuLinksRes, headerSettingsRes, popupsRes, categoriesRes] = await Promise.all([
         supabase.from('website_settings').select('*').single(),
         supabase.from('hero_slides').select('*').order('order_position'),
         supabase.from('landing_sections').select('*').order('order_position').order('section_name'),
@@ -643,7 +654,8 @@ export default function WebsiteEditionPage() {
         supabase.from('announcement_bar_settings').select('*').single(),
         supabase.from('menu_links').select('*').order('order_position'),
         supabase.from('header_settings').select('*').single(),
-        supabase.from('popups').select('*').order('order_position')
+        supabase.from('popups').select('*').order('order_position'),
+        supabase.from('categories').select('*').order('order_position')
       ])
 
       if (settingsRes.data) {
@@ -674,6 +686,7 @@ export default function WebsiteEditionPage() {
 
       if (heroRes.data) setHeroSlides(heroRes.data as HeroSlide[])
       if (sectionsRes.data) setSections(sectionsRes.data as LandingSection[])
+      if (categoriesRes.data) setLandingCategories(categoriesRes.data as EditableLandingCategory[])
       if (announcementsRes.data) setAnnouncements(announcementsRes.data as AnnouncementMessage[])
       if (menuLinksRes.data) setMenuLinks(menuLinksRes.data as MenuLink[])
       if (headerSettingsRes.data) {
@@ -3182,6 +3195,37 @@ export default function WebsiteEditionPage() {
                   className="input min-h-24"
                 />
               </div>
+
+              {sectionForm.block_type === 'categories' && (
+                <div className="space-y-3 rounded-xl border border-border p-4">
+                  <div>
+                    <h4 className="font-semibold text-text">Icono para cada categoría</h4>
+                    <p className="mt-1 text-xs text-text-muted">El catálogo sugiere uno según el nombre; podés cambiarlo por cualquiera de estos iconos.</p>
+                  </div>
+                  {landingCategories.filter(category => !category.parent_id && category.show_in_catalog !== false).map(category => {
+                    const customIcon = sectionForm.settings.category_icons?.[category.id] || ''
+                    const selectedIcon = getCategoryIconName(category.name, customIcon)
+                    return (
+                      <div key={category.id} className="grid items-center gap-3 rounded-lg bg-gray-50 p-3 sm:grid-cols-[1fr_2fr]">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Icon name={selectedIcon} className="h-5 w-5" /></span>
+                          <span className="truncate text-sm font-semibold text-text">{category.name}</span>
+                        </div>
+                        <select
+                          aria-label={`Icono para ${category.name}`}
+                          className="input"
+                          value={customIcon}
+                          onChange={e => setSectionForm(current => ({ ...current, settings: { ...current.settings, category_icons: { ...(current.settings.category_icons || {}), [category.id]: e.target.value } } }))}
+                        >
+                          <option value="">Sugerido automáticamente</option>
+                          {CATEGORY_ICON_OPTIONS.map(option => <option key={option.name} value={option.name}>{option.label}</option>)}
+                        </select>
+                      </div>
+                    )
+                  })}
+                  {landingCategories.filter(category => !category.parent_id && category.show_in_catalog !== false).length === 0 && <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">No hay categorías principales visibles para configurar.</p>}
+                </div>
+              )}
 
               {sectionForm.block_type === 'banner' && (
                 <div className="space-y-3 rounded-xl border border-border p-4">

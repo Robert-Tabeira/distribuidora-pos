@@ -6,6 +6,8 @@ export type IconName =
   | 'document' | 'chat' | 'shoe' | 'palette' | 'type' | 'sparkles'
   | 'link' | 'info' | 'edit' | 'ticket' | 'bolt' | 'clock' | 'scroll'
   | 'location' | 'phone' | 'mail' | 'check' | 'search' | 'close' | 'cart'
+  | 'meat' | 'chicken' | 'milk' | 'bottle' | 'bread' | 'fish' | 'cheese'
+  | 'carrot' | 'cleaning' | 'snowflake' | 'coffee' | 'home'
 
 type IconProps = SVGProps<SVGSVGElement> & { name: IconName }
 
@@ -43,6 +45,18 @@ const paths: Record<IconName, ReactNode> = {
   search: <><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></>,
   close: <><path d="m18 6-12 12M6 6l12 12" /></>,
   cart: <><circle cx="9" cy="20" r="1" /><circle cx="18" cy="20" r="1" /><path d="M2 3h2l2.6 12.2A2 2 0 0 0 8.6 17h9.7a2 2 0 0 0 2-1.6L22 7H5" /></>,
+  meat: <><path d="M7 6.5c2.2-2 6.1-2 8.2.1l2.2 2.2a5.8 5.8 0 0 1-4.1 9.9H8a5 5 0 0 1-1-9.9" /><circle cx="7.5" cy="8" r="1.5" /><path d="M4 6 2.8 4.8M5 10H2.5" /></>,
+  chicken: <><path d="M8 8a5 5 0 1 1 7 7l-3 3-7-7 3-3Z" /><path d="m5 16-2 2 3 3 2-2M3 18l-2-2M6 21l-2 2" /></>,
+  milk: <><path d="M8 3h8l2 4v14H6V7l2-4Z" /><path d="M8 3v4l-2 3h12l-2-3V3M9 14h6" /></>,
+  bottle: <><path d="M9 3h6v4l2 2v12H7V9l2-2V3Z" /><path d="M9 7h6M7 12h10" /></>,
+  bread: <><path d="M4 20V9a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v11H4Z" /><path d="M8 5v5M12 5v5M16 5v5M4 14h16" /></>,
+  fish: <><path d="M3 12c3-4 7-6 12-5l5-3v16l-5-3c-5 1-9-1-12-5Z" /><circle cx="9" cy="10" r=".8" /><path d="M13 9.5c1.5 1.5 1.5 3.5 0 5" /></>,
+  cheese: <><path d="m3 10 14-6 4 4v12H3v-10Z" /><circle cx="8" cy="14" r="1" /><circle cx="15" cy="11" r="1.3" /><circle cx="13" cy="17" r=".8" /></>,
+  carrot: <><path d="m7 8 9 9-7 4-4-6 2-7Z" /><path d="M7 8 4 5M9 6 9 2M12 7l3-3M9 12l3 3M7 15l2 2" /></>,
+  cleaning: <><path d="M9 4h6l1 4-2 2v11h-5V10L7 8l2-4Z" /><path d="M9 4 8 2h7l-1 2M9 14h5M18 5h3M19 8h2" /></>,
+  snowflake: <><path d="M12 2v20M4 6l16 12M20 6 4 18" /><path d="m9 4 3-2 3 2M9 20l3 2 3-2M4 10 4 6l4-1M16 19l4-1v-4M16 5l4 1v4M4 14v4l4 1" /></>,
+  coffee: <><path d="M5 8h12v8a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V8ZM17 10h2a2 2 0 0 1 0 4h-2M8 4c0 1 1 1 1 2M12 3c0 1 1 1 1 2" /></>,
+  home: <><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-6v-7h-4v7H4a1 1 0 0 1-1-1V10Z" /></>,
 }
 
 export function Icon({ name, ...props }: IconProps) {

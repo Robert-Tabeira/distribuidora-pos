@@ -37,6 +37,7 @@ export default function CatalogPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [landingCategoryTarget, setLandingCategoryTarget] = useState('')
   const [showOnlyDiscounts, setShowOnlyDiscounts] = useState(false)
   const [cartItems, setCartItems] = useState<{ itemId: string; productId: string; quantity: number; unit: string; notes: string }[]>([])
   const [showCart, setShowCart] = useState(false)
@@ -55,6 +56,12 @@ export default function CatalogPage() {
   useEffect(() => {
     loadData()
     loadCart()
+    const params = new URLSearchParams(window.location.search)
+    const categoryId = params.get('categoria') || params.get('category')
+    if (categoryId) {
+      setLandingCategoryTarget(categoryId)
+      setSelectedCategories([categoryId])
+    }
     supabase.from('website_settings').select('phone_number, customer_orders_enabled, show_recent_product_badge').single().then(({ data }) => {
       if (data?.phone_number) setBusinessPhone(data.phone_number.replace(/\D/g, ''))
       setCustomerOrderingEnabled(data?.customer_orders_enabled === true)
@@ -231,9 +238,13 @@ export default function CatalogPage() {
     // Filtrar por categorías (matchea tanto si es la categoría principal
     // seleccionada como si es una subcategoría seleccionada)
     if (selectedCategories.length > 0) {
+      const catsById = new Map((categories as CategoryExt[]).map(category => [category.id, category]))
       filtered = filtered.filter(p =>
-        selectedCategories.includes(p.category_id || '') ||
-        selectedCategories.includes((p as any).subcategory_id || '')
+        selectedCategories.some(categoryId =>
+          categoryId === p.category_id ||
+          categoryId === (p as any).subcategory_id ||
+          catsById.get(p.category_id || '')?.parent_id === categoryId
+        )
       )
     }
 
@@ -254,7 +265,7 @@ export default function CatalogPage() {
     }
 
     return filtered
-  }, [products, searchQuery, selectedCategories, showOnlyDiscounts, sortOption])
+  }, [products, categories, searchQuery, selectedCategories, showOnlyDiscounts, sortOption])
 
   // Agrupa filteredProducts en secciones por categoría (y, dentro de cada
   // una, por subcategoría si corresponde), respetando el orden y color
@@ -315,6 +326,22 @@ export default function CatalogPage() {
 
     return { sections, uncategorized }
   }, [filteredProducts, categories])
+
+  useEffect(() => {
+    if (!landingCategoryTarget || categories.length === 0) return
+    const categoryRows = categories as CategoryExt[]
+    const selected = categoryRows.find(category => category.id === landingCategoryTarget)
+    if (!selected) {
+      setLandingCategoryTarget('')
+      return
+    }
+    const mainCategoryId = selected.parent_id || selected.id
+    const categorySection = document.getElementById(`catalog-category-${mainCategoryId}`)
+    if (categorySection) {
+      categorySection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      setLandingCategoryTarget('')
+    }
+  }, [categories, groupedSections, landingCategoryTarget])
 
   const cartTotal = cartItems.reduce((sum, item) => sum + item.quantity, 0)
   const activeFilterCount = selectedCategories.length + (showOnlyDiscounts ? 1 : 0)
@@ -584,7 +611,7 @@ export default function CatalogPage() {
             ) : (
               <div>
                 {groupedSections.sections.map(section => (
-                  <div key={section.category.id} className="mb-10">
+                  <div id={`catalog-category-${section.category.id}`} key={section.category.id} className="mb-10 scroll-mt-24">
                     <div
                       className="rounded-2xl px-4 py-3 sm:px-5 sm:py-4 mb-4"
                       style={{ backgroundColor: (section.category as any).color || '#f3f4f6' }}

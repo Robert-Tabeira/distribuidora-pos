@@ -7,6 +7,7 @@ import { HeroSlider } from '@/components/hero-slider'
 import { supabase } from '@/lib/supabase'
 import type { Category, Product, Discount } from '@/types/database'
 import { Icon } from '@/components/ui/icon'
+import { getCategoryIconName } from '@/lib/category-icons'
 import Link from 'next/link'
 
 interface ProductWithDiscount extends Product {
@@ -24,6 +25,7 @@ interface LandingSectionSettings {
   show_email?: boolean
   show_address?: boolean
   show_business_hours?: boolean
+  category_icons?: Record<string, string>
   cards?: Array<{ title: string; description: string; image_url: string; link_url: string; button_text: string }>
   slides?: Array<{ image_url: string; link_url: string }>
 }
@@ -42,6 +44,7 @@ interface LandingSection {
 interface CategoryForLanding extends Category {
   parent_id: string | null
   show_in_catalog: boolean
+  color: string | null
 }
 interface BusinessSettings {
   phone_number: string | null
@@ -74,8 +77,8 @@ function LandingBlockRenderer({
           {section.subtitle && <p className="mt-2 text-center text-gray-600">{section.subtitle}</p>}
           <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {mainCategories.map(category => (
-              <Link key={category.id} href="/catalogo" className="group flex min-h-28 flex-col items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-4 text-center transition hover:-translate-y-1 hover:border-primary/40 hover:bg-white hover:shadow-md">
-                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-white"><Icon name="grid" className="h-5 w-5" /></span>
+              <Link key={category.id} href={`/catalogo?categoria=${encodeURIComponent(category.id)}`} className="group flex min-h-28 flex-col items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-4 text-center transition hover:-translate-y-1 hover:border-primary/40 hover:bg-white hover:shadow-md">
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-white"><Icon name={getCategoryIconName(category.name, settings.category_icons?.[category.id])} className="h-5 w-5" /></span>
                 <span className="text-sm font-semibold text-gray-800">{category.name}</span>
               </Link>
             ))}
