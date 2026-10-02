@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { HeroSlider } from '@/components/hero-slider'
 import { supabase } from '@/lib/supabase'
 import type { Product, Discount } from '@/types/database'
+import { Icon } from '@/components/ui/icon'
 
 interface ProductWithDiscount extends Product {
   discount?: Discount
@@ -92,7 +93,7 @@ export default function LandingPage() {
       {productsWithDiscount.length > 0 && (
         <section className="py-16 bg-gradient-to-r from-red-50 via-orange-50 to-red-50 px-4">
           <div className="max-w-7xl mx-auto">
-            <h2 className="text-4xl font-black text-gray-900 mb-2">🎉 Ofertas Especiales</h2>
+            <h2 className="mb-2 flex items-center justify-center gap-3 text-4xl font-black text-gray-900"><Icon name="tag" className="h-8 w-8 text-primary" />Ofertas Especiales</h2>
             <p className="text-gray-600 mb-8 text-lg">No te pierdas nuestras mejores promociones</p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -109,7 +110,7 @@ export default function LandingPage() {
                     {product.gallery?.[0] ? (
                       <img src={product.gallery[0]} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-5xl">📦</div>
+                      <div className="w-full h-full flex items-center justify-center text-gray-300"><Icon name="box" className="h-12 w-12" /></div>
                     )}
                     {product.discount && (
                       <div className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1 rounded-full font-black text-sm shadow-lg">
@@ -133,7 +134,7 @@ export default function LandingPage() {
       {/* TOP PRODUCTOS */}
       <section className="py-16 bg-white px-4">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-black text-gray-900 mb-12">🏆 Lo Más Vendido</h2>
+          <h2 className="mb-12 flex items-center justify-center gap-3 text-4xl font-black text-gray-900"><Icon name="sparkles" className="h-8 w-8 text-primary" />Lo Más Vendido</h2>
 
           {loading ? (
             <div className="flex justify-center py-20">
@@ -156,7 +157,7 @@ export default function LandingPage() {
                     {product.gallery?.[0] ? (
                       <img src={product.gallery[0]} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-4xl">📦</div>
+                      <div className="w-full h-full flex items-center justify-center text-gray-300"><Icon name="box" className="h-10 w-10" /></div>
                     )}
                     {product.discount && (
                       <div className="absolute top-2 right-2 bg-red-500 text-white px-2.5 py-1 rounded-full font-black text-xs">
@@ -195,7 +196,7 @@ export default function LandingPage() {
             onClick={() => router.push('/catalogo')}
             className="inline-block px-8 py-4 bg-white text-blue-900 rounded-xl font-bold text-lg hover:bg-gray-100 transition-all"
           >
-            📦 Ir al Catálogo
+            <span className="inline-flex items-center gap-2"><Icon name="box" className="h-5 w-5" />Ir al Catálogo</span>
           </button>
         </div>
       </section>
@@ -210,8 +211,8 @@ export default function LandingPage() {
             </div>
             <div>
               <h4 className="text-white font-bold mb-4">Contacto</h4>
-              <p className="text-sm mb-2">📱 WhatsApp: +598 99 123 4567</p>
-              <p className="text-sm">📧 info@losprimos.com</p>
+              <p className="mb-2 inline-flex items-center gap-2 text-sm"><Icon name="phone" className="h-4 w-4" />WhatsApp: +598 99 123 4567</p>
+              <p className="inline-flex items-center gap-2 text-sm"><Icon name="mail" className="h-4 w-4" />info@losprimos.com</p>
             </div>
             <div>
               <h4 className="text-white font-bold mb-4">Horarios</h4>

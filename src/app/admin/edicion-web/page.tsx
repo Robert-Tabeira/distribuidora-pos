@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { uploadImageToSupabase } from '@/lib/image-upload-helper'
 import { PopupFrame } from '@/components/popup-frame'
+import { Icon, type IconName } from '@/components/ui/icon'
 import type { Employee } from '@/types/database'
 
 interface ColorSwatch {
@@ -160,7 +161,7 @@ function CollapsibleCard({
   defaultOpen = false,
   children
 }: {
-  icon: string
+  icon: IconName
   title: string
   subtitle?: string
   defaultOpen?: boolean
@@ -176,7 +177,7 @@ function CollapsibleCard({
         className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left"
       >
         <div className="flex items-center gap-3 min-w-0">
-          <span className="text-xl">{icon}</span>
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon name={icon} className="h-5 w-5" /></span>
           <div className="min-w-0">
             <p className="font-bold text-text">{title}</p>
             {subtitle && <p className="text-xs text-text-muted truncate">{subtitle}</p>}
@@ -1491,25 +1492,25 @@ export default function WebsiteEditionPage() {
               aria-current={activeTab === 'settings' ? 'page' : undefined}
               className={`flex shrink-0 items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold transition-colors lg:w-full ${activeTab === 'settings' ? 'bg-primary text-white shadow-sm' : 'text-text-muted hover:bg-gray-100 hover:text-text'}`}
             >
-              <span aria-hidden="true">⚙️</span><span>Configuración</span>
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-current/10"><Icon name="settings" className="h-4 w-4" /></span><span>Configuración</span>
             </button>
             <button
               onClick={() => setActiveTab('sections')}
               aria-current={activeTab === 'sections' ? 'page' : undefined}
               className={`flex shrink-0 items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold transition-colors lg:w-full ${activeTab === 'sections' ? 'bg-primary text-white shadow-sm' : 'text-text-muted hover:bg-gray-100 hover:text-text'}`}
             >
-              <span aria-hidden="true">🧩</span><span>Secciones</span>
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-current/10"><Icon name="layers" className="h-4 w-4" /></span><span>Secciones</span>
             </button>
           </div>
           {activeTab === 'sections' && (
             <div className="mt-2 flex gap-1 overflow-x-auto border-t border-border pt-2 lg:flex-col lg:overflow-visible">
               {[
-                { key: 'announcement', label: 'Barra de anuncios', icon: '📢' },
-                { key: 'header', label: 'Header y menú', icon: '🧭' },
-                { key: 'hero', label: 'Hero', icon: '🎨' },
-                { key: 'landing', label: 'Bloques de landing', icon: '📄' },
-                { key: 'popups', label: 'Pop-ups', icon: '💬' },
-                { key: 'footer', label: 'Footer', icon: '🦶' },
+                { key: 'announcement', label: 'Barra de anuncios', icon: 'megaphone' as IconName },
+                { key: 'header', label: 'Header y menú', icon: 'compass' as IconName },
+                { key: 'hero', label: 'Hero', icon: 'image' as IconName },
+                { key: 'landing', label: 'Bloques de landing', icon: 'document' as IconName },
+                { key: 'popups', label: 'Pop-ups', icon: 'chat' as IconName },
+                { key: 'footer', label: 'Footer', icon: 'shoe' as IconName },
               ].map(item => (
                 <button
                   key={item.key}
@@ -1517,7 +1518,7 @@ export default function WebsiteEditionPage() {
                   aria-current={sectionView === item.key ? 'page' : undefined}
                   className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm transition-colors lg:w-full ${sectionView === item.key ? 'bg-blue-50 font-semibold text-primary' : 'text-text-muted hover:bg-gray-50 hover:text-text'}`}
                 >
-                  <span aria-hidden="true">{item.icon}</span><span>{item.label}</span>
+                  <Icon name={item.icon} className="h-4 w-4 shrink-0" /><span>{item.label}</span>
                 </button>
               ))}
             </div>
@@ -1807,7 +1808,7 @@ export default function WebsiteEditionPage() {
             {/* Panel de Diseño */}
             <p className="text-xs font-semibold text-text-muted mb-2 mt-2">DISEÑO DE LA BARRA</p>
 
-            <CollapsibleCard icon="🎨" title="Colores" subtitle="Fondo y texto">
+            <CollapsibleCard icon="palette" title="Colores" subtitle="Fondo y texto">
               <div className="grid sm:grid-cols-2 gap-5">
                 <ColorPicker
                   label="Color de fondo"
@@ -1824,7 +1825,7 @@ export default function WebsiteEditionPage() {
               </div>
             </CollapsibleCard>
 
-            <CollapsibleCard icon="🔤" title="Tipografía" subtitle="Fuente, tamaño y grosor">
+            <CollapsibleCard icon="type" title="Tipografía" subtitle="Fuente, tamaño y grosor">
               <div className="grid sm:grid-cols-2 gap-5 mb-5">
                 <div>
                   <label className="block text-sm font-semibold text-text-muted mb-2">Tipografía</label>
@@ -1884,7 +1885,7 @@ export default function WebsiteEditionPage() {
               </div>
             </CollapsibleCard>
 
-            <CollapsibleCard icon="✨" title="Efecto visual" subtitle={barForm.animation === 'none' ? 'Ninguno' : barForm.animation}>
+            <CollapsibleCard icon="sparkles" title="Efecto visual" subtitle={barForm.animation === 'none' ? 'Ninguno' : barForm.animation}>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {[
                   { value: 'none', label: 'Ninguno' },
@@ -2028,7 +2029,7 @@ export default function WebsiteEditionPage() {
               </div>
 
               {/* LOGO Y NOMBRE */}
-              <CollapsibleCard icon="🖼️" title="Logo y Nombre" subtitle={logoForm.use_logo_image ? 'Imagen' : logoForm.site_name}>
+              <CollapsibleCard icon="image" title="Logo y Nombre" subtitle={logoForm.use_logo_image ? 'Imagen' : logoForm.site_name}>
                 <div className="flex gap-2 mb-5 p-1 bg-gray-100 rounded-xl w-fit">
                   <button
                     onClick={() => setLogoForm({ ...logoForm, use_logo_image: false })}
@@ -2099,7 +2100,7 @@ export default function WebsiteEditionPage() {
               {/* ENLACES DE MENÚ */}
               <div className="card mb-4 max-w-2xl">
                 <div className="flex justify-between items-center mb-5">
-                  <h4 className="font-bold text-lg">🔗 Enlaces de Menú</h4>
+                  <h4 className="font-bold text-lg inline-flex items-center gap-2"><Icon name="link" className="h-5 w-5 text-primary" />Enlaces de Menú</h4>
                   <button
                     onClick={() => openMenuLinkModal()}
                     className="px-4 py-2 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 text-sm whitespace-nowrap"
@@ -2137,7 +2138,7 @@ export default function WebsiteEditionPage() {
               </div>
 
               {/* ESTILO */}
-              <CollapsibleCard icon="🎨" title="Estilo del Header" subtitle="Colores y comportamiento">
+              <CollapsibleCard icon="palette" title="Estilo del Header" subtitle="Colores y comportamiento">
                 <div className="grid sm:grid-cols-3 gap-5 mb-5">
                   <ColorPicker label="Color de fondo" value={headerForm.bg_color} onChange={(hex) => setHeaderForm({ ...headerForm, bg_color: hex })} palette={palette} />
                   <ColorPicker label="Color de texto" value={headerForm.text_color} onChange={(hex) => setHeaderForm({ ...headerForm, text_color: hex })} palette={palette} />
@@ -2158,7 +2159,7 @@ export default function WebsiteEditionPage() {
 
               {/* TEXTO DEL MENÚ */}
               <CollapsibleCard
-                icon="🔤"
+                icon="type"
                 title="Texto del menú"
                 subtitle={`${headerForm.nav_uppercase ? 'Mayúsculas' : 'Normal'}${headerForm.nav_underline ? ', subrayado' : ''}`}
               >
@@ -2416,7 +2417,7 @@ export default function WebsiteEditionPage() {
 
             {/* CONTENIDO */}
             {popupForm.content_mode === 'image' ? (
-              <CollapsibleCard icon="🖼️" title="Imagen" defaultOpen subtitle="Clickeable, con transparencia si el PNG la tiene">
+              <CollapsibleCard icon="image" title="Imagen" defaultOpen subtitle="Clickeable, con transparencia si el PNG la tiene">
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-semibold text-text-muted mb-2">Imagen del pop-up *</label>
@@ -2442,7 +2443,7 @@ export default function WebsiteEditionPage() {
                 </div>
               </CollapsibleCard>
             ) : (
-              <CollapsibleCard icon="✏️" title="Contenido" defaultOpen subtitle="Título, mensaje y botón">
+              <CollapsibleCard icon="edit" title="Contenido" defaultOpen subtitle="Título, mensaje y botón">
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-semibold text-text-muted mb-2">Título</label>
@@ -2505,7 +2506,7 @@ export default function WebsiteEditionPage() {
 
             {/* DISEÑO (solo aplica al modo Constructor) */}
             {popupForm.content_mode === 'builder' && (
-              <CollapsibleCard icon="🎨" title="Diseño" subtitle="Colores del pop-up y del botón">
+              <CollapsibleCard icon="palette" title="Diseño" subtitle="Colores del pop-up y del botón">
                 <div className="grid sm:grid-cols-2 gap-5">
                   <ColorPicker label="Fondo" value={popupForm.bg_color} onChange={(hex) => setPopupForm({ ...popupForm, bg_color: hex })} palette={palette} />
                   <ColorPicker label="Texto" value={popupForm.text_color} onChange={(hex) => setPopupForm({ ...popupForm, text_color: hex })} palette={palette} />
@@ -2516,7 +2517,7 @@ export default function WebsiteEditionPage() {
             )}
 
             {/* ESTILO DEL RECUADRO */}
-            <CollapsibleCard icon="🎟️" title="Estilo del recuadro" subtitle={popupForm.shape === 'ticket' ? 'Ticket / cupón' : 'Borde y forma'}>
+            <CollapsibleCard icon="ticket" title="Estilo del recuadro" subtitle={popupForm.shape === 'ticket' ? 'Ticket / cupón' : 'Borde y forma'}>
               <div className="space-y-5">
                 <div>
                   <label className="block text-sm font-semibold text-text-muted mb-2">Forma</label>
@@ -2627,7 +2628,7 @@ export default function WebsiteEditionPage() {
             </CollapsibleCard>
 
             {/* DISPARADORES */}
-            <CollapsibleCard icon="⚡" title="Disparadores" subtitle="Cuándo aparece (podés combinar varios)">
+            <CollapsibleCard icon="bolt" title="Disparadores" subtitle="Cuándo aparece (podés combinar varios)">
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
                   <input
@@ -2701,7 +2702,7 @@ export default function WebsiteEditionPage() {
             </CollapsibleCard>
 
             {/* PÁGINAS */}
-            <CollapsibleCard icon="📍" title="Páginas" subtitle={[popupForm.show_on_landing && 'Landing', popupForm.show_on_catalogo && 'Catálogo'].filter(Boolean).join(', ') || 'Ninguna seleccionada'}>
+            <CollapsibleCard icon="location" title="Páginas" subtitle={[popupForm.show_on_landing && 'Landing', popupForm.show_on_catalogo && 'Catálogo'].filter(Boolean).join(', ') || 'Ninguna seleccionada'}>
               <div className="space-y-3">
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input

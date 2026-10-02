@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { Icon } from '@/components/ui/icon'
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -36,49 +37,49 @@ export default function AdminDashboard() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* PRODUCTOS */}
           <button onClick={() => router.push('/productos')} className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-2xl hover:shadow-lg transition-all text-left">
-            <div className="text-4xl mb-3">📦</div>
+            <div className="w-12 h-12 mb-4 rounded-xl bg-blue-600/10 text-blue-700 flex items-center justify-center"><Icon name="box" className="w-6 h-6" /></div>
             <h3 className="font-bold text-lg text-gray-900">Productos</h3>
             <p className="text-sm text-gray-600">Gestiona tu catálogo</p>
           </button>
 
           {/* PRECIOS */}
           <button onClick={() => router.push('/precios')} className="p-6 bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-2xl hover:shadow-lg transition-all text-left">
-            <div className="text-4xl mb-3">💰</div>
+            <div className="w-12 h-12 mb-4 rounded-xl bg-green-600/10 text-green-700 flex items-center justify-center"><Icon name="currency" className="w-6 h-6" /></div>
             <h3 className="font-bold text-lg text-gray-900">Precios</h3>
             <p className="text-sm text-gray-600">Configura precios</p>
           </button>
 
           {/* EMPLEADOS */}
           <button onClick={() => router.push('/empleados')} className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200 rounded-2xl hover:shadow-lg transition-all text-left">
-            <div className="text-4xl mb-3">👥</div>
+            <div className="w-12 h-12 mb-4 rounded-xl bg-purple-600/10 text-purple-700 flex items-center justify-center"><Icon name="users" className="w-6 h-6" /></div>
             <h3 className="font-bold text-lg text-gray-900">Empleados</h3>
             <p className="text-sm text-gray-600">Gestiona usuarios</p>
           </button>
 
           {/* DESCUENTOS */}
           <button onClick={() => router.push('/descuentos')} className="p-6 bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-200 rounded-2xl hover:shadow-lg transition-all text-left">
-            <div className="text-4xl mb-3">🎁</div>
+            <div className="w-12 h-12 mb-4 rounded-xl bg-yellow-600/10 text-yellow-700 flex items-center justify-center"><Icon name="tag" className="w-6 h-6" /></div>
             <h3 className="font-bold text-lg text-gray-900">Descuentos</h3>
             <p className="text-sm text-gray-600">Crea ofertas</p>
           </button>
 
           {/* CATEGORÍAS */}
           <button onClick={() => router.push('/admin/categorias')} className="p-6 bg-gradient-to-br from-indigo-50 to-indigo-100 border-2 border-indigo-200 rounded-2xl hover:shadow-lg transition-all text-left">
-            <div className="text-4xl mb-3">🗂️</div>
+            <div className="w-12 h-12 mb-4 rounded-xl bg-indigo-600/10 text-indigo-700 flex items-center justify-center"><Icon name="grid" className="w-6 h-6" /></div>
             <h3 className="font-bold text-lg text-gray-900">Categorías</h3>
             <p className="text-sm text-gray-600">Organizá categorías y subcategorías</p>
           </button>
 
           {/* CLIENTES */}
           <button onClick={() => router.push('/admin/clientes')} className="p-6 bg-gradient-to-br from-teal-50 to-teal-100 border-2 border-teal-200 rounded-2xl hover:shadow-lg transition-all text-left">
-            <div className="text-4xl mb-3">🧑‍🤝‍🧑</div>
+            <div className="w-12 h-12 mb-4 rounded-xl bg-teal-600/10 text-teal-700 flex items-center justify-center"><Icon name="store" className="w-6 h-6" /></div>
             <h3 className="font-bold text-lg text-gray-900">Clientes</h3>
             <p className="text-sm text-gray-600">Ver clientes y resetear códigos</p>
           </button>
 
           {/* EDICIÓN WEB - PRINCIPAL */}
           <button onClick={() => router.push('/admin/edicion-web')} className="p-6 bg-gradient-to-br from-pink-50 via-rose-50 to-red-50 border-2 border-pink-300 rounded-2xl hover:shadow-2xl hover:border-pink-400 transition-all text-left hover:-translate-y-1 ring-2 ring-pink-200 ring-opacity-50">
-            <div className="text-5xl mb-3">🎨</div>
+            <div className="w-12 h-12 mb-4 rounded-xl bg-pink-600/10 text-pink-700 flex items-center justify-center"><Icon name="brush" className="w-6 h-6" /></div>
             <h3 className="font-bold text-lg text-gray-900">Edición Web</h3>
             <p className="text-sm text-gray-600 font-semibold">Configura landing, hero y secciones</p>
           </button>
@@ -87,7 +88,7 @@ export default function AdminDashboard() {
         {/* LOGOUT */}
         <div className="mt-12 text-center">
           <button onClick={() => { localStorage.removeItem('employee'); router.push('/login') }} className="px-8 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 font-bold text-lg transition-all">
-            🚪 Cerrar Sesión
+            <span className="inline-flex items-center justify-center gap-2"><Icon name="logout" className="w-5 h-5" />Cerrar Sesión</span>
           </button>
         </div>
       </main>

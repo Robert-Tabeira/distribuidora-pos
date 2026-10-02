@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import type { Product, Category, Discount } from '@/types/database'
 import { getCustomerSession } from '@/lib/customer-auth'
+import { Icon } from '@/components/ui/icon'
 
 interface ProductWithDiscount extends Product {
   discount?: Discount
@@ -353,7 +354,7 @@ export default function CatalogPage() {
               className="w-full h-full object-contain group-hover:opacity-90 transition-opacity"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-5xl">📦</div>
+            <div className="w-full h-full flex items-center justify-center text-gray-300"><Icon name="box" className="h-12 w-12" /></div>
           )}
           {product.discount && (
             <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-red-500 text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full font-black text-[10px] sm:text-sm shadow-lg">
@@ -376,7 +377,7 @@ export default function CatalogPage() {
           )}
 
           {product.discount && (
-            <p className="text-[10px] sm:text-xs text-red-600 font-semibold">🎁 {product.discount.name}</p>
+            <p className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-red-600 font-semibold"><Icon name="tag" className="h-3.5 w-3.5" />{product.discount.name}</p>
           )}
         </div>
       </div>
@@ -492,7 +493,7 @@ export default function CatalogPage() {
                   {filteredProducts.length} producto{filteredProducts.length !== 1 ? 's' : ''} disponible{filteredProducts.length !== 1 ? 's' : ''}
                 </p>
                   </div>
-                  {customerOrderingEnabled && <button onClick={() => setShowCart(true)} className="shrink-0 px-4 py-2.5 rounded-xl bg-blue-900 text-white font-bold shadow-sm hover:bg-blue-800">🛒 Lista ({cartTotal})</button>}
+                  {customerOrderingEnabled && <button onClick={() => setShowCart(true)} className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-900 text-white font-bold shadow-sm hover:bg-blue-800"><Icon name="cart" className="h-4 w-4" />Lista ({cartTotal})</button>}
                 </div>
               </div>
 
@@ -562,7 +563,7 @@ export default function CatalogPage() {
               </div>
             ) : filteredProducts.length === 0 ? (
               <div className="text-center py-20 bg-white rounded-2xl">
-                <div className="text-5xl mb-4">🔍</div>
+                <div className="mb-4 text-gray-300"><Icon name="search" className="mx-auto h-12 w-12" /></div>
                 <p className="text-lg text-gray-600 font-medium">No se encontraron productos</p>
                 <p className="text-sm text-gray-500 mt-2">
                   {searchQuery && `No coinciden con: "${searchQuery}"`}
@@ -648,7 +649,7 @@ export default function CatalogPage() {
                   className="w-full h-full object-contain"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-7xl">📦</div>
+                <div className="w-full h-full flex items-center justify-center text-gray-300"><Icon name="box" className="h-20 w-20" /></div>
               )}
 
               {selectedProduct.discount && (
@@ -719,7 +720,7 @@ export default function CatalogPage() {
               )}
 
               {selectedProduct.discount && (
-                <p className="text-sm text-red-600 font-semibold mb-4">🎁 {selectedProduct.discount.name}</p>
+                <p className="mb-4 inline-flex items-center gap-1 text-sm text-red-600 font-semibold"><Icon name="tag" className="h-4 w-4" />{selectedProduct.discount.name}</p>
               )}
 
               {customerOrderingEnabled && (() => {
