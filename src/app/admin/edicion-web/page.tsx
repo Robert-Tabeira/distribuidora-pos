@@ -395,7 +395,7 @@ function ColorPicker({
             className="w-8 h-8 rounded-full border-2 border-dashed border-gray-400 flex items-center justify-center text-xs pointer-events-none"
             style={{ backgroundColor: !palette.some(s => s.hex.toLowerCase() === value.toLowerCase()) ? value : undefined }}
           >
-            {palette.some(s => s.hex.toLowerCase() === value.toLowerCase()) && '🎨'}
+            {palette.some(s => s.hex.toLowerCase() === value.toLowerCase()) && <Icon name="palette" className="h-4 w-4" />}
           </div>
         </div>
 
@@ -1634,7 +1634,7 @@ export default function WebsiteEditionPage() {
                     onChange={(e) => setSettingsForm({ ...settingsForm, show_phone: e.target.checked })}
                     className="w-5 h-5 rounded border-gray-300"
                   />
-                  <span className="font-semibold text-gray-700">📱 Mostrar Teléfono</span>
+                  <span className="inline-flex items-center gap-2 font-semibold text-gray-700"><Icon name="phone" className="h-4 w-4 text-primary" />Mostrar Teléfono</span>
                 </label>
 
                 <label className="flex items-center gap-3 cursor-pointer">
@@ -1644,7 +1644,7 @@ export default function WebsiteEditionPage() {
                     onChange={(e) => setSettingsForm({ ...settingsForm, show_business_hours: e.target.checked })}
                     className="w-5 h-5 rounded border-gray-300"
                   />
-                  <span className="font-semibold text-gray-700">🕐 Mostrar Horarios</span>
+                  <span className="inline-flex items-center gap-2 font-semibold text-gray-700"><Icon name="clock" className="h-4 w-4 text-primary" />Mostrar Horarios</span>
                 </label>
 
                 <label className="flex items-center gap-3 cursor-pointer">
@@ -1654,7 +1654,7 @@ export default function WebsiteEditionPage() {
                     onChange={(e) => setSettingsForm({ ...settingsForm, show_address: e.target.checked })}
                     className="w-5 h-5 rounded border-gray-300"
                   />
-                  <span className="font-semibold text-gray-700">📍 Mostrar Dirección</span>
+                  <span className="inline-flex items-center gap-2 font-semibold text-gray-700"><Icon name="location" className="h-4 w-4 text-primary" />Mostrar Dirección</span>
                 </label>
 
                 <label className="flex items-center gap-3 cursor-pointer">
@@ -1664,7 +1664,7 @@ export default function WebsiteEditionPage() {
                     onChange={(e) => setSettingsForm({ ...settingsForm, show_email: e.target.checked })}
                     className="w-5 h-5 rounded border-gray-300"
                   />
-                  <span className="font-semibold text-gray-700">📧 Mostrar Email</span>
+                  <span className="inline-flex items-center gap-2 font-semibold text-gray-700"><Icon name="mail" className="h-4 w-4 text-primary" />Mostrar Email</span>
                 </label>
               </div>
             </div>
@@ -1682,7 +1682,7 @@ export default function WebsiteEditionPage() {
         {/* PALETA DE COLORES GLOBAL */}
         {activeTab === 'settings' && (
           <div className="card max-w-2xl mt-6">
-            <h3 className="font-bold text-xl mb-2">🎨 Paleta de Colores</h3>
+            <h3 className="mb-2 inline-flex items-center gap-2 font-bold text-xl"><Icon name="palette" className="h-5 w-5 text-primary" />Paleta de Colores</h3>
             <p className="text-sm text-text-muted mb-6">
               Colores reutilizables en toda la web (barra de anuncios y futuras secciones).
             </p>
@@ -1920,7 +1920,7 @@ export default function WebsiteEditionPage() {
 
             {announcements.length === 0 ? (
               <div className="card text-center py-12 text-text-muted max-w-2xl">
-                <div className="text-4xl mb-3">📢</div>
+                <div className="mb-3 text-gray-300"><Icon name="megaphone" className="mx-auto h-10 w-10" /></div>
                 <p className="font-medium">Todavía no hay mensajes</p>
                 <p className="text-sm mt-1">Creá el primero para que aparezca arriba del header</p>
               </div>
@@ -2024,7 +2024,7 @@ export default function WebsiteEditionPage() {
                       </span>
                     ))}
                   </div>
-                  <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-xs">ℹ️</div>
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center"><Icon name="info" className="h-4 w-4" /></div>
                 </div>
               </div>
 
@@ -2316,7 +2316,7 @@ export default function WebsiteEditionPage() {
 
             {popups.length === 0 ? (
               <div className="card text-center py-12 text-text-muted max-w-2xl">
-                <div className="text-4xl mb-3">💬</div>
+                <div className="mb-3 text-gray-300"><Icon name="chat" className="mx-auto h-10 w-10" /></div>
                 <p className="font-medium">Todavía no hay pop-ups</p>
                 <p className="text-sm mt-1">Creá el primero con imagen propia o con el constructor</p>
               </div>
@@ -2324,9 +2324,9 @@ export default function WebsiteEditionPage() {
               <div className="space-y-3 max-w-2xl">
                 {popups.map(popup => {
                   const triggers = [
-                    popup.trigger_on_load && `⏱️ ${popup.trigger_on_load_delay}s`,
-                    popup.trigger_on_scroll && `📜 ${popup.trigger_on_scroll_percent}%`,
-                    popup.trigger_on_exit && '🚪 Salida'
+                    popup.trigger_on_load && `Al cargar: ${popup.trigger_on_load_delay}s`,
+                    popup.trigger_on_scroll && `Al desplazar: ${popup.trigger_on_scroll_percent}%`,
+                    popup.trigger_on_exit && 'Al salir'
                   ].filter(Boolean)
                   const pages = [popup.show_on_landing && 'Landing', popup.show_on_catalogo && 'Catálogo'].filter(Boolean)
 
@@ -2340,7 +2340,7 @@ export default function WebsiteEditionPage() {
                               {popup.content_mode === 'image' ? 'Imagen' : 'Constructor'}
                             </span>
                             {popup.shape === 'ticket' && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 uppercase">🎟️ Ticket</span>
+                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-700"><Icon name="ticket" className="h-3 w-3" />Ticket</span>
                             )}
                           </div>
                           <div className="flex flex-wrap gap-1.5 text-xs text-text-muted">
@@ -2534,7 +2534,7 @@ export default function WebsiteEditionPage() {
                       onClick={() => setPopupForm({ ...popupForm, shape: 'ticket' })}
                       className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${popupForm.shape === 'ticket' ? 'bg-white shadow text-text' : 'text-text-muted'}`}
                     >
-                      🎟️ Ticket / cupón
+                      <span className="inline-flex items-center gap-2"><Icon name="ticket" className="h-4 w-4" />Ticket / cupón</span>
                     </button>
                   </div>
                 </div>
@@ -2638,7 +2638,7 @@ export default function WebsiteEditionPage() {
                     className="w-5 h-5 rounded border-gray-300 mt-0.5"
                   />
                   <div className="flex-1">
-                    <label className="font-semibold text-sm">⏱️ Al cargar la página</label>
+                    <label className="inline-flex items-center gap-2 font-semibold text-sm"><Icon name="clock" className="h-4 w-4 text-primary" />Al cargar la página</label>
                     {popupForm.trigger_on_load && (
                       <div className="mt-2 flex items-center gap-2">
                         <input
@@ -2662,7 +2662,7 @@ export default function WebsiteEditionPage() {
                     className="w-5 h-5 rounded border-gray-300 mt-0.5"
                   />
                   <div className="flex-1">
-                    <label className="font-semibold text-sm">📜 Al hacer scroll</label>
+                    <label className="inline-flex items-center gap-2 font-semibold text-sm"><Icon name="scroll" className="h-4 w-4 text-primary" />Al hacer scroll</label>
                     {popupForm.trigger_on_scroll && (
                       <div className="mt-2 flex items-center gap-2">
                         <input
@@ -2686,7 +2686,7 @@ export default function WebsiteEditionPage() {
                     onChange={(e) => setPopupForm({ ...popupForm, trigger_on_exit: e.target.checked })}
                     className="w-5 h-5 rounded border-gray-300"
                   />
-                  <span className="font-semibold text-sm">🚪 Al intentar salir de la página (exit intent)</span>
+                  <span className="inline-flex items-center gap-2 font-semibold text-sm"><Icon name="logout" className="h-4 w-4 text-primary" />Al intentar salir de la página (exit intent)</span>
                 </label>
 
                 <label className="flex items-center gap-3 cursor-pointer pt-2 border-t border-border">
@@ -2747,7 +2747,7 @@ export default function WebsiteEditionPage() {
         {/* FOOTER (próximamente) */}
         {activeTab === 'sections' && sectionView === 'footer' && (
           <div className="card text-center py-16 text-text-muted">
-            <div className="text-4xl mb-3">🦶</div>
+            <div className="mb-3 text-gray-300"><Icon name="shoe" className="mx-auto h-10 w-10" /></div>
             <p className="font-semibold text-text">Footer</p>
             <p className="text-sm mt-1">Próximamente vas a poder editar el pie de página desde acá</p>
           </div>
@@ -2804,7 +2804,7 @@ export default function WebsiteEditionPage() {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      <div className="text-4xl">📸</div>
+                      <div className="text-gray-400"><Icon name="image" className="mx-auto h-10 w-10" /></div>
                       <div className="text-sm font-semibold text-text">Haz clic para subir una imagen</div>
                       <div className="text-xs text-text-muted">JPG, PNG, WebP (máx 5MB)</div>
                     </div>
