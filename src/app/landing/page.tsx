@@ -303,30 +303,6 @@ export default function LandingPage() {
         <LandingBlockRenderer key={section.id} section={section} categories={categories} products={products} businessSettings={businessSettings} />
       ))}
 
-      {/* FOOTER */}
-      <footer className="bg-gray-900 text-gray-300 py-12 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-            <div>
-              <h3 className="text-white font-black text-2xl mb-2">Los Primos</h3>
-              <p className="text-sm">Distribuidora oficial de Sarubbi en Uruguay</p>
-            </div>
-            <div>
-              <h4 className="text-white font-bold mb-4">Contacto</h4>
-              <p className="mb-2 inline-flex items-center gap-2 text-sm"><Icon name="phone" className="h-4 w-4" />WhatsApp: +598 99 123 4567</p>
-              <p className="inline-flex items-center gap-2 text-sm"><Icon name="mail" className="h-4 w-4" />info@losprimos.com</p>
-            </div>
-            <div>
-              <h4 className="text-white font-bold mb-4">Horarios</h4>
-              <p className="text-sm mb-1">Lunes a Viernes: 7:00 - 18:00</p>
-              <p className="text-sm">Sábado: 7:00 - 13:00</p>
-            </div>
-          </div>
-          <div className="border-t border-gray-800 pt-8 text-center text-sm">
-            <p>© 2024 Los Primos. Todos los derechos reservados.</p>
-          </div>
-        </div>
-      </footer>
     </div>
     </PublicLayout>
   )

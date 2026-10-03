@@ -1,6 +1,7 @@
 import { Header } from '@/components/header'
 import AnnouncementBar from '@/components/announcement-bar'
 import PopupDisplay from '@/components/popup-display'
+import { PublicFooter } from '@/components/public-footer'
 
 // Envoltorio para las páginas PÚBLICAS del sitio (landing, catálogo, etc.)
 // No usar esto en pantallas internas (admin, login, caja, mostrador, productos),
@@ -11,6 +12,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
       <AnnouncementBar />
       <Header />
       {children}
+      <PublicFooter />
       <PopupDisplay />
     </>
   )

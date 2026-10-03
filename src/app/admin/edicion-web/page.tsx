@@ -31,6 +31,33 @@ interface WebsiteSettings {
   site_tagline?: string
   logo_url?: string | null
   use_logo_image?: boolean
+  footer_settings?: FooterSettings
+}
+
+interface FooterSettings {
+  brand_title: string
+  description: string
+  contact_title: string
+  hours_title: string
+  copyright_text: string
+  show_contact: boolean
+  show_phone: boolean
+  show_email: boolean
+  show_address: boolean
+  show_hours: boolean
+}
+
+const DEFAULT_FOOTER_SETTINGS: FooterSettings = {
+  brand_title: '',
+  description: 'Distribuidora oficial de Sarubbi en Uruguay',
+  contact_title: 'Contacto',
+  hours_title: 'Horarios',
+  copyright_text: 'Todos los derechos reservados.',
+  show_contact: true,
+  show_phone: true,
+  show_email: true,
+  show_address: true,
+  show_hours: true
 }
 
 interface MenuLink {
@@ -270,6 +297,7 @@ function SitePreviewPanel({
   headerForm,
   menuLinks,
   landingSections,
+  footerForm,
   editingPopupForm
 }: {
   sectionView: string | null
@@ -279,6 +307,7 @@ function SitePreviewPanel({
   headerForm: { bg_color: string; text_color: string; active_color: string; sticky: boolean; shadow: boolean; nav_uppercase: boolean; nav_underline: boolean; nav_letter_spacing: string; nav_font_weight: string }
   menuLinks: MenuLink[]
   landingSections: LandingSection[]
+  footerForm: FooterSettings
   editingPopupForm?: any
 }) {
   const FONT_FAMILY_MAP: Record<string, string> = {
@@ -362,7 +391,13 @@ function SitePreviewPanel({
           </div>
         </div>
 
-        {sectionView === 'landing' ? (
+        {sectionView === 'footer' ? (
+          <div className="grid grid-cols-3 gap-3 bg-gray-900 p-4 text-gray-300">
+            <div><p className="text-sm font-black text-white">{footerForm.brand_title || logoForm.site_name || 'Los Primos'}</p><p className="mt-1 text-[9px]">{footerForm.description || 'Descripción del negocio'}</p></div>
+            {footerForm.show_contact && <div><p className="mb-1 text-[9px] font-bold text-white">{footerForm.contact_title || 'Contacto'}</p><p className="text-[8px]">{footerForm.show_phone ? 'WhatsApp · ' : ''}{footerForm.show_email ? 'Email · ' : ''}{footerForm.show_address ? 'Dirección' : ''}</p></div>}
+            {footerForm.show_hours && <div><p className="mb-1 text-[9px] font-bold text-white">{footerForm.hours_title || 'Horarios'}</p><p className="text-[8px]">Horario configurado</p></div>}
+          </div>
+        ) : sectionView === 'landing' ? (
           <div className="max-h-72 space-y-2 overflow-auto bg-gray-50 p-3">
             {landingSections.filter(section => section.is_visible).length > 0 ? landingSections.filter(section => section.is_visible).map(section => (
               <div key={section.id} className="flex min-h-16 items-center gap-2 rounded-lg border border-gray-100 bg-white p-2">
@@ -428,7 +463,7 @@ function SitePreviewPanel({
         )}
       </div>
 
-      {sectionView && ['hero', 'footer'].includes(sectionView) && (
+      {sectionView === 'hero' && (
         <p className="text-xs text-text-light mt-3 text-center">
           Esta sección todavía no tiene vista previa propia — arriba se ve el resto del sitio (barra + header) mientras tanto.
         </p>
@@ -519,6 +554,9 @@ export default function WebsiteEditionPage() {
   })
   const [savingSettings, setSavingSettings] = useState(false)
   const [settingsMessage, setSettingsMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [footerForm, setFooterForm] = useState<FooterSettings>(DEFAULT_FOOTER_SETTINGS)
+  const [savingFooter, setSavingFooter] = useState(false)
+  const [footerMessage, setFooterMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   // Hero Slides
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([])
@@ -664,6 +702,7 @@ export default function WebsiteEditionPage() {
 
       if (settingsRes.data) {
         setSettings(settingsRes.data as WebsiteSettings)
+        setFooterForm({ ...DEFAULT_FOOTER_SETTINGS, ...(settingsRes.data.footer_settings || {}) })
         setSettingsForm({
           phone_number: settingsRes.data.phone_number || '',
           email: settingsRes.data.email || '',
@@ -841,6 +880,31 @@ export default function WebsiteEditionPage() {
       console.error('Error saving settings:', error)
     } finally {
       setSavingSettings(false)
+    }
+  }
+
+  async function saveFooter() {
+    setFooterMessage(null)
+    if (!settings?.id) {
+      setFooterMessage({ type: 'error', text: 'No se encontró la configuración del sitio para guardar el footer.' })
+      return
+    }
+
+    setSavingFooter(true)
+    try {
+      const { error } = await supabase
+        .from('website_settings')
+        .update({ footer_settings: footerForm, updated_at: new Date().toISOString() })
+        .eq('id', settings.id)
+
+      if (error) throw error
+      setSettings({ ...settings, footer_settings: footerForm })
+      setFooterMessage({ type: 'success', text: 'Footer guardado correctamente.' })
+    } catch (error) {
+      console.error('Error saving footer:', error)
+      setFooterMessage({ type: 'error', text: 'No se pudo guardar. Verificá que hayas ejecutado la migración de Supabase.' })
+    } finally {
+      setSavingFooter(false)
     }
   }
 
@@ -2983,12 +3047,47 @@ export default function WebsiteEditionPage() {
           </div>
         )}
 
-        {/* FOOTER (próximamente) */}
+        {/* FOOTER */}
         {activeTab === 'sections' && sectionView === 'footer' && (
-          <div className="card text-center py-16 text-text-muted">
-            <div className="mb-3 text-gray-300"><Icon name="shoe" className="mx-auto h-10 w-10" /></div>
-            <p className="font-semibold text-text">Footer</p>
-            <p className="text-sm mt-1">Próximamente vas a poder editar el pie de página desde acá</p>
+          <div className="space-y-5">
+            <div>
+              <h3 className="font-bold text-xl mb-1">Footer del sitio</h3>
+              <p className="text-sm text-text-muted">Editá la información y elegí qué datos del negocio aparecen al pie de las páginas públicas.</p>
+            </div>
+
+            <div className="card space-y-4">
+              <h4 className="font-bold text-text">Identidad</h4>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-text-muted">Nombre del negocio</label>
+                <input className="input" value={footerForm.brand_title} onChange={e => setFooterForm({ ...footerForm, brand_title: e.target.value })} placeholder={logoForm.site_name || 'Los Primos'} />
+                <p className="mt-1 text-xs text-text-muted">Dejalo vacío para usar el nombre de Header / Menú.</p>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-text-muted">Descripción</label>
+                <textarea className="input min-h-20" value={footerForm.description} onChange={e => setFooterForm({ ...footerForm, description: e.target.value })} placeholder="Breve descripción del negocio" />
+              </div>
+            </div>
+
+            <div className="card space-y-4">
+              <h4 className="font-bold text-text">Secciones e información</h4>
+              <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-border p-3 text-sm font-medium text-text-muted"><input type="checkbox" checked={footerForm.show_contact} onChange={e => setFooterForm({ ...footerForm, show_contact: e.target.checked })} className="h-4 w-4 rounded" />Mostrar sección de contacto</label>
+              {footerForm.show_contact && <div className="space-y-3 rounded-xl bg-gray-50 p-3">
+                <div><label className="mb-1 block text-xs font-medium text-text-muted">Título de contacto</label><input className="input" value={footerForm.contact_title} onChange={e => setFooterForm({ ...footerForm, contact_title: e.target.value })} /></div>
+                {([['show_phone', 'Teléfono y WhatsApp'], ['show_email', 'Email'], ['show_address', 'Dirección']] as const).map(([key, label]) => <label key={key} className="flex cursor-pointer items-center gap-3 text-sm text-text-muted"><input type="checkbox" checked={footerForm[key]} onChange={e => setFooterForm({ ...footerForm, [key]: e.target.checked })} className="h-4 w-4 rounded" />Mostrar {label.toLowerCase()}</label>)}
+                <p className="text-xs text-text-muted">Los datos se toman de Configuración del negocio.</p>
+              </div>}
+              <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-border p-3 text-sm font-medium text-text-muted"><input type="checkbox" checked={footerForm.show_hours} onChange={e => setFooterForm({ ...footerForm, show_hours: e.target.checked })} className="h-4 w-4 rounded" />Mostrar sección de horarios</label>
+              {footerForm.show_hours && <div className="pl-1"><label className="mb-1 block text-xs font-medium text-text-muted">Título de horarios</label><input className="input" value={footerForm.hours_title} onChange={e => setFooterForm({ ...footerForm, hours_title: e.target.value })} /><p className="mt-1 text-xs text-text-muted">El horario se toma de Configuración del negocio.</p></div>}
+            </div>
+
+            <div className="card space-y-3">
+              <h4 className="font-bold text-text">Texto inferior</h4>
+              <div><label className="mb-1 block text-sm font-medium text-text-muted">Aviso de derechos</label><input className="input" value={footerForm.copyright_text} onChange={e => setFooterForm({ ...footerForm, copyright_text: e.target.value })} placeholder="Todos los derechos reservados." /></div>
+              <p className="text-xs text-text-muted">Se mostrará junto al año actual y el nombre del negocio.</p>
+            </div>
+
+            {footerMessage && <p role="status" className={`rounded-xl p-3 text-sm ${footerMessage.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{footerMessage.text}</p>}
+            <button type="button" onClick={saveFooter} disabled={savingFooter || loading} className="btn btn-primary w-full">{savingFooter ? 'Guardando…' : 'Guardar footer'}</button>
           </div>
         )}
       </div>
@@ -3003,6 +3102,7 @@ export default function WebsiteEditionPage() {
           headerForm={headerForm}
           menuLinks={menuLinks}
           landingSections={sections}
+          footerForm={footerForm}
           editingPopupForm={sectionView === 'popups' && showPopupModal ? popupForm : null}
         />
       </div>
