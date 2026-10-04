@@ -233,15 +233,15 @@ export default function ProductImagesPage() {
       img.onload = async () => {
         // Step 1: Renderizar en un canvas "grande" tal como se ve en pantalla,
         // pero a 4x de resolución (EXPORT_SCALE) para que el resultado final
-        // use detalle real de la foto en vez de agrandar una imagen chica.
-        // Todo lo que es proporción (fitScale, cropSize) se recalcula solo al
-        // pasarle el largeSize ya escalado; lo único que hay que escalar a
-        // mano es el offset (está en px de pantalla, no es una proporción).
+        // conservar el detalle y mantener la misma escala que muestra el editor.
         const EXPORT_SCALE = 4
         const largeSize = 384 * EXPORT_SCALE
 
-        const fit = getFitSize(editingImage.naturalWidth, editingImage.naturalHeight, largeSize)
-        const fitScale = fit.ratio
+        // El editor visual trabaja sobre 384px. El canvas exporta a 4x, por lo
+        // que debe usar exactamente cuatro veces la escala del preview. La
+        // versión anterior limitaba la escala a 1 al exportar y las imágenes
+        // de hasta 1536px quedaban más chicas que lo mostrado en pantalla.
+        const fitScale = getFitSize(editingImage.naturalWidth, editingImage.naturalHeight, 384).ratio * EXPORT_SCALE
 
         const largeCanvas = document.createElement('canvas')
 
@@ -306,16 +306,25 @@ export default function ProductImagesPage() {
         // Dibujar imagen recortada redimensionada
         finalCtx.drawImage(croppedCanvas, 0, 0, finalSize, finalSize)
 
-        finalCanvas.toBlob(async (blob) => {
-          const finalFile = new File([blob!], editingImage.originalFile.name, {
+        finalCanvas.toBlob((blob) => {
+          if (!blob) {
+            setUploading(false)
+            alert('No se pudo procesar la imagen editada. Intentá de nuevo.')
+            return
+          }
+          const finalFile = new File([blob], editingImage.originalFile.name, {
             type: 'image/webp'
           })
 
-          console.log(`Guardando: ${(blob!.size / 1024).toFixed(2)}KB`)
-          await uploadToSupabase(finalFile, editingImage.replaceIndex)
+          console.log(`Guardando: ${(blob.size / 1024).toFixed(2)}KB`)
+          void uploadToSupabase(finalFile, editingImage.replaceIndex)
         }, 'image/webp', 0.95)
       }
 
+      img.onerror = () => {
+        setUploading(false)
+        alert('No se pudo abrir la imagen para exportarla. Intentá de nuevo.')
+      }
       img.src = editingImage.preview
     } catch (error) {
       console.error('Error saving image:', error)
@@ -339,11 +348,23 @@ export default function ProductImagesPage() {
         .getPublicUrl(fileName)
 
       if (publicData?.publicUrl) {
-        setImages(currentImages => replaceIndex === undefined
-          ? [...currentImages, publicData.publicUrl]
-          : currentImages.map((image, index) => index === replaceIndex ? publicData.publicUrl : image))
+        const updatedImages = replaceIndex === undefined
+          ? [...images, publicData.publicUrl]
+          : images.map((image, index) => index === replaceIndex ? publicData.publicUrl : image)
+
+        // Al ajustar una imagen que ya pertenece a la galería, guardar el
+        // ajuste también lo persiste en el producto; no requiere otro botón.
+        if (replaceIndex !== undefined) {
+          const { error: updateError } = await supabase
+            .from('products')
+            .update({ gallery: updatedImages })
+            .eq('id', productId)
+          if (updateError) throw updateError
+        }
+
+        setImages(updatedImages)
         setEditingImage(null)
-        alert(replaceIndex === undefined ? '✅ Imagen guardada en la galería' : '✅ Imagen actualizada. Pulsa “Guardar Galería” para confirmar los cambios.')
+        alert(replaceIndex === undefined ? '✅ Imagen guardada en la galería. Pulsa “Guardar Galería” para confirmar los cambios.' : '✅ Ajuste guardado y aplicado al producto.')
       }
     } catch (error) {
       console.error('Error uploading to supabase:', error)
