@@ -183,7 +183,10 @@ export default function ProductImagesPage() {
         originalFile: file,
         preview,
         rotation: 0,
-        scale: 1,
+        // El recorte exportado ocupa el 75% del lienzo. Al abrir una imagen
+        // ya cuadrada de la galería, 75% hace que el archivo completo quepa
+        // dentro de ese recorte sin volver a acercarlo.
+        scale: 0.75,
         offsetX: 0,
         offsetY: 0,
         naturalWidth: dimensions.width,
@@ -237,11 +240,12 @@ export default function ProductImagesPage() {
         const EXPORT_SCALE = 4
         const largeSize = 384 * EXPORT_SCALE
 
-        // El editor visual trabaja sobre 384px. El canvas exporta a 4x, por lo
-        // que debe usar exactamente cuatro veces la escala del preview. La
-        // versión anterior limitaba la escala a 1 al exportar y las imágenes
-        // de hasta 1536px quedaban más chicas que lo mostrado en pantalla.
-        const fitScale = getFitSize(editingImage.naturalWidth, editingImage.naturalHeight, 384).ratio * EXPORT_SCALE
+        // Conservamos el cálculo que ya funcionaba para imágenes nuevas.
+        // Para una imagen ya exportada a 800x800, en cambio, escalamos según
+        // el preview y la reducimos al 75% inicial para evitar recortarla otra vez.
+        const fitScale = editingImage.replaceIndex === undefined
+          ? getFitSize(editingImage.naturalWidth, editingImage.naturalHeight, largeSize).ratio
+          : getFitSize(editingImage.naturalWidth, editingImage.naturalHeight, 384).ratio * EXPORT_SCALE
 
         const largeCanvas = document.createElement('canvas')
 
@@ -477,10 +481,13 @@ export default function ProductImagesPage() {
 
                   {(() => {
                     const smallFit = getFitSize(editingImage.naturalWidth, editingImage.naturalHeight, 192)
+                    const isExistingImage = editingImage.replaceIndex !== undefined
+                    const previewScale = isExistingImage ? editingImage.scale / 0.75 : editingImage.scale
+                    const previewOffsetCorrection = isExistingImage ? 0.75 : 1
                     return (
                       <div
                         style={{
-                          transform: `rotate(${editingImage.rotation}deg) scale(${editingImage.scale}) translate(${(editingImage.offsetX * 192) / 384}px, ${(editingImage.offsetY * 192) / 384}px)`,
+                          transform: `rotate(${editingImage.rotation}deg) scale(${previewScale}) translate(${(editingImage.offsetX * 192 * previewOffsetCorrection) / 384}px, ${(editingImage.offsetY * 192 * previewOffsetCorrection) / 384}px)`,
                           transition: 'transform 0.2s'
                         }}
                         className="flex items-center justify-center"
