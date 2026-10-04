@@ -15,6 +15,7 @@ interface EditingImage {
   offsetY: number
   naturalWidth: number
   naturalHeight: number
+  replaceIndex?: number
 }
 
 // Calcula el tamaño (ancho/alto en px) al que una imagen de naturalWidth x
@@ -157,6 +158,46 @@ export default function ProductImagesPage() {
     }
   }
 
+  async function editGalleryImage(index: number) {
+    setUploading(true)
+    try {
+      const response = await fetch(images[index])
+      if (!response.ok) throw new Error(`No se pudo cargar la imagen (${response.status})`)
+      const blob = await response.blob()
+      const file = new File([blob], `galeria-${index + 1}.webp`, { type: blob.type || 'image/webp' })
+      const preview = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = () => reject(new Error('No se pudo leer la imagen'))
+        reader.readAsDataURL(file)
+      })
+      const dimensions = await new Promise<{ width: number; height: number }>((resolve, reject) => {
+        const img = new Image()
+        img.onload = () => resolve({ width: img.width, height: img.height })
+        img.onerror = () => reject(new Error('El archivo no se pudo abrir como imagen'))
+        img.src = preview
+      })
+
+      setEditingImage({
+        id: `${Date.now()}-${index}`,
+        originalFile: file,
+        preview,
+        rotation: 0,
+        scale: 1,
+        offsetX: 0,
+        offsetY: 0,
+        naturalWidth: dimensions.width,
+        naturalHeight: dimensions.height,
+        replaceIndex: index
+      })
+    } catch (error) {
+      console.error('Error loading gallery image for editing:', error)
+      alert('No se pudo abrir esa imagen para editarla. Revisá la conexión e intentá de nuevo.')
+    } finally {
+      setUploading(false)
+    }
+  }
+
   function rotateImage(degrees: number) {
     if (!editingImage) return
     setEditingImage({
@@ -271,7 +312,7 @@ export default function ProductImagesPage() {
           })
 
           console.log(`Guardando: ${(blob!.size / 1024).toFixed(2)}KB`)
-          await uploadToSupabase(finalFile)
+          await uploadToSupabase(finalFile, editingImage.replaceIndex)
         }, 'image/webp', 0.95)
       }
 
@@ -283,7 +324,7 @@ export default function ProductImagesPage() {
     }
   }
 
-  async function uploadToSupabase(file: File) {
+  async function uploadToSupabase(file: File, replaceIndex?: number) {
     try {
       const fileName = `product-images/${productId}/${Date.now()}_${Math.random().toString(36).substring(7)}.webp`
 
@@ -298,9 +339,11 @@ export default function ProductImagesPage() {
         .getPublicUrl(fileName)
 
       if (publicData?.publicUrl) {
-        setImages([...images, publicData.publicUrl])
+        setImages(currentImages => replaceIndex === undefined
+          ? [...currentImages, publicData.publicUrl]
+          : currentImages.map((image, index) => index === replaceIndex ? publicData.publicUrl : image))
         setEditingImage(null)
-        alert('✅ Imagen guardada correctamente')
+        alert(replaceIndex === undefined ? '✅ Imagen guardada en la galería' : '✅ Imagen actualizada. Pulsa “Guardar Galería” para confirmar los cambios.')
       }
     } catch (error) {
       console.error('Error uploading to supabase:', error)
@@ -393,7 +436,8 @@ export default function ProductImagesPage() {
         {editingImage ? (
           // Editor de imagen
           <div className="card">
-            <h3 className="font-bold text-lg mb-6">Editor de Imagen</h3>
+            <h3 className="font-bold text-lg mb-2">{editingImage.replaceIndex === undefined ? 'Editor de Imagen' : 'Ajustar imagen de la galería'}</h3>
+            {editingImage.replaceIndex !== undefined && <p className="mb-6 text-sm text-gray-600">Ajustá el tamaño y el encuadre viendo el resultado. Al guardar, esta imagen reemplazará la número {editingImage.replaceIndex + 1}.</p>}
 
             <div className="lg:grid lg:grid-cols-5 lg:gap-8 lg:items-start">
             {/* Columna izquierda: previews, quedan fijos en pantalla mientras ajustás los controles */}
@@ -570,7 +614,7 @@ export default function ProductImagesPage() {
                     disabled={uploading}
                     className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 font-semibold transition-all"
                   >
-                    {uploading ? '⏳ Guardando...' : '✅ Guardar'}
+                    {uploading ? '⏳ Guardando...' : editingImage.replaceIndex === undefined ? '✅ Guardar' : '✅ Guardar ajustes'}
                   </button>
                 </div>
               </div>
@@ -648,10 +692,19 @@ export default function ProductImagesPage() {
                         }}
                       />
 
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-all flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => void editGalleryImage(index)}
+                          disabled={uploading}
+                          className="rounded-lg bg-white px-3 py-2 text-sm font-bold text-gray-900 hover:bg-gray-100 disabled:opacity-50"
+                          aria-label={`Editar imagen ${index + 1}`}
+                        >
+                          ✏️ Editar
+                        </button>
                         <button
                           onClick={() => removeImage(index)}
                           className="w-10 h-10 bg-red-600 hover:bg-red-700 text-white rounded-lg flex items-center justify-center font-bold transition-all"
+                          aria-label={`Eliminar imagen ${index + 1}`}
                         >
                           🗑️
                         </button>
