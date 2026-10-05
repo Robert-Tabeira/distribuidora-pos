@@ -31,6 +31,12 @@ function normalizeText(text: string) {
     .toLowerCase()
 }
 
+function isRecentlyAddedProduct(product: Product) {
+  const createdAt = new Date(product.created_at).getTime()
+  const age = Date.now() - createdAt
+  return Number.isFinite(createdAt) && age >= 0 && age < 48 * 60 * 60 * 1000
+}
+
 export default function CatalogPage() {
   const [products, setProducts] = useState<ProductWithDiscount[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -39,6 +45,7 @@ export default function CatalogPage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [landingCategoryTarget, setLandingCategoryTarget] = useState('')
   const [showOnlyDiscounts, setShowOnlyDiscounts] = useState(false)
+  const [showOnlyRecentlyAdded, setShowOnlyRecentlyAdded] = useState(false)
   const [cartItems, setCartItems] = useState<{ itemId: string; productId: string; quantity: number; unit: string; notes: string }[]>([])
   const [showCart, setShowCart] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<ProductWithDiscount | null>(null)
@@ -235,6 +242,11 @@ export default function CatalogPage() {
       )
     }
 
+    // Usa exactamente la ventana que genera la etiqueta de novedad en la tarjeta.
+    if (showOnlyRecentlyAdded) {
+      filtered = showRecentProductBadge ? filtered.filter(isRecentlyAddedProduct) : []
+    }
+
     // Filtrar por categorías (matchea tanto si es la categoría principal
     // seleccionada como si es una subcategoría seleccionada)
     if (selectedCategories.length > 0) {
@@ -265,7 +277,7 @@ export default function CatalogPage() {
     }
 
     return filtered
-  }, [products, categories, searchQuery, selectedCategories, showOnlyDiscounts, sortOption])
+  }, [products, categories, searchQuery, selectedCategories, showOnlyDiscounts, showOnlyRecentlyAdded, showRecentProductBadge, sortOption])
 
   // Agrupa filteredProducts en secciones por categoría (y, dentro de cada
   // una, por subcategoría si corresponde), respetando el orden y color
@@ -344,7 +356,7 @@ export default function CatalogPage() {
   }, [categories, groupedSections, landingCategoryTarget])
 
   const cartTotal = cartItems.reduce((sum, item) => sum + item.quantity, 0)
-  const activeFilterCount = selectedCategories.length + (showOnlyDiscounts ? 1 : 0)
+  const activeFilterCount = selectedCategories.length + (showOnlyDiscounts ? 1 : 0) + (showOnlyRecentlyAdded ? 1 : 0)
 
   const toggleCategory = (categoryId: string) => {
     setSelectedCategories(prev =>
@@ -356,9 +368,7 @@ export default function CatalogPage() {
 
   // Card de producto, reutilizada en cada sección/subsección del catálogo
   function renderProductCard(product: ProductWithDiscount) {
-    const createdAt = new Date(product.created_at).getTime()
-    const productAge = Date.now() - createdAt
-    const isRecentlyAdded = showRecentProductBadge && Number.isFinite(createdAt) && productAge >= 0 && productAge < 48 * 60 * 60 * 1000
+    const isRecentlyAdded = showRecentProductBadge && isRecentlyAddedProduct(product)
 
     return (
       <div
@@ -436,11 +446,12 @@ export default function CatalogPage() {
               </div>
 
               {/* Limpiar Filtros */}
-              {(selectedCategories.length > 0 || showOnlyDiscounts || searchQuery.trim()) && (
+              {(selectedCategories.length > 0 || showOnlyDiscounts || showOnlyRecentlyAdded || searchQuery.trim()) && (
                 <button
                   onClick={() => {
                     setSelectedCategories([])
                     setShowOnlyDiscounts(false)
+                    setShowOnlyRecentlyAdded(false)
                     setSearchQuery('')
                   }}
                   className="w-full mb-6 py-2 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all text-sm font-semibold"
@@ -505,6 +516,22 @@ export default function CatalogPage() {
                     Solo con Descuento
                   </span>
                 </label>
+              </div>
+
+              <div className="mt-8 border-t border-gray-100 pt-6">
+                <h4 className="font-bold text-gray-900 mb-4 text-sm uppercase">Novedades</h4>
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={showOnlyRecentlyAdded}
+                    onChange={(e) => setShowOnlyRecentlyAdded(e.target.checked)}
+                    className="w-5 h-5 rounded border-gray-300 text-blue-900 cursor-pointer"
+                  />
+                  <span className="inline-flex items-center gap-2 text-gray-700 group-hover:text-blue-900 transition-colors text-sm">
+                    <span className="rounded-full bg-emerald-600 px-2 py-1 text-[10px] font-bold text-white">Recién agregado</span>
+                  </span>
+                </label>
+                {!showRecentProductBadge && <p className="mt-2 text-xs text-gray-500">La etiqueta está desactivada en la configuración del sitio.</p>}
               </div>
             </div>
           </div>
@@ -575,7 +602,7 @@ export default function CatalogPage() {
                   className="flex-1 min-w-0 px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-900"
                 >
                   <option value="default">Ordenar: relevancia</option>
-                  <option value="recent">Recién agregados</option>
+                  <option value="recent">Fecha de agregado (más nuevos)</option>
                   <option value="name_asc">Nombre (A-Z)</option>
                   <option value="name_desc">Nombre (Z-A)</option>
                 </select>
@@ -596,12 +623,14 @@ export default function CatalogPage() {
                   {searchQuery && `No coinciden con: "${searchQuery}"`}
                   {selectedCategories.length > 0 && ` en las categorías seleccionadas`}
                   {showOnlyDiscounts && ` con descuento`}
+                  {showOnlyRecentlyAdded && ` con la etiqueta “Recién agregado”`}
                 </p>
                 <button
                   onClick={() => {
                     setSearchQuery('')
                     setSelectedCategories([])
                     setShowOnlyDiscounts(false)
+                    setShowOnlyRecentlyAdded(false)
                   }}
                   className="mt-4 px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition-all text-sm font-semibold"
                 >
