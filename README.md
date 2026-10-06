@@ -94,7 +94,10 @@ CREATE TABLE order_items (
 ALTER PUBLICATION supabase_realtime ADD TABLE orders;
 ALTER PUBLICATION supabase_realtime ADD TABLE order_items;
 
--- RLS Policies (permitir todo por ahora)
+-- ⚠️ SOLO PARA PRUEBAS LOCALES. Estas policies permiten que cualquier
+-- visitante lea, modifique o borre datos usando la clave pública.
+-- No las uses en producción. El despliegue necesita políticas RLS por rol
+-- y autenticación real; el login de la interfaz no protege la Data API.
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE employees ENABLE ROW LEVEL SECURITY;
