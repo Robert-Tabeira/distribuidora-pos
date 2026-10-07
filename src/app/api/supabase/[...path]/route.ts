@@ -82,7 +82,10 @@ async function handle(request: NextRequest, path: string[]) {
   }
   const session = await getActiveEmployeeSession()
   const table = apiVersion === 'rest' && resource === 'v1' && resourcePath[0] !== 'rpc' ? resourcePath[0] : null
-  const isPublicRead = table !== null && ['GET', 'HEAD'].includes(method) && publicReadTables.has(table)
+  // Las consultas del administrador necesitan el esquema completo de tablas
+  // (por ejemplo, categorías y productos desde el panel). La proyección pública
+  // se aplica solo a visitantes y empleados sin rol de administrador.
+  const isPublicRead = session?.role !== 'admin' && table !== null && ['GET', 'HEAD'].includes(method) && publicReadTables.has(table)
   const isAdminStorage = apiVersion === 'storage' && session?.role === 'admin'
   const isAdminHashPin = apiVersion === 'rest' && resourcePath.length === 2 && resourcePath[0] === 'rpc' && resourcePath[1] === 'hash_pin' && method === 'POST' && session?.role === 'admin'
 
