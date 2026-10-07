@@ -33,6 +33,8 @@ Crear archivo `.env.local`:
 ```
 NEXT_PUBLIC_SUPABASE_URL=tu_url_de_supabase
 NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_anon_key
+SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key_solo_servidor
+APP_SESSION_SECRET=secreto_aleatorio_de_al_menos_32_caracteres
 ```
 
 ### 3. Configurar Supabase
@@ -94,21 +96,13 @@ CREATE TABLE order_items (
 ALTER PUBLICATION supabase_realtime ADD TABLE orders;
 ALTER PUBLICATION supabase_realtime ADD TABLE order_items;
 
--- ⚠️ SOLO PARA PRUEBAS LOCALES. Estas policies permiten que cualquier
--- visitante lea, modifique o borre datos usando la clave pública.
--- No las uses en producción. El despliegue necesita políticas RLS por rol
--- y autenticación real; el login de la interfaz no protege la Data API.
+-- Habilitar RLS. Las policies de desarrollo abiertas que permiten a
+-- visitantes modificar tablas no deben crearse.
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE employees ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Allow all" ON categories FOR ALL USING (true);
-CREATE POLICY "Allow all" ON products FOR ALL USING (true);
-CREATE POLICY "Allow all" ON employees FOR ALL USING (true);
-CREATE POLICY "Allow all" ON orders FOR ALL USING (true);
-CREATE POLICY "Allow all" ON order_items FOR ALL USING (true);
 
 -- Datos iniciales
 INSERT INTO categories (name, order_position) VALUES
@@ -126,11 +120,8 @@ INSERT INTO categories (name, order_position) VALUES
   ('Copetín', 12),
   ('Promos', 99);
 
--- Empleado de prueba
-INSERT INTO employees (name, pin, role) VALUES
-  ('Admin', '1234', 'admin'),
-  ('Mostrador', '1111', 'mostrador'),
-  ('Cajero', '0000', 'caja');
+-- Crear el primer empleado administrador desde un entorno controlado y asignar
+-- un PIN propio. No cargar PIN de prueba ni guardar PIN en texto plano.
 ```
 
 ### 4. Ejecutar en desarrollo
@@ -149,7 +140,19 @@ Abrir [http://localhost:3000](http://localhost:3000)
 4. Agregar las variables de entorno:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY` (solo variable de servidor; nunca `NEXT_PUBLIC_`)
+   - `APP_SESSION_SECRET` (secreto aleatorio de 32 caracteres o más)
 5. Deploy!
+
+### Cierre de acceso público a Supabase
+
+Configurar primero las variables de servidor `SUPABASE_SERVICE_ROLE_KEY` y
+`APP_SESSION_SECRET` tanto en local como en el hosting, y desplegar la versión
+con las rutas `/api/session` y `/api/supabase`. No publicar la clave service
+role ni anteponerle `NEXT_PUBLIC_`. Después de hacer un backup, ejecutar en el
+SQL Editor la migración `supabase/migrations/202610060001_lock_public_data_access.sql`.
+Si se aplica antes de desplegar esas rutas, el catálogo y el POS perderán el
+acceso a la base hasta que el servidor nuevo esté publicado.
 
 ## Uso
 

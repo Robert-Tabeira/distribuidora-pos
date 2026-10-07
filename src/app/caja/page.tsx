@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import type { Employee, Order, OrderItem } from '@/types/database'
+import { logoutEmployee } from '@/lib/logout-employee'
 
 type OrderWithDetails = Order & {
   items: OrderItem[]
@@ -80,7 +81,7 @@ export default function CajaPage() {
         const [itemsRes, employeeRes] = await Promise.all([
           supabase.from('order_items').select('*').eq('order_id', order.id),
           order.employee_id 
-            ? supabase.from('employees').select('*').eq('id', order.employee_id).single()
+            ? supabase.from('employees').select('id, name, role, created_at').eq('id', order.employee_id).single()
             : Promise.resolve({ data: null })
         ])
 
@@ -96,8 +97,8 @@ export default function CajaPage() {
     setLoading(false)
   }
 
-  function logout() {
-    localStorage.removeItem('employee')
+  async function logout() {
+    await logoutEmployee()
     router.push('/login')
   }
 
