@@ -77,6 +77,8 @@ export default function LoginPage() {
         // Se conserva para mostrar nombre/rol en la interfaz. La cookie httpOnly
         // emitida por el servidor es la credencial que se validará en las APIs.
         localStorage.setItem('employee', JSON.stringify(data.employee))
+        localStorage.setItem('employee_last_activity', String(Date.now()))
+        window.dispatchEvent(new Event('employee-session-started'))
         
         if (data.employee.role === 'caja') {
           router.push('/caja')

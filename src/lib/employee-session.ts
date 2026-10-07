@@ -4,12 +4,14 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
 export const EMPLOYEE_SESSION_COOKIE = 'los_primos_employee_session'
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 12
+export const SESSION_IDLE_TIMEOUT_SECONDS = 60 * 30
 
 export type EmployeeSession = {
   id: string
   name: string
   role: 'mostrador' | 'caja' | 'admin'
   expiresAt: number
+  lastActivityAt: number
 }
 
 function getSessionSecret() {
@@ -24,10 +26,23 @@ function sign(value: string) {
   return createHmac('sha256', getSessionSecret()).update(value).digest('base64url')
 }
 
-export function createEmployeeSession(employee: Omit<EmployeeSession, 'expiresAt'>) {
+export function createEmployeeSession(employee: Omit<EmployeeSession, 'expiresAt' | 'lastActivityAt'>) {
+  const now = Math.floor(Date.now() / 1000)
   const payload = Buffer.from(JSON.stringify({
     ...employee,
-    expiresAt: Math.floor(Date.now() / 1000) + SESSION_MAX_AGE_SECONDS,
+    expiresAt: now + SESSION_MAX_AGE_SECONDS,
+    lastActivityAt: now,
+  })).toString('base64url')
+  return `${payload}.${sign(payload)}`
+}
+
+export function refreshEmployeeSession(session: EmployeeSession) {
+  const payload = Buffer.from(JSON.stringify({
+    id: session.id,
+    name: session.name,
+    role: session.role,
+    expiresAt: session.expiresAt,
+    lastActivityAt: Math.floor(Date.now() / 1000),
   })).toString('base64url')
   return `${payload}.${sign(payload)}`
 }
@@ -46,7 +61,9 @@ export function verifyEmployeeSession(token?: string | null): EmployeeSession | 
     if (
       !session.id || !session.name ||
       !['admin', 'caja', 'mostrador'].includes(session.role) ||
-      !Number.isInteger(session.expiresAt) || session.expiresAt <= Math.floor(Date.now() / 1000)
+      !Number.isInteger(session.expiresAt) || session.expiresAt <= Math.floor(Date.now() / 1000) ||
+      !Number.isInteger(session.lastActivityAt) ||
+      Math.floor(Date.now() / 1000) - session.lastActivityAt >= SESSION_IDLE_TIMEOUT_SECONDS
     ) return null
     return session
   } catch {
@@ -80,3 +97,4 @@ export const employeeSessionCookieOptions = {
   path: '/',
   maxAge: SESSION_MAX_AGE_SECONDS,
 }
+
