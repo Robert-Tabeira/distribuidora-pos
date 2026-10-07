@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { cookies } from 'next/headers'
-import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
 export const EMPLOYEE_SESSION_COOKIE = 'los_primos_employee_session'
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 12
@@ -62,11 +62,13 @@ export function getEmployeeSession() {
 export async function getActiveEmployeeSession() {
   const session = getEmployeeSession()
   if (!session) return null
-  const { data, error } = await supabaseAdmin
+  const result = await getSupabaseAdmin()
     .from('employees')
     .select('id, role')
     .eq('id', session.id)
     .maybeSingle()
+  const data = result.data as any
+  const error = result.error
   if (error || !data || data.role !== session.role) return null
   return session
 }

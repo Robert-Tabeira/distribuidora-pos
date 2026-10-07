@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getActiveEmployeeSession } from '@/lib/employee-session'
-import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -190,8 +190,10 @@ async function handle(request: NextRequest, path: string[]) {
         return NextResponse.json({ message: 'Artículos del pedido inválidos' }, { status: 400 })
       }
       const orderIds = [...new Set(items.map(item => item.order_id))]
-      const { data: ownedOrders, error: ownedOrdersError } = await supabaseAdmin
+      const ownedOrdersResult = await getSupabaseAdmin()
         .from('orders').select('id').eq('employee_id', session.id).in('id', orderIds)
+      const ownedOrders = ownedOrdersResult.data as any[] | null
+      const ownedOrdersError = ownedOrdersResult.error
       if (ownedOrdersError || (ownedOrders?.length || 0) !== orderIds.length) {
         return NextResponse.json({ message: 'El pedido no pertenece a esta sesión' }, { status: 403 })
       }

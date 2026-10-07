@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { createEmployeeSession, EMPLOYEE_SESSION_COOKIE, employeeSessionCookieOptions } from '@/lib/employee-session'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   if (request.headers.get('origin') !== request.nextUrl.origin) {
@@ -21,10 +22,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Credenciales inválidas' }, { status: 400 })
   }
 
-  const { data: verification, error: verificationError } = await supabaseAdmin.rpc('verify_pin_secure', {
+  const supabaseAdmin = getSupabaseAdmin()
+  const verificationResult = await supabaseAdmin.rpc('verify_pin_secure' as any, {
     p_employee_id: employeeId,
     p_pin_attempt: pin,
-  })
+  } as any)
+  const verification = verificationResult.data as any
+  const verificationError = verificationResult.error
 
   if (verificationError) {
     console.error('Error verificando PIN del empleado:', verificationError)
@@ -44,11 +48,13 @@ export async function POST(request: NextRequest) {
     }, { status: 401 })
   }
 
-  const { data: employee, error: employeeError } = await supabaseAdmin
+  const employeeResult = await supabaseAdmin
     .from('employees')
     .select('id, name, role')
     .eq('id', employeeId)
     .maybeSingle()
+  const employee = employeeResult.data as any
+  const employeeError = employeeResult.error
 
   if (employeeError || !employee || !['admin', 'caja', 'mostrador'].includes(employee.role)) {
     console.error('No se pudo cargar el empleado autenticado:', employeeError)
