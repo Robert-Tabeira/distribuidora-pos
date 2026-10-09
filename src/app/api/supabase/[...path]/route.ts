@@ -14,7 +14,7 @@ const publicReadTables = new Set([
 // Proyección cerrada: una consulta pública nunca recibe columnas internas de la tabla.
 const publicColumns: Record<string, string> = {
   products: 'id,name,unit,category_id,status,created_at,price_lista1_kg,price_lista1_unidad,price_lista1_caja,price_lista1_funda,price_lista1_litro,gallery,description,visible_in_catalog',
-  categories: 'id,name,order_position,created_at,parent_id,icon,color,show_in_catalog',
+  categories: 'id,name,order_position,created_at,parent_id,color,show_in_catalog',
   discounts: 'id,name,description,percentage,color,is_active,created_at,updated_at',
   product_discounts: 'id,product_id,discount_id,created_at',
   special_product_discounts: 'id,product_id,name,description,original_price,fixed_price,is_active,created_at,updated_at',

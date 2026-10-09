@@ -81,7 +81,7 @@ begin
     if to_regclass(format('public.%I', table_name)) is not null then
       column_list := case table_name
         when 'products' then 'id,name,unit,category_id,status,created_at,price_lista1_kg,price_lista1_unidad,price_lista1_caja,price_lista1_funda,price_lista1_litro,gallery,description,visible_in_catalog'
-        when 'categories' then 'id,name,order_position,created_at,parent_id,icon,color,show_in_catalog'
+        when 'categories' then 'id,name,order_position,created_at,parent_id,color,show_in_catalog'
         when 'discounts' then 'id,name,description,percentage,color,is_active,created_at,updated_at'
         when 'product_discounts' then 'id,product_id,discount_id,created_at'
         when 'special_product_discounts' then 'id,product_id,name,description,original_price,fixed_price,is_active,created_at,updated_at'
