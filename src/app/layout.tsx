@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next'
-import { EmployeeSessionTimeout } from '@/components/employee-session-timeout'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -29,7 +28,6 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="min-h-screen">
-        <EmployeeSessionTimeout />
         {children}
       </body>
     </html>
