@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
 
 // Tipo sin PIN para seguridad
 type EmployeePublic = {
@@ -24,14 +25,17 @@ export default function LoginPage() {
   }, [])
 
   async function loadEmployees() {
-    try {
-      const response = await fetch('/api/session/employees', { cache: 'no-store' })
-      const result = await response.json()
-      if (!response.ok) throw new Error(result.error || 'Error al cargar empleados')
-      setEmployees(result.employees || [])
-    } catch (error) {
+    // NO traemos el PIN, solo datos públicos
+    const { data, error } = await supabase
+      .from('employees')
+      .select('id, name, role, created_at')
+      .order('name')
+
+    if (error) {
       setError('Error al cargar empleados')
       console.error(error)
+    } else {
+      setEmployees(data || [])
     }
     setLoading(false)
   }
@@ -59,12 +63,19 @@ export default function LoginPage() {
     if (!selectedEmployee) return
 
     try {
-      const response = await fetch('/api/session/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ employeeId: selectedEmployee.id, pin: enteredPin }),
-      })
-      const data = await response.json()
+      // Verificar PIN usando función segura con bloqueo
+      const { data, error } = await supabase
+        .rpc('verify_pin_secure', {
+          p_employee_id: selectedEmployee.id,
+          p_pin_attempt: enteredPin
+        })
+
+      if (error) {
+        console.error('Error verificando PIN:', error)
+        setError('Error al verificar')
+        setPin('')
+        return
+      }
 
       if (data.blocked) {
         setError(`🔒 Bloqueado. Esperá ${data.remaining_minutes} min.`)
@@ -73,24 +84,17 @@ export default function LoginPage() {
         return
       }
 
-      if (response.ok && data.employee) {
-        // Se conserva para mostrar nombre/rol en la interfaz. La cookie httpOnly
-        // emitida por el servidor es la credencial que se validará en las APIs.
-        localStorage.setItem('employee', JSON.stringify(data.employee))
+      if (data.success) {
+        localStorage.setItem('employee', JSON.stringify(selectedEmployee))
         
-        if (data.employee.role === 'caja') {
+        if (selectedEmployee.role === 'caja') {
           router.push('/caja')
-        } else if (data.employee.role === 'admin') {
+        } else if (selectedEmployee.role === 'admin') {
           router.push('/admin')
         } else {
           router.push('/mostrador')
         }
       } else {
-        if (response.status >= 500) {
-          setError('Error al verificar. Revisá la configuración del servidor.')
-          setPin('')
-          return
-        }
         const remaining = data.attempts_remaining
         if (remaining !== undefined && remaining <= 2) {
           setError(`PIN incorrecto. Quedan ${remaining} intentos.`)

@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { logoutEmployee } from '@/lib/logout-employee'
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -80,7 +79,7 @@ export default function AdminDashboard() {
 
         {/* LOGOUT */}
         <div className="mt-12 text-center">
-          <button onClick={async () => { await logoutEmployee(); router.push('/login') }} className="px-8 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 font-bold text-lg transition-all">
+          <button onClick={() => { localStorage.removeItem('employee'); router.push('/login') }} className="px-8 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 font-bold text-lg transition-all">
             🚪 Cerrar Sesión
           </button>
         </div>

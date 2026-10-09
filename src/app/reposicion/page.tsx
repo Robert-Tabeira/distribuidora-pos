@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { logoutEmployee } from '@/lib/logout-employee'
 import type { Product } from '@/types/database'
 
 type ReposicionItem = {
@@ -61,8 +60,7 @@ export default function ReposicionPage() {
     setLoading(false)
   }
 
-  async function logout() {
-    await logoutEmployee()
+  function logout() {
     localStorage.removeItem('employee')
     router.push('/login')
   }

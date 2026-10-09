@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import type { Category, Product, Employee, CartItem } from '@/types/database'
-import { logoutEmployee } from '@/lib/logout-employee'
 
 type CartItemWithCheck = CartItem & { checked: boolean }
 
@@ -94,8 +93,7 @@ export default function MostradorPage() {
     setLoading(false)
   }
 
-  async function logout() {
-    await logoutEmployee()
+  function logout() {
     localStorage.removeItem('employee')
     localStorage.removeItem('cartDraft')
     localStorage.removeItem('cartDraftCustomer')

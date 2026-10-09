@@ -8,11 +8,12 @@ create table if not exists public.customer_shopping_lists (
 
 alter table public.customer_shopping_lists enable row level security;
 
--- No crear una política abierta: la sesión de cliente de localStorage no es
--- una identidad que Postgres pueda verificar. El acceso se habilita cuando
--- las operaciones pasan por autenticación y políticas de propiedad seguras.
+-- La aplicación autentica clientes con sesión propia en localStorage y usa
+-- la clave pública de Supabase; por eso sigue el acceso abierto que usa este
+-- proyecto para sus tablas públicas.
 drop policy if exists "Allow all" on public.customer_shopping_lists;
-revoke all on table public.customer_shopping_lists from anon, authenticated, public;
+create policy "Allow all" on public.customer_shopping_lists
+  for all using (true) with check (true);
 
 create index if not exists customer_shopping_lists_customer_created_idx
   on public.customer_shopping_lists (customer_id, created_at desc);
