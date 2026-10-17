@@ -30,6 +30,9 @@ interface WebsiteSettings {
   site_name?: string
   site_tagline?: string
   logo_url?: string | null
+  logo_transparent_url?: string | null
+  logo_width?: number
+  logo_sticky_width?: number
   use_logo_image?: boolean
   footer_settings?: FooterSettings
 }
@@ -303,7 +306,7 @@ function SitePreviewPanel({
   sectionView: string | null
   barForm: { bg_color: string; text_color: string; font_family: string; font_size: string; font_weight: string; letter_spacing: string; animation: string }
   announcements: AnnouncementMessage[]
-  logoForm: { site_name: string; site_tagline: string; logo_url: string; use_logo_image: boolean }
+  logoForm: { site_name: string; site_tagline: string; logo_url: string; logo_transparent_url: string; logo_width: number; logo_sticky_width: number; use_logo_image: boolean }
   headerForm: { bg_color: string; text_color: string; active_color: string; sticky: boolean; shadow: boolean; nav_uppercase: boolean; nav_underline: boolean; nav_letter_spacing: string; nav_font_weight: string }
   menuLinks: MenuLink[]
   landingSections: LandingSection[]
@@ -364,7 +367,7 @@ function SitePreviewPanel({
           style={{ backgroundColor: headerForm.bg_color }}
         >
           {logoForm.use_logo_image && logoForm.logo_url ? (
-            <img src={logoForm.logo_url} alt={logoForm.site_name} className="h-6 object-contain" />
+            <img src={logoForm.logo_url} alt={logoForm.site_name} className="h-6 object-contain" style={{ width: `${logoForm.logo_width}px` }} />
           ) : (
             <div className="min-w-0">
               <p className="font-black text-xs truncate" style={{ color: headerForm.text_color }}>{logoForm.site_name}</p>
@@ -604,6 +607,9 @@ export default function WebsiteEditionPage() {
     site_name: 'Los Primos',
     site_tagline: 'Distribuidora Oficial Sarubbi',
     logo_url: '',
+    logo_transparent_url: '',
+    logo_width: 180,
+    logo_sticky_width: 144,
     use_logo_image: false,
     logo_link_url: '/landing'
   })
@@ -722,6 +728,9 @@ export default function WebsiteEditionPage() {
           site_name: settingsRes.data.site_name || 'Los Primos',
           site_tagline: settingsRes.data.site_tagline || 'Distribuidora Oficial Sarubbi',
           logo_url: settingsRes.data.logo_url || '',
+          logo_transparent_url: settingsRes.data.logo_transparent_url || '',
+          logo_width: settingsRes.data.logo_width || 180,
+          logo_sticky_width: settingsRes.data.logo_sticky_width || 144,
           use_logo_image: settingsRes.data.use_logo_image || false,
           logo_link_url: settingsRes.data.logo_link_url || '/landing'
         })
@@ -1384,7 +1393,7 @@ export default function WebsiteEditionPage() {
   }
 
   // ===== HEADER: LOGO Y NOMBRE =====
-  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>, variant: 'standard' | 'transparent') {
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -1394,7 +1403,7 @@ export default function WebsiteEditionPage() {
     if (error) {
       alert(`❌ Error al subir el logo: ${error}`)
     } else {
-      setLogoForm({ ...logoForm, logo_url: url })
+      setLogoForm({ ...logoForm, [variant === 'transparent' ? 'logo_transparent_url' : 'logo_url']: url })
     }
     setUploadingLogo(false)
   }
@@ -1409,6 +1418,9 @@ export default function WebsiteEditionPage() {
           site_name: logoForm.site_name.trim() || 'Los Primos',
           site_tagline: logoForm.site_tagline.trim(),
           logo_url: logoForm.logo_url || null,
+          logo_transparent_url: logoForm.logo_transparent_url || null,
+          logo_width: logoForm.logo_width,
+          logo_sticky_width: logoForm.logo_sticky_width,
           use_logo_image: logoForm.use_logo_image,
           logo_link_url: logoForm.logo_link_url.trim() || '/landing',
           updated_at: new Date().toISOString()
@@ -2314,15 +2326,29 @@ export default function WebsiteEditionPage() {
                 </div>
 
                 {logoForm.use_logo_image ? (
-                  <div className="mb-5">
-                    <label className="block text-sm font-semibold text-text-muted mb-2">Logo (imagen)</label>
-                    {logoForm.logo_url && (
-                      <div className="mb-3 p-4 bg-gray-50 rounded-lg inline-block">
-                        <img src={logoForm.logo_url} alt="Logo" className="h-12 object-contain" />
+                  <div className="mb-5 space-y-5">
+                    <p className="text-sm text-text-muted">Usá versiones preparadas para cada fondo: una clara para el header transparente y otra para el header blanco al desplazarte.</p>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="rounded-xl border border-border p-4">
+                        <label className="mb-3 block text-sm font-semibold text-text">Logo para header transparente</label>
+                        <div className="mb-3 flex h-20 items-center justify-center rounded-lg bg-gradient-to-r from-stone-800 to-amber-950 p-3">
+                          {logoForm.logo_transparent_url ? <img src={logoForm.logo_transparent_url} alt="Logo para fondo transparente" className="max-h-full object-contain" style={{ width: `${logoForm.logo_width}px` }} /> : <span className="text-xs text-white/80">Usa el logo principal si no subís otro</span>}
+                        </div>
+                        <input type="file" accept="image/*" onChange={e => handleLogoUpload(e, 'transparent')} disabled={uploadingLogo} className="input" />
+                        <label className="mt-4 block text-xs font-semibold text-text-muted">Ancho: {logoForm.logo_width} px</label>
+                        <input type="range" min="60" max="320" step="4" value={logoForm.logo_width} onChange={e => setLogoForm({ ...logoForm, logo_width: Number(e.target.value) })} className="mt-2 w-full" />
                       </div>
-                    )}
-                    <input type="file" accept="image/*" onChange={handleLogoUpload} disabled={uploadingLogo} className="input" />
-                    {uploadingLogo && <p className="text-xs text-text-muted mt-2">Subiendo...</p>}
+                      <div className="rounded-xl border border-border p-4">
+                        <label className="mb-3 block text-sm font-semibold text-text">Logo para header sólido / sticky</label>
+                        <div className="mb-3 flex h-20 items-center justify-center rounded-lg border border-gray-200 bg-white p-3">
+                          {logoForm.logo_url ? <img src={logoForm.logo_url} alt="Logo para fondo sólido" className="max-h-full object-contain" style={{ width: `${logoForm.logo_sticky_width}px` }} /> : <span className="text-xs text-text-muted">Subí el logo para fondo claro</span>}
+                        </div>
+                        <input type="file" accept="image/*" onChange={e => handleLogoUpload(e, 'standard')} disabled={uploadingLogo} className="input" />
+                        <label className="mt-4 block text-xs font-semibold text-text-muted">Ancho: {logoForm.logo_sticky_width} px</label>
+                        <input type="range" min="60" max="320" step="4" value={logoForm.logo_sticky_width} onChange={e => setLogoForm({ ...logoForm, logo_sticky_width: Number(e.target.value) })} className="mt-2 w-full" />
+                      </div>
+                    </div>
+                    {uploadingLogo && <p className="text-xs text-text-muted">Subiendo logo...</p>}
                   </div>
                 ) : (
                   <div className="grid sm:grid-cols-2 gap-5 mb-5">

@@ -17,6 +17,9 @@ interface WebsiteSettings {
   site_name: string
   site_tagline: string
   logo_url: string | null
+  logo_transparent_url: string | null
+  logo_width: number
+  logo_sticky_width: number
   use_logo_image: boolean
   logo_link_url: string
   customer_orders_enabled?: boolean
@@ -137,6 +140,12 @@ export function Header() {
   const isLandingPage = pathname === '/landing' || pathname === '/'
   const landingHeaderAtTop = isLandingPage && !isScrolled
   const transparentLandingHeader = landingHeaderAtTop && headerSettings.bg_color === 'transparent'
+  const activeLogoUrl = landingHeaderAtTop
+    ? settings?.logo_transparent_url || settings?.logo_url
+    : settings?.logo_url
+  const activeLogoWidth = isScrolled
+    ? settings?.logo_sticky_width || 144
+    : settings?.logo_width || 180
   const headerTextColor = landingHeaderAtTop ? '#ffffff' : isLandingPage ? '#3b2a20' : headerSettings.text_color
   const headerActiveColor = landingHeaderAtTop ? '#ffffff' : isLandingPage ? '#8b4a2f' : headerSettings.active_color
 
@@ -155,11 +164,12 @@ export function Header() {
         <div className={`flex items-center justify-between ${isLandingPage && (isScrolled || transparentLandingHeader) ? 'h-full' : ''}`}>
           {/* Logo */}
           <Link href={settings?.logo_link_url || '/landing'} className="flex items-center gap-3 min-w-0">
-            {settings?.use_logo_image && settings?.logo_url ? (
+            {settings?.use_logo_image && activeLogoUrl ? (
               <img
-                src={settings.logo_url}
+                src={activeLogoUrl}
                 alt={siteName}
-                className={`object-contain transition-all duration-300 ${isScrolled ? 'h-8' : 'h-10'}`}
+                className="object-contain transition-all duration-300"
+                style={{ width: `${activeLogoWidth}px`, maxHeight: isScrolled ? '48px' : '64px', height: 'auto' }}
               />
             ) : (
               <div className="flex flex-col min-w-0">
