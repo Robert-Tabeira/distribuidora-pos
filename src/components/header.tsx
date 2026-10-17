@@ -140,10 +140,11 @@ export function Header() {
   const isLandingPage = pathname === '/landing' || pathname === '/'
   const landingHeaderAtTop = isLandingPage && !isScrolled
   const transparentLandingHeader = landingHeaderAtTop && headerSettings.bg_color === 'transparent'
-  const activeLogoUrl = landingHeaderAtTop
+  const transparentHeaderAtTop = !isScrolled && (isLandingPage || headerSettings.bg_color === 'transparent')
+  const activeLogoUrl = transparentHeaderAtTop
     ? settings?.logo_transparent_url || settings?.logo_url
     : settings?.logo_url
-  const activeLogoWidth = isScrolled
+  const activeLogoWidth = !transparentHeaderAtTop && isScrolled
     ? settings?.logo_sticky_width || 144
     : settings?.logo_width || 180
   const headerTextColor = landingHeaderAtTop ? '#ffffff' : isLandingPage ? '#3b2a20' : headerSettings.text_color
@@ -166,6 +167,7 @@ export function Header() {
           <Link href={settings?.logo_link_url || '/landing'} className="flex items-center gap-3 min-w-0">
             {settings?.use_logo_image && activeLogoUrl ? (
               <img
+                key={activeLogoUrl}
                 src={activeLogoUrl}
                 alt={siteName}
                 className="object-contain transition-all duration-300"
