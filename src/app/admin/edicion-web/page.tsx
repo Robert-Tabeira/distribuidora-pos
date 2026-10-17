@@ -1397,15 +1397,33 @@ export default function WebsiteEditionPage() {
     const file = e.target.files?.[0]
     if (!file) return
 
+    const field = variant === 'transparent' ? 'logo_transparent_url' : 'logo_url'
     setUploadingLogo(true)
-    const { url, error } = await uploadImageToSupabase(file, 'logo')
+    try {
+      const { url, error: uploadError } = await uploadImageToSupabase(file, 'logo')
+      if (uploadError || !url) throw new Error(uploadError || 'No se recibió la URL del archivo')
 
-    if (error) {
-      alert(`❌ Error al subir el logo: ${error}`)
-    } else {
-      setLogoForm({ ...logoForm, [variant === 'transparent' ? 'logo_transparent_url' : 'logo_url']: url })
+      // Mostrarlo de inmediato y guardar la URL ahora; así no depende de que
+      // el formulario completo se guarde después ni de un estado obsoleto.
+      setLogoForm(current => ({ ...current, [field]: url }))
+      if (!settings) throw new Error('La configuración del sitio todavía no está cargada')
+
+      const { error: saveError } = await supabase
+        .from('website_settings')
+        .update({ [field]: url, updated_at: new Date().toISOString() })
+        .eq('id', settings.id)
+      if (saveError) {
+        throw new Error(`El archivo se subió, pero Supabase no guardó su URL: ${saveError.message}`)
+      }
+
+      setSettings(current => current ? { ...current, [field]: url } : current)
+    } catch (error) {
+      console.error('Error uploading/saving logo:', error)
+      alert(`❌ No se pudo guardar el logo. ${error instanceof Error ? error.message : String(error)}`)
+    } finally {
+      setUploadingLogo(false)
+      e.target.value = ''
     }
-    setUploadingLogo(false)
   }
 
   async function saveLogo() {
@@ -2386,8 +2404,8 @@ export default function WebsiteEditionPage() {
                   />
                 </div>
 
-                <button onClick={saveLogo} disabled={savingLogo} className="btn btn-primary w-full">
-                  {savingLogo ? 'Guardando...' : 'Guardar Logo y Nombre'}
+                <button onClick={saveLogo} disabled={savingLogo || uploadingLogo} className="btn btn-primary w-full">
+                  {uploadingLogo ? 'Subiendo y guardando logo...' : savingLogo ? 'Guardando...' : 'Guardar Logo y Nombre'}
                 </button>
               </CollapsibleCard>
 
