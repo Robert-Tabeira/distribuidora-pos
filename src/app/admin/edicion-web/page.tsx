@@ -122,6 +122,11 @@ interface HeroSlide {
   id: string
   order_position: number
   image_url: string
+  mobile_image_url?: string | null
+  desktop_text_position?: string | null
+  mobile_text_position?: string | null
+  desktop_image_position?: string | null
+  mobile_image_position?: string | null
   title: string
   description: string | null
   cta_text: string | null
@@ -148,12 +153,14 @@ interface LandingFeatureCard {
   title: string
   description: string
   image_url: string
+  mobile_image_url?: string
   link_url: string
   button_text: string
 }
 
 interface LandingCarouselSlide {
   image_url: string
+  mobile_image_url?: string
   link_url: string
 }
 
@@ -179,6 +186,13 @@ interface LandingSectionSettings {
   category_icons?: Record<string, string>
   cards?: LandingFeatureCard[]
   slides?: LandingCarouselSlide[]
+  mobile_image_url?: string
+  desktop_text_alignment?: 'inherit' | 'left' | 'center' | 'right'
+  mobile_text_alignment?: 'inherit' | 'left' | 'center' | 'right'
+  desktop_image_position?: 'center' | 'top' | 'bottom' | 'left' | 'right'
+  mobile_image_position?: 'center' | 'top' | 'bottom' | 'left' | 'right'
+  desktop_image_side?: 'left' | 'right'
+  mobile_image_order?: 'first' | 'last'
 }
 
 interface AnnouncementMessage {
@@ -536,6 +550,7 @@ function ColorPicker({
 export default function WebsiteEditionPage() {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const mobileHeroInputRef = useRef<HTMLInputElement>(null)
   const [employee, setEmployee] = useState<Employee | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'settings' | 'sections'>('settings')
@@ -564,11 +579,12 @@ export default function WebsiteEditionPage() {
   // Hero Slides
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([])
   const [editingHero, setEditingHero] = useState<HeroSlide | null>(null)
-  const [heroForm, setHeroForm] = useState({ title: '', description: '', cta_text: '', cta_url: '', image_url: '' })
+  const [heroForm, setHeroForm] = useState({ title: '', description: '', cta_text: '', cta_url: '', image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center' })
   const [savingHero, setSavingHero] = useState(false)
   const [showHeroModal, setShowHeroModal] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [imagePreview, setImagePreview] = useState('')
+  const [mobileHeroPreview, setMobileHeroPreview] = useState('')
 
   // Landing Sections
   const [sections, setSections] = useState<LandingSection[]>([])
@@ -918,7 +934,7 @@ export default function WebsiteEditionPage() {
   }
 
   // ===== IMAGE UPLOAD =====
-  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>, variant: 'desktop' | 'mobile' = 'desktop') {
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -928,15 +944,15 @@ export default function WebsiteEditionPage() {
     if (error) {
       alert(`❌ Error al subir imagen: ${error}`)
     } else {
-      setHeroForm({ ...heroForm, image_url: url })
-      setImagePreview(url)
-      alert('✅ Imagen subida correctamente')
+      setHeroForm(current => ({ ...current, [variant === 'mobile' ? 'mobile_image_url' : 'image_url']: url }))
+      if (variant === 'mobile') setMobileHeroPreview(url)
+      else setImagePreview(url)
+      alert(`✅ Imagen para ${variant === 'mobile' ? 'móvil' : 'escritorio'} subida correctamente`)
     }
 
     setUploadingImage(false)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
+    const inputRef = variant === 'mobile' ? mobileHeroInputRef : fileInputRef
+    if (inputRef.current) inputRef.current.value = ''
   }
 
   // ===== HERO SLIDES =====
@@ -962,6 +978,11 @@ export default function WebsiteEditionPage() {
             cta_text: heroForm.cta_text.trim() || null,
             cta_url: heroForm.cta_url.trim() || null,
             image_url: heroForm.image_url.trim(),
+            mobile_image_url: heroForm.mobile_image_url.trim() || null,
+            desktop_text_position: heroForm.desktop_text_position,
+            mobile_text_position: heroForm.mobile_text_position,
+            desktop_image_position: heroForm.desktop_image_position,
+            mobile_image_position: heroForm.mobile_image_position,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingHero.id)
@@ -976,7 +997,12 @@ export default function WebsiteEditionPage() {
                 description: heroForm.description.trim() || null,
                 cta_text: heroForm.cta_text.trim() || null,
                 cta_url: heroForm.cta_url.trim() || null,
-                image_url: heroForm.image_url.trim()
+                image_url: heroForm.image_url.trim(),
+                mobile_image_url: heroForm.mobile_image_url.trim() || null,
+                desktop_text_position: heroForm.desktop_text_position,
+                mobile_text_position: heroForm.mobile_text_position,
+                desktop_image_position: heroForm.desktop_image_position,
+                mobile_image_position: heroForm.mobile_image_position
               }
             : s
         ))
@@ -991,6 +1017,11 @@ export default function WebsiteEditionPage() {
             cta_text: heroForm.cta_text.trim() || null,
             cta_url: heroForm.cta_url.trim() || null,
             image_url: heroForm.image_url.trim(),
+            mobile_image_url: heroForm.mobile_image_url.trim() || null,
+            desktop_text_position: heroForm.desktop_text_position,
+            mobile_text_position: heroForm.mobile_text_position,
+            desktop_image_position: heroForm.desktop_image_position,
+            mobile_image_position: heroForm.mobile_image_position,
             order_position: maxOrder + 1,
             is_active: true
           }])
@@ -1002,10 +1033,12 @@ export default function WebsiteEditionPage() {
 
       setShowHeroModal(false)
       setImagePreview('')
+      setMobileHeroPreview('')
       alert('✅ Slide guardado correctamente')
     } catch (error) {
       console.error('Error saving hero:', error)
-      alert('❌ Error al guardar')
+      const details = error instanceof Error ? error.message : JSON.stringify(error)
+      alert(`❌ Error al guardar el slide: ${details}. Si el error menciona una columna nueva, aplicá primero la migración responsive del hero en Supabase.`)
     } finally {
       setSavingHero(false)
     }
@@ -1032,13 +1065,20 @@ export default function WebsiteEditionPage() {
         description: hero.description || '',
         cta_text: hero.cta_text || '',
         cta_url: hero.cta_url || '',
-        image_url: hero.image_url
+        image_url: hero.image_url,
+        mobile_image_url: hero.mobile_image_url || '',
+        desktop_text_position: hero.desktop_text_position || 'left',
+        mobile_text_position: hero.mobile_text_position || 'left',
+        desktop_image_position: hero.desktop_image_position || 'center',
+        mobile_image_position: hero.mobile_image_position || 'center'
       })
       setImagePreview(hero.image_url)
+      setMobileHeroPreview(hero.mobile_image_url || '')
     } else {
       setEditingHero(null)
-      setHeroForm({ title: '', description: '', cta_text: '', cta_url: '', image_url: '' })
+      setHeroForm({ title: '', description: '', cta_text: '', cta_url: '', image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center' })
       setImagePreview('')
+      setMobileHeroPreview('')
     }
     setShowHeroModal(true)
   }
@@ -1059,8 +1099,10 @@ export default function WebsiteEditionPage() {
     }
   }
 
-  async function uploadSectionImage(file: File | undefined) {
-    await uploadLandingAsset(file, url => setSectionForm(current => ({ ...current, image_url: url })))
+  async function uploadSectionImage(file: File | undefined, variant: 'desktop' | 'mobile' = 'desktop') {
+    await uploadLandingAsset(file, url => variant === 'mobile'
+      ? updateLandingSettings({ mobile_image_url: url })
+      : setSectionForm(current => ({ ...current, image_url: url })))
   }
 
   function updateLandingCard(index: number, changes: Partial<LandingFeatureCard>) {
@@ -3180,7 +3222,7 @@ export default function WebsiteEditionPage() {
 
             <div className="space-y-4 mb-6">
               <div>
-                <label className="block text-sm font-semibold text-text-muted mb-2">Imagen * (Sube desde tu ordenador)</label>
+                <label className="block text-sm font-semibold text-text-muted mb-2">Imagen para escritorio *</label>
                 <div 
                   onClick={() => fileInputRef.current?.click()}
                   className="border-2 border-dashed border-primary/30 rounded-lg p-6 text-center cursor-pointer hover:border-primary/60 transition-all"
@@ -3218,6 +3260,30 @@ export default function WebsiteEditionPage() {
                   className="hidden"
                   disabled={uploadingImage}
                 />
+                <div className="mt-4 rounded-xl border border-border p-4">
+                  <label className="block text-sm font-semibold text-text-muted">Imagen para móvil (opcional)</label>
+                  <p className="mb-3 mt-1 text-xs text-text-muted">Si no subís una, se adapta la imagen de escritorio.</p>
+                  {mobileHeroPreview && <img src={mobileHeroPreview} alt="Vista previa móvil del hero" className="mb-3 h-32 w-full rounded-lg object-cover" />}
+                  <input ref={mobileHeroInputRef} type="file" accept="image/*" onChange={e => handleImageUpload(e, 'mobile')} className="input" disabled={uploadingImage} />
+                </div>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {(['desktop', 'mobile'] as const).map(device => {
+                    const key = device === 'desktop' ? 'desktop_text_position' : 'mobile_text_position'
+                    return <label key={key} className="block text-sm font-semibold text-text-muted">Texto en {device === 'desktop' ? 'escritorio' : 'móvil'}
+                      <select className="input mt-2" value={heroForm[key]} onChange={e => setHeroForm(current => ({ ...current, [key]: e.target.value }))}>
+                        <option value="left">Izquierda</option><option value="center">Centro</option><option value="right">Derecha</option>
+                      </select>
+                    </label>
+                  })}
+                  {(['desktop', 'mobile'] as const).map(device => {
+                    const key = device === 'desktop' ? 'desktop_image_position' : 'mobile_image_position'
+                    return <label key={key} className="block text-sm font-semibold text-text-muted">Encuadre en {device === 'desktop' ? 'escritorio' : 'móvil'}
+                      <select className="input mt-2" value={heroForm[key]} onChange={e => setHeroForm(current => ({ ...current, [key]: e.target.value }))}>
+                        <option value="center">Centro</option><option value="top">Arriba</option><option value="bottom">Abajo</option><option value="left">Izquierda</option><option value="right">Derecha</option>
+                      </select>
+                    </label>
+                  })}
+                </div>
               </div>
 
               <div>
@@ -3360,6 +3426,37 @@ export default function WebsiteEditionPage() {
                 />
               </div>
 
+              <div className="grid gap-3 rounded-xl border border-border p-4 sm:grid-cols-2">
+                <p className="text-sm font-semibold text-text sm:col-span-2">Alineación del texto por dispositivo</p>
+                {(['desktop', 'mobile'] as const).map(device => {
+                  const key = device === 'desktop' ? 'desktop_text_alignment' : 'mobile_text_alignment'
+                  return <label key={key} className="block text-sm font-medium text-text-muted">{device === 'desktop' ? 'Escritorio' : 'Móvil'}
+                    <select className="input mt-1" value={sectionForm.settings[key] || 'inherit'} onChange={e => updateLandingSettings({ [key]: e.target.value as LandingSectionSettings[typeof key] })}>
+                      <option value="inherit">Diseño actual</option><option value="left">Izquierda</option><option value="center">Centro</option><option value="right">Derecha</option>
+                    </select>
+                  </label>
+                })}
+                <p className="text-sm font-semibold text-text sm:col-span-2">Encuadre de imágenes por dispositivo</p>
+                {(['desktop', 'mobile'] as const).map(device => {
+                  const key = device === 'desktop' ? 'desktop_image_position' : 'mobile_image_position'
+                  return <label key={key} className="block text-sm font-medium text-text-muted">{device === 'desktop' ? 'Escritorio' : 'Móvil'}
+                    <select className="input mt-1" value={sectionForm.settings[key] || 'center'} onChange={e => updateLandingSettings({ [key]: e.target.value as LandingSectionSettings[typeof key] })}>
+                      <option value="center">Centro</option><option value="top">Arriba</option><option value="bottom">Abajo</option><option value="left">Izquierda</option><option value="right">Derecha</option>
+                    </select>
+                  </label>
+                })}
+                <label className="block text-sm font-medium text-text-muted">Posición de imagen en escritorio
+                  <select className="input mt-1" value={sectionForm.settings.desktop_image_side || 'current'} onChange={e => updateLandingSettings({ desktop_image_side: e.target.value === 'current' ? undefined : e.target.value as 'left' | 'right' })}>
+                    <option value="current">Diseño actual</option><option value="left">A la izquierda del texto</option><option value="right">A la derecha del texto</option>
+                  </select>
+                </label>
+                <label className="block text-sm font-medium text-text-muted">Orden en móvil
+                  <select className="input mt-1" value={sectionForm.settings.mobile_image_order || 'first'} onChange={e => updateLandingSettings({ mobile_image_order: e.target.value as 'first' | 'last' })}>
+                    <option value="first">Imagen antes del texto</option><option value="last">Imagen después del texto</option>
+                  </select>
+                </label>
+              </div>
+
               {sectionForm.block_type === 'categories' && (
                 <div className="space-y-3 rounded-xl border border-border p-4">
                   <div>
@@ -3411,6 +3508,7 @@ export default function WebsiteEditionPage() {
                       <input className="input" value={card.title} onChange={e => updateLandingCard(index, { title: e.target.value })} placeholder="Título" />
                       <textarea className="input min-h-20" value={card.description} onChange={e => updateLandingCard(index, { description: e.target.value })} placeholder="Descripción" />
                       <div className="grid gap-2 sm:grid-cols-2"><input className="input" value={card.image_url} onChange={e => updateLandingCard(index, { image_url: e.target.value })} placeholder="URL de la imagen" /><label className="flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-primary/40 px-3 py-2 text-sm font-semibold text-primary">{uploadingImage ? 'Subiendo…' : 'Subir imagen'}<input type="file" accept="image/*" className="hidden" disabled={uploadingImage} onChange={e => { void uploadLandingAsset(e.target.files?.[0], url => updateLandingCard(index, { image_url: url })); e.currentTarget.value = '' }} /></label></div>
+                      <div className="grid gap-2 sm:grid-cols-2"><input className="input" value={card.mobile_image_url || ''} onChange={e => updateLandingCard(index, { mobile_image_url: e.target.value })} placeholder="URL de imagen para móvil (opcional)" /><label className="flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-primary/40 px-3 py-2 text-sm font-semibold text-primary">{uploadingImage ? 'Subiendo…' : 'Subir imagen móvil'}<input type="file" accept="image/*" className="hidden" disabled={uploadingImage} onChange={e => { void uploadLandingAsset(e.target.files?.[0], url => updateLandingCard(index, { mobile_image_url: url })); e.currentTarget.value = '' }} /></label></div>
                       <div className="grid gap-2 sm:grid-cols-2"><input className="input" value={card.link_url} onChange={e => updateLandingCard(index, { link_url: e.target.value })} placeholder="Enlace (ej. /catalogo)" /><input className="input" value={card.button_text} onChange={e => updateLandingCard(index, { button_text: e.target.value })} placeholder="Texto del botón" /></div>
                     </div>
                   ))}
@@ -3449,11 +3547,11 @@ export default function WebsiteEditionPage() {
                 <div className="space-y-3">
                   <h4 className="font-semibold text-text">Fotos del carrusel</h4>
                   {(sectionForm.settings.slides || []).map((slide, index) => (
-                    <div key={index} className="grid gap-2 rounded-xl border border-border p-3 sm:grid-cols-[1fr_1fr_auto]">
-                      <input className="input" value={slide.image_url} onChange={e => updateLandingSlide(index, { image_url: e.target.value })} placeholder="URL de imagen" />
+                    <div key={index} className="grid gap-2 rounded-xl border border-border p-3 sm:grid-cols-2">
+                      <div className="space-y-2"><input className="input" value={slide.image_url} onChange={e => updateLandingSlide(index, { image_url: e.target.value })} placeholder="URL de imagen para escritorio" /><label className="flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-primary/40 px-3 py-2 text-sm font-semibold text-primary">{uploadingImage ? 'Subiendo…' : 'Subir imagen escritorio'}<input type="file" accept="image/*" className="hidden" disabled={uploadingImage} onChange={e => { void uploadLandingAsset(e.target.files?.[0], url => updateLandingSlide(index, { image_url: url })); e.currentTarget.value = '' }} /></label></div>
+                      <div className="space-y-2"><input className="input" value={slide.mobile_image_url || ''} onChange={e => updateLandingSlide(index, { mobile_image_url: e.target.value })} placeholder="URL móvil (opcional)" /><label className="flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-primary/40 px-3 py-2 text-sm font-semibold text-primary">{uploadingImage ? 'Subiendo…' : 'Subir imagen móvil'}<input type="file" accept="image/*" className="hidden" disabled={uploadingImage} onChange={e => { void uploadLandingAsset(e.target.files?.[0], url => updateLandingSlide(index, { mobile_image_url: url })); e.currentTarget.value = '' }} /></label></div>
                       <input className="input" value={slide.link_url} onChange={e => updateLandingSlide(index, { link_url: e.target.value })} placeholder="Enlace opcional" />
                       <button type="button" onClick={() => updateLandingSettings({ slides: (sectionForm.settings.slides || []).filter((_, i) => i !== index) })} className="rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-600">Quitar</button>
-                      <label className="cursor-pointer text-xs font-semibold text-primary">Subir imagen<input type="file" accept="image/*" className="hidden" disabled={uploadingImage} onChange={e => { void uploadLandingAsset(e.target.files?.[0], url => updateLandingSlide(index, { image_url: url })); e.currentTarget.value = '' }} /></label>
                     </div>
                   ))}
                   <button type="button" onClick={() => updateLandingSettings({ slides: [...(sectionForm.settings.slides || []), { image_url: '', link_url: '' }] })} className="w-full rounded-xl border border-dashed border-primary/40 py-3 text-sm font-semibold text-primary hover:bg-primary/5">+ Agregar foto</button>
@@ -3469,8 +3567,9 @@ export default function WebsiteEditionPage() {
                 </div>
               )}
 
-              {['content', 'banner'].includes(sectionForm.block_type) && <div>
-                <label className="block text-sm font-semibold text-text-muted mb-2">Imagen del bloque</label>
+              {['content', 'banner'].includes(sectionForm.block_type) && <div className="space-y-4">
+                <div>
+                <label className="block text-sm font-semibold text-text-muted mb-2">Imagen para escritorio</label>
                 <label className="mb-3 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-primary/40 bg-primary/5 px-4 py-4 text-sm font-semibold text-primary transition hover:bg-primary/10">
                   <Icon name="image" className="h-5 w-5" />
                   {uploadingImage ? 'Subiendo imagen…' : 'Elegir imagen desde el equipo'}
@@ -3485,6 +3584,17 @@ export default function WebsiteEditionPage() {
                   className="input"
                 />
                 {sectionForm.image_url && <img src={sectionForm.image_url} alt="Vista previa del bloque" className="mt-3 max-h-40 w-full rounded-xl border border-border object-cover" />}
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-text-muted mb-2">Imagen para móvil (opcional)</label>
+                  <p className="mb-2 text-xs text-text-muted">Si queda vacía, se usará la imagen de escritorio.</p>
+                  <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-primary/40 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary transition hover:bg-primary/10">
+                    <Icon name="image" className="h-5 w-5" />{uploadingImage ? 'Subiendo imagen…' : 'Elegir imagen móvil'}
+                    <input type="file" accept="image/*" className="hidden" disabled={uploadingImage} onChange={e => { void uploadSectionImage(e.target.files?.[0], 'mobile'); e.currentTarget.value = '' }} />
+                  </label>
+                  <input type="url" value={sectionForm.settings.mobile_image_url || ''} onChange={e => updateLandingSettings({ mobile_image_url: e.target.value })} placeholder="URL de imagen móvil (opcional)" className="input mt-2" />
+                  {sectionForm.settings.mobile_image_url && <img src={sectionForm.settings.mobile_image_url} alt="Vista previa móvil" className="mt-3 max-h-40 w-full rounded-xl border border-border object-cover" />}
+                </div>
               </div>}
 
               <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border p-4">

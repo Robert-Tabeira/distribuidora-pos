@@ -13,7 +13,19 @@ interface HeroSlide {
   is_active: boolean
   order_position: number
   image_url: string
+  mobile_image_url?: string | null
+  desktop_text_position?: 'left' | 'center' | 'right' | null
+  mobile_text_position?: 'left' | 'center' | 'right' | null
+  desktop_image_position?: 'center' | 'top' | 'bottom' | 'left' | 'right' | null
+  mobile_image_position?: 'center' | 'top' | 'bottom' | 'left' | 'right' | null
 }
+
+const HORIZONTAL_POSITION = { left: 'justify-start', center: 'justify-center', right: 'justify-end' } as const
+const DESKTOP_HORIZONTAL_POSITION = { left: 'md:justify-start', center: 'md:justify-center', right: 'md:justify-end' } as const
+const IMAGE_POSITION = { center: 'object-center', top: 'object-top', bottom: 'object-bottom', left: 'object-left', right: 'object-right' } as const
+const DESKTOP_IMAGE_POSITION = { center: 'md:object-center', top: 'md:object-top', bottom: 'md:object-bottom', left: 'md:object-left', right: 'md:object-right' } as const
+const TEXT_ALIGNMENT = { left: 'text-left', center: 'text-center', right: 'text-right' } as const
+const DESKTOP_TEXT_ALIGNMENT = { left: 'md:text-left', center: 'md:text-center', right: 'md:text-right' } as const
 
 const DEFAULT_SLIDES: HeroSlide[] = [
   {
@@ -130,18 +142,20 @@ export function HeroSlider() {
   const currentSlideData = slides[currentSlide]
 
   return (
-    <div 
-      className="relative w-full h-screen overflow-hidden group transition-all duration-1000 bg-cover bg-center"
-      style={{
-        backgroundImage: `url('${currentSlideData.image_url}')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center'
-      }}
-    >
+    <div className="group relative h-screen w-full overflow-hidden bg-stone-900 transition-all duration-1000">
+      <picture className="absolute inset-0 block">
+        {currentSlideData.mobile_image_url && <source media="(max-width: 767px)" srcSet={currentSlideData.mobile_image_url} />}
+        <img
+          src={currentSlideData.image_url}
+          alt=""
+          aria-hidden="true"
+          className={`h-full w-full object-cover ${IMAGE_POSITION[currentSlideData.mobile_image_position || 'center']} ${DESKTOP_IMAGE_POSITION[currentSlideData.desktop_image_position || 'center']}`}
+        />
+      </picture>
       {/* Content */}
-      <div className="absolute inset-0 flex items-center justify-start pointer-events-none">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
-          <div className="max-w-2xl">
+      <div className="pointer-events-none absolute inset-0">
+        <div className={`mx-auto flex h-full w-full max-w-7xl items-center px-4 sm:px-6 ${HORIZONTAL_POSITION[currentSlideData.mobile_text_position || 'left']} ${DESKTOP_HORIZONTAL_POSITION[currentSlideData.desktop_text_position || 'left']}`}>
+          <div className={`w-full max-w-2xl ${TEXT_ALIGNMENT[currentSlideData.mobile_text_position || 'left']} ${DESKTOP_TEXT_ALIGNMENT[currentSlideData.desktop_text_position || 'left']}`}>
             <h1 className="font-serif text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-6 animate-fade-in drop-shadow-lg">
               {currentSlideData.title}
             </h1>
