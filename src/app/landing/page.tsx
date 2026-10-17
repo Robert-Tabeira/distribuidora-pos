@@ -73,14 +73,14 @@ function LandingBlockRenderer({
     const mainCategories = categories.filter(category => !category.parent_id && category.show_in_catalog !== false)
     if (mainCategories.length === 0) return null
     return (
-      <section className="bg-white px-4 py-14">
+      <section className="bg-[#fbf7f0] px-4 py-14">
         <div className="mx-auto max-w-7xl">
-          <h2 className="text-center text-3xl font-bold text-gray-900 sm:text-4xl">{heading}</h2>
+          <h2 className="font-serif text-center text-3xl font-bold text-[#3b2a20] sm:text-4xl">{heading}</h2>
           {section.subtitle && <p className="mt-2 text-center text-gray-600">{section.subtitle}</p>}
           <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {mainCategories.map(category => (
-              <Link key={category.id} href={`/catalogo?categoria=${encodeURIComponent(category.id)}`} className="group flex min-h-28 flex-col items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-4 text-center transition hover:-translate-y-1 hover:border-primary/40 hover:bg-white hover:shadow-md">
-                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-white"><Icon name={getCategoryIconName(category.name, settings.category_icons?.[category.id])} className="h-5 w-5" /></span>
+              <Link key={category.id} href={`/catalogo?categoria=${encodeURIComponent(category.id)}`} className="group flex min-h-28 flex-col items-center justify-center gap-3 rounded-2xl border border-[#e7d9c8] bg-[#fffdf9] p-4 text-center transition hover:-translate-y-1 hover:border-[#b77a4d] hover:shadow-md">
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#8b4a2f]/10 text-[#8b4a2f] transition group-hover:bg-[#8b4a2f] group-hover:text-white"><Icon name={getCategoryIconName(category.name, settings.category_icons?.[category.id])} className="h-5 w-5" /></span>
                 <span className="text-sm font-semibold text-gray-800">{category.name}</span>
               </Link>
             ))}
@@ -108,13 +108,13 @@ function LandingBlockRenderer({
 
   if (section.block_type === 'feature_cards') {
     return (
-      <section className="bg-white px-4 py-14">
+      <section className="bg-[#fffdf9] px-4 py-14">
         <div className="mx-auto max-w-7xl">
           <h2 className="text-center text-3xl font-bold text-gray-900 sm:text-4xl">{heading}</h2>
           {section.subtitle && <p className="mt-2 text-center text-gray-600">{section.subtitle}</p>}
           <div className="mt-8 grid gap-5 md:grid-cols-2">
             {(settings.cards || []).filter(card => card.title || card.image_url || card.description).map((card, index) => (
-              <article key={`${section.id}-${index}`} className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+              <article key={`${section.id}-${index}`} className="overflow-hidden rounded-2xl border border-[#e7d9c8] bg-white shadow-sm">
                 {card.image_url && <img src={card.image_url} alt={card.title} className="h-56 w-full object-cover" />}
                 <div className="p-6">
                   <h3 className="text-xl font-bold text-gray-900">{card.title}</h3>
@@ -137,7 +137,7 @@ function LandingBlockRenderer({
       settings.show_email !== false && businessSettings?.email ? { icon: 'mail' as const, label: 'Email', value: businessSettings.email, href: `mailto:${businessSettings.email}` } : null
     ].filter(Boolean) as Array<{ icon: 'clock' | 'location' | 'phone' | 'mail'; label: string; value: string; href?: string }>
     return (
-      <section className="bg-gray-50 px-4 py-14">
+      <section className="bg-[#f6efe5] px-4 py-14">
         <div className="mx-auto max-w-6xl">
           <h2 className="text-center text-3xl font-bold text-gray-900 sm:text-4xl">{heading}</h2>
           {section.subtitle && <p className="mt-2 text-center text-gray-600">{section.subtitle}</p>}
@@ -162,7 +162,7 @@ function LandingBlockRenderer({
     const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`
     const embedUrl = `https://maps.google.com/maps?q=${encodedAddress}&output=embed`
     return (
-      <section className="bg-gray-50 px-4 py-14">
+      <section className="bg-[#f6efe5] px-4 py-14">
         <div className="mx-auto max-w-6xl">
           <div className="mb-6 text-center">
             <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">{heading}</h2>
@@ -196,14 +196,14 @@ function LandingBlockRenderer({
     const slides = (settings.slides || []).filter(slide => slide.image_url)
     if (slides.length === 0) return null
     return (
-      <section className="bg-white px-4 py-14">
+      <section className="bg-[#fffdf9] px-4 py-14">
         <div className="mx-auto max-w-7xl">
           <h2 className="text-center text-3xl font-bold text-gray-900 sm:text-4xl">{heading}</h2>
           {section.subtitle && <p className="mt-2 text-center text-gray-600">{section.subtitle}</p>}
           {section.description && <p className="mt-3 text-center text-gray-600">{section.description}</p>}
           <div className="mt-8 flex snap-x gap-4 overflow-x-auto pb-4">
             {slides.map((slide, index) => (
-              <a key={`${section.id}-${index}`} href={slide.link_url || undefined} className="w-[78%] shrink-0 snap-start overflow-hidden rounded-2xl border border-gray-200 shadow-sm sm:w-[46%] lg:w-[30%]">
+              <a key={`${section.id}-${index}`} href={slide.link_url || undefined} className="w-[78%] shrink-0 snap-start overflow-hidden rounded-2xl border border-[#e7d9c8] shadow-sm sm:w-[46%] lg:w-[30%]">
                 <img src={slide.image_url} alt={`${heading} ${index + 1}`} className="h-56 w-full object-cover transition hover:scale-[1.02]" />
               </a>
             ))}
@@ -217,7 +217,7 @@ function LandingBlockRenderer({
     const shownProducts = settings.mode === 'discounts' ? products.filter(product => product.discount) : products
     if (shownProducts.length === 0) return null
     return (
-      <section className="bg-white px-4 py-14">
+      <section className="bg-[#fbf7f0] px-4 py-14">
         <div className="mx-auto max-w-7xl">
           <h2 className="text-center text-3xl font-bold text-gray-900 sm:text-4xl">{heading}</h2>
           {section.subtitle && <p className="mt-2 text-center text-gray-600">{section.subtitle}</p>}
@@ -236,7 +236,7 @@ function LandingBlockRenderer({
   }
 
   return (
-    <section className="bg-white px-4 py-14">
+      <section className="bg-[#fffdf9] px-4 py-14">
       <div className={`mx-auto grid max-w-6xl items-center gap-8 ${section.image_url ? 'md:grid-cols-2' : 'max-w-4xl text-center'}`}>
         {section.image_url && <img src={section.image_url} alt={heading} className="max-h-[28rem] min-h-56 w-full rounded-2xl object-cover" />}
         <div><h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">{heading}</h2>{section.subtitle && <p className="mt-3 text-lg font-medium text-primary">{section.subtitle}</p>}{section.description && <p className="mt-4 whitespace-pre-line leading-7 text-gray-600">{section.description}</p>}</div>

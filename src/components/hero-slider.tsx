@@ -139,13 +139,13 @@ export function HeroSlider() {
       }}
     >
       {/* Dark overlay para que el texto sea legible */}
-      <div className="absolute inset-0 bg-black/40" />
+      <div className="absolute inset-0 bg-gradient-to-r from-[#21140f]/75 via-[#38251b]/45 to-black/20" />
 
       {/* Content */}
       <div className="absolute inset-0 flex items-center justify-start pointer-events-none">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
           <div className="max-w-2xl">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-6 animate-fade-in drop-shadow-lg">
+            <h1 className="font-serif text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-6 animate-fade-in drop-shadow-lg">
               {currentSlideData.title}
             </h1>
             {currentSlideData.description && (
@@ -156,7 +156,7 @@ export function HeroSlider() {
             {currentSlideData.cta_text && currentSlideData.cta_url && (
               <button
                 onClick={() => router.push(currentSlideData.cta_url!)}
-                className="pointer-events-auto inline-block px-8 py-4 bg-white text-blue-900 rounded-xl font-bold hover:bg-gray-100 transition-all text-lg animate-fade-in-delay-2 shadow-lg"
+                className="pointer-events-auto inline-block px-8 py-4 bg-[#f8efe2] text-[#4b2e20] rounded-xl font-bold hover:bg-white transition-all text-lg animate-fade-in-delay-2 shadow-lg"
               >
                 {currentSlideData.cta_text}
               </button>
