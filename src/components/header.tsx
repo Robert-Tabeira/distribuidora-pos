@@ -162,19 +162,19 @@ export function Header() {
       }}
     >
       <div className={`max-w-7xl mx-auto px-4 sm:px-6 ${isLandingPage && (isScrolled || transparentLandingHeader) ? 'h-full' : ''}`}>
-        <div className={`flex items-center justify-between ${isLandingPage && (isScrolled || transparentLandingHeader) ? 'h-full' : ''}`}>
+        <div className={`relative flex items-center justify-between ${isLandingPage && (isScrolled || transparentLandingHeader) ? 'h-full' : ''}`}>
           {/* Logo */}
-          <Link href={settings?.logo_link_url || '/landing'} className="flex items-center gap-3 min-w-0">
+          <Link href={settings?.logo_link_url || '/landing'} className="absolute left-1/2 z-10 flex max-w-[calc(100vw-7rem)] -translate-x-1/2 items-center justify-center gap-3 md:static md:max-w-none md:translate-x-0">
             {settings?.use_logo_image && activeLogoUrl ? (
               <img
                 key={activeLogoUrl}
                 src={activeLogoUrl}
                 alt={siteName}
-                className="object-contain transition-all duration-300"
+                className="max-w-full object-contain transition-all duration-300"
                 style={{ width: `${activeLogoWidth}px`, maxHeight: isScrolled ? '48px' : '64px', height: 'auto' }}
               />
             ) : (
-              <div className="flex flex-col min-w-0">
+              <div className="flex min-w-0 flex-col items-center text-center md:items-start md:text-left">
                 <h1
                   className={`font-black transition-all duration-300 truncate ${isScrolled ? 'text-lg' : 'text-2xl'}`}
                   style={{ color: headerTextColor }}
