@@ -139,7 +139,7 @@ export function HeroSlider() {
       }}
     >
       {/* Dark overlay para que el texto sea legible */}
-      <div className="absolute inset-0 bg-gradient-to-r from-[#21140f]/75 via-[#38251b]/45 to-black/20" />
+      <div className="absolute inset-0 bg-[#21140f]/40" />
 
       {/* Content */}
       <div className="absolute inset-0 flex items-center justify-start pointer-events-none">
