@@ -142,17 +142,17 @@ export function Header() {
 
   return (
     <header
-      className={`${headerSettings.sticky || isLandingPage ? 'sticky top-0' : ''} ${isLandingPage ? transparentLandingHeader ? '-mb-[56px]' : isScrolled ? '-mb-[48px]' : '-mb-[72px]' : ''} z-40 ${transparentLandingHeader ? '' : 'backdrop-blur-md'} border-b transition-all duration-300 ${
+      className={`${headerSettings.sticky || isLandingPage ? 'sticky top-0' : ''} ${isLandingPage ? transparentLandingHeader ? '-mb-16' : isScrolled ? '-mb-14' : '-mb-[72px]' : ''} z-40 ${transparentLandingHeader ? '' : 'backdrop-blur-md'} border-b transition-all duration-300 ${
         landingHeaderAtTop ? 'border-transparent shadow-none' : isLandingPage ? 'border-stone-200 shadow-md' : `border-gray-200 ${headerSettings.shadow ? 'shadow-sm' : ''}`
-      } ${isScrolled ? 'py-2' : transparentLandingHeader ? 'pt-0 pb-4' : 'py-4'}`}
+      } ${isLandingPage ? isScrolled ? 'h-14 py-0' : transparentLandingHeader ? 'h-16 py-0' : 'py-4' : isScrolled ? 'py-2' : 'py-4'}`}
       style={{
         backgroundColor: landingHeaderAtTop
           ? headerSettings.bg_color === 'transparent' ? 'transparent' : 'rgba(35, 22, 15, 0.16)'
           : isLandingPage ? '#ffffff' : headerSettings.bg_color
       }}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between">
+      <div className={`max-w-7xl mx-auto px-4 sm:px-6 ${isLandingPage && (isScrolled || transparentLandingHeader) ? 'h-full' : ''}`}>
+        <div className={`flex items-center justify-between ${isLandingPage && (isScrolled || transparentLandingHeader) ? 'h-full' : ''}`}>
           {/* Logo */}
           <Link href={settings?.logo_link_url || '/landing'} className="flex items-center gap-3 min-w-0">
             {settings?.use_logo_image && settings?.logo_url ? (
