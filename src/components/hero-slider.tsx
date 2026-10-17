@@ -138,9 +138,6 @@ export function HeroSlider() {
         backgroundPosition: 'center'
       }}
     >
-      {/* Dark overlay para que el texto sea legible */}
-      <div className="absolute inset-0 bg-[#21140f]/40" />
-
       {/* Content */}
       <div className="absolute inset-0 flex items-center justify-start pointer-events-none">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">

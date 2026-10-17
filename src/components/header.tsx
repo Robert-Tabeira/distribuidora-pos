@@ -141,7 +141,7 @@ export function Header() {
 
   return (
     <header
-      className={`${headerSettings.sticky || isLandingPage ? 'sticky top-0' : ''} ${isLandingPage ? '-mb-[72px]' : ''} z-40 backdrop-blur-md border-b transition-all duration-300 ${
+      className={`${headerSettings.sticky || isLandingPage ? 'sticky top-0' : ''} ${isLandingPage ? '-mb-[72px]' : ''} z-40 ${landingHeaderAtTop && headerSettings.bg_color === 'transparent' ? '' : 'backdrop-blur-md'} border-b transition-all duration-300 ${
         landingHeaderAtTop ? 'border-transparent shadow-none' : isLandingPage ? 'border-stone-200 shadow-md' : `border-gray-200 ${headerSettings.shadow ? 'shadow-sm' : ''}`
       } ${isScrolled ? 'py-2' : 'py-4'}`}
       style={{
