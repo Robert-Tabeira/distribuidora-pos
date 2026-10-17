@@ -84,7 +84,16 @@ export default function AnnouncementBar() {
         .single()
     ])
 
-    if (messagesRes.data) setMessages(messagesRes.data as AnnouncementMessage[])
+    if (messagesRes.data) {
+      const visibleMessages = (messagesRes.data as AnnouncementMessage[]).filter(message =>
+        Boolean(
+          message.message?.trim() ||
+          message.icon?.trim() ||
+          (message.link_text?.trim() && message.link_url?.trim())
+        )
+      )
+      setMessages(visibleMessages)
+    }
     if (settingsRes.data) setSettings(settingsRes.data as BarSettings)
   }
 
