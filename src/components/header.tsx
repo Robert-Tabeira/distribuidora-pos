@@ -136,14 +136,15 @@ export function Header() {
   const visibleMenuLinks = menuLinks.filter(link => settings?.customer_orders_enabled === true || !/^\/cliente(?:\/|$)/.test(link.url))
   const isLandingPage = pathname === '/landing' || pathname === '/'
   const landingHeaderAtTop = isLandingPage && !isScrolled
+  const transparentLandingHeader = landingHeaderAtTop && headerSettings.bg_color === 'transparent'
   const headerTextColor = landingHeaderAtTop ? '#ffffff' : isLandingPage ? '#3b2a20' : headerSettings.text_color
   const headerActiveColor = landingHeaderAtTop ? '#ffffff' : isLandingPage ? '#8b4a2f' : headerSettings.active_color
 
   return (
     <header
-      className={`${headerSettings.sticky || isLandingPage ? 'sticky top-0' : ''} ${isLandingPage ? '-mb-[72px]' : ''} z-40 ${landingHeaderAtTop && headerSettings.bg_color === 'transparent' ? '' : 'backdrop-blur-md'} border-b transition-all duration-300 ${
+      className={`${headerSettings.sticky || isLandingPage ? 'sticky top-0' : ''} ${isLandingPage ? transparentLandingHeader ? '-mb-[56px]' : isScrolled ? '-mb-[48px]' : '-mb-[72px]' : ''} z-40 ${transparentLandingHeader ? '' : 'backdrop-blur-md'} border-b transition-all duration-300 ${
         landingHeaderAtTop ? 'border-transparent shadow-none' : isLandingPage ? 'border-stone-200 shadow-md' : `border-gray-200 ${headerSettings.shadow ? 'shadow-sm' : ''}`
-      } ${isScrolled ? 'py-2' : 'py-4'}`}
+      } ${isScrolled ? 'py-2' : transparentLandingHeader ? 'pt-0 pb-4' : 'py-4'}`}
       style={{
         backgroundColor: landingHeaderAtTop
           ? headerSettings.bg_color === 'transparent' ? 'transparent' : 'rgba(35, 22, 15, 0.16)'
