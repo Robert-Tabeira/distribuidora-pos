@@ -2408,7 +2408,23 @@ export default function WebsiteEditionPage() {
               {/* ESTILO */}
               <CollapsibleCard icon="palette" title="Estilo del Header" subtitle="Colores y comportamiento">
                 <div className="grid sm:grid-cols-3 gap-5 mb-5">
-                  <ColorPicker label="Color de fondo" value={headerForm.bg_color} onChange={(hex) => setHeaderForm({ ...headerForm, bg_color: hex })} palette={palette} />
+                  <div className="space-y-3">
+                    <label className="flex items-start gap-3 rounded-xl border border-border p-3">
+                      <input
+                        type="checkbox"
+                        checked={headerForm.bg_color === 'transparent'}
+                        onChange={(e) => setHeaderForm({ ...headerForm, bg_color: e.target.checked ? 'transparent' : '#ffffff' })}
+                        className="mt-0.5 h-5 w-5 rounded border-gray-300"
+                      />
+                      <span>
+                        <span className="block text-sm font-semibold">Fondo transparente</span>
+                        <span className="mt-1 block text-xs text-text-muted">Deja visible lo que está detrás del header.</span>
+                      </span>
+                    </label>
+                    {headerForm.bg_color !== 'transparent' && (
+                      <ColorPicker label="Color de fondo" value={headerForm.bg_color} onChange={(hex) => setHeaderForm({ ...headerForm, bg_color: hex })} palette={palette} />
+                    )}
+                  </div>
                   <ColorPicker label="Color de texto" value={headerForm.text_color} onChange={(hex) => setHeaderForm({ ...headerForm, text_color: hex })} palette={palette} />
                   <ColorPicker label="Color de enlace activo" value={headerForm.active_color} onChange={(hex) => setHeaderForm({ ...headerForm, active_color: hex })} palette={palette} />
                 </div>

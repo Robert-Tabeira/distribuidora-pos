@@ -144,7 +144,11 @@ export function Header() {
       className={`${headerSettings.sticky || isLandingPage ? 'sticky top-0' : ''} ${isLandingPage ? '-mb-[72px]' : ''} z-40 backdrop-blur-md border-b transition-all duration-300 ${
         landingHeaderAtTop ? 'border-transparent shadow-none' : isLandingPage ? 'border-stone-200 shadow-md' : `border-gray-200 ${headerSettings.shadow ? 'shadow-sm' : ''}`
       } ${isScrolled ? 'py-2' : 'py-4'}`}
-      style={{ backgroundColor: landingHeaderAtTop ? 'rgba(35, 22, 15, 0.16)' : isLandingPage ? '#ffffff' : headerSettings.bg_color }}
+      style={{
+        backgroundColor: landingHeaderAtTop
+          ? headerSettings.bg_color === 'transparent' ? 'transparent' : 'rgba(35, 22, 15, 0.16)'
+          : isLandingPage ? '#ffffff' : headerSettings.bg_color
+      }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between">
