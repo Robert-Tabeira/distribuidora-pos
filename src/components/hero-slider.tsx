@@ -26,6 +26,7 @@ interface HeroSlide {
   title_size_mobile?: number | null
   body_size_desktop?: number | null
   body_size_mobile?: number | null
+  image_darkness?: number | null
 }
 
 const HORIZONTAL_POSITION = { left: 'justify-start', center: 'justify-center', right: 'justify-end' } as const
@@ -163,6 +164,11 @@ export function HeroSlider() {
           className={`h-full w-full ${IMAGE_FIT[currentSlideData.mobile_image_fit || 'contain']} ${DESKTOP_IMAGE_FIT[currentSlideData.desktop_image_fit || 'contain']} ${IMAGE_POSITION[currentSlideData.mobile_image_position || 'center']} ${DESKTOP_IMAGE_POSITION[currentSlideData.desktop_image_position || 'center']}`}
         />
       </picture>
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-black"
+        style={{ opacity: (currentSlideData.image_darkness ?? 18) / 100 }}
+      />
       {/* Content */}
       <div className="pointer-events-none absolute inset-0">
         <div className={`mx-auto flex h-full w-full max-w-7xl items-center px-4 sm:px-6 ${HORIZONTAL_POSITION[currentSlideData.mobile_text_position || 'left']} ${DESKTOP_HORIZONTAL_POSITION[currentSlideData.desktop_text_position || 'left']}`}>

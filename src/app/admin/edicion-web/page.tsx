@@ -74,7 +74,6 @@ interface MenuLink {
 interface HeaderSettings {
   id: string
   bg_color: string
-  transparent_darkness: number
   text_color: string
   active_color: string
   sticky: boolean
@@ -136,6 +135,7 @@ interface HeroSlide {
   title_size_mobile?: number | null
   body_size_desktop?: number | null
   body_size_mobile?: number | null
+  image_darkness?: number | null
   title: string
   description: string | null
   cta_text: string | null
@@ -598,7 +598,7 @@ export default function WebsiteEditionPage() {
   // Hero Slides
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([])
   const [editingHero, setEditingHero] = useState<HeroSlide | null>(null)
-  const [heroForm, setHeroForm] = useState({ title: '', description: '', cta_text: '', cta_url: '', image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain' as 'cover' | 'contain', mobile_image_fit: 'contain' as 'cover' | 'contain', title_font: 'lora', body_font: 'dm_sans', title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
+  const [heroForm, setHeroForm] = useState({ title: '', description: '', cta_text: '', cta_url: '', image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain' as 'cover' | 'contain', mobile_image_fit: 'contain' as 'cover' | 'contain', image_darkness: 18, title_font: 'lora', body_font: 'dm_sans', title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
   const [savingHero, setSavingHero] = useState(false)
   const [showHeroModal, setShowHeroModal] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -662,7 +662,6 @@ export default function WebsiteEditionPage() {
   const [headerSettings, setHeaderSettings] = useState<HeaderSettings | null>(null)
   const [headerForm, setHeaderForm] = useState({
     bg_color: '#ffffff',
-    transparent_darkness: 16,
     text_color: '#374151',
     active_color: '#2563eb',
     sticky: true,
@@ -782,7 +781,6 @@ export default function WebsiteEditionPage() {
         setHeaderSettings(h)
         setHeaderForm({
           bg_color: h.bg_color,
-          transparent_darkness: h.transparent_darkness ?? 16,
           text_color: h.text_color,
           active_color: h.active_color,
           sticky: h.sticky,
@@ -1006,6 +1004,7 @@ export default function WebsiteEditionPage() {
             mobile_image_position: heroForm.mobile_image_position,
             desktop_image_fit: heroForm.desktop_image_fit,
             mobile_image_fit: heroForm.mobile_image_fit,
+            image_darkness: heroForm.image_darkness,
             title_font: heroForm.title_font,
             body_font: heroForm.body_font,
             title_size_desktop: heroForm.title_size_desktop,
@@ -1034,6 +1033,7 @@ export default function WebsiteEditionPage() {
                 mobile_image_position: heroForm.mobile_image_position,
                 desktop_image_fit: heroForm.desktop_image_fit,
                 mobile_image_fit: heroForm.mobile_image_fit,
+                image_darkness: heroForm.image_darkness,
                 title_font: heroForm.title_font,
                 body_font: heroForm.body_font,
                 title_size_desktop: heroForm.title_size_desktop,
@@ -1061,6 +1061,7 @@ export default function WebsiteEditionPage() {
             mobile_image_position: heroForm.mobile_image_position,
             desktop_image_fit: heroForm.desktop_image_fit,
             mobile_image_fit: heroForm.mobile_image_fit,
+            image_darkness: heroForm.image_darkness,
             title_font: heroForm.title_font,
             body_font: heroForm.body_font,
             title_size_desktop: heroForm.title_size_desktop,
@@ -1118,6 +1119,7 @@ export default function WebsiteEditionPage() {
         mobile_image_position: hero.mobile_image_position || 'center',
         desktop_image_fit: hero.desktop_image_fit || 'contain',
         mobile_image_fit: hero.mobile_image_fit || 'contain',
+        image_darkness: hero.image_darkness ?? 18,
         title_font: hero.title_font || 'lora',
         body_font: hero.body_font || 'dm_sans',
         title_size_desktop: hero.title_size_desktop || 72,
@@ -1129,7 +1131,7 @@ export default function WebsiteEditionPage() {
       setMobileHeroPreview(hero.mobile_image_url || '')
     } else {
       setEditingHero(null)
-      setHeroForm({ title: '', description: '', cta_text: '', cta_url: '', image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain', mobile_image_fit: 'contain', title_font: 'lora', body_font: 'dm_sans', title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
+      setHeroForm({ title: '', description: '', cta_text: '', cta_url: '', image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain', mobile_image_fit: 'contain', image_darkness: 18, title_font: 'lora', body_font: 'dm_sans', title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
       setImagePreview('')
       setMobileHeroPreview('')
     }
@@ -2563,23 +2565,6 @@ export default function WebsiteEditionPage() {
                     {headerForm.bg_color !== 'transparent' && (
                       <ColorPicker label="Color de fondo" value={headerForm.bg_color} onChange={(hex) => setHeaderForm({ ...headerForm, bg_color: hex })} palette={palette} />
                     )}
-                    {headerForm.bg_color === 'transparent' && (
-                      <label className="block rounded-xl border border-border p-3">
-                        <span className="flex items-center justify-between gap-2 text-sm font-semibold">
-                          <span>Oscurecer fondo</span><span>{headerForm.transparent_darkness}%</span>
-                        </span>
-                        <span className="mt-1 block text-xs text-text-muted">Agrega una capa oscura sobre la imagen para resaltar el texto.</span>
-                        <input
-                          type="range"
-                          min="0"
-                          max="60"
-                          step="1"
-                          value={headerForm.transparent_darkness}
-                          onChange={(e) => setHeaderForm({ ...headerForm, transparent_darkness: Number(e.target.value) })}
-                          className="mt-2 w-full"
-                        />
-                      </label>
-                    )}
                   </div>
                   <ColorPicker label="Color de texto" value={headerForm.text_color} onChange={(hex) => setHeaderForm({ ...headerForm, text_color: hex })} palette={palette} />
                   <ColorPicker label="Color de enlace activo" value={headerForm.active_color} onChange={(hex) => setHeaderForm({ ...headerForm, active_color: hex })} palette={palette} />
@@ -3362,6 +3347,21 @@ export default function WebsiteEditionPage() {
                       </select>
                     </label>
                   })}
+                  <label className="block rounded-xl border border-border p-3 sm:col-span-2">
+                    <span className="flex items-center justify-between gap-2 text-sm font-semibold">
+                      <span>Oscurecer fondo del hero</span><span>{heroForm.image_darkness}%</span>
+                    </span>
+                    <span className="mt-1 block text-xs text-text-muted">Agrega una capa oscura sobre la imagen para que el texto destaque.</span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="60"
+                      step="1"
+                      value={heroForm.image_darkness}
+                      onChange={e => setHeroForm(current => ({ ...current, image_darkness: Number(e.target.value) }))}
+                      className="mt-2 w-full"
+                    />
+                  </label>
                 </div>
               </div>
 

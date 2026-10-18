@@ -35,7 +35,6 @@ interface MenuLink {
 
 interface HeaderSettings {
   bg_color: string
-  transparent_darkness: number
   text_color: string
   active_color: string
   sticky: boolean
@@ -48,7 +47,6 @@ interface HeaderSettings {
 
 const DEFAULT_HEADER_SETTINGS: HeaderSettings = {
   bg_color: '#ffffff',
-  transparent_darkness: 16,
   text_color: '#374151',
   active_color: '#2563eb',
   sticky: true,
@@ -160,9 +158,7 @@ export function Header() {
       } ${isLandingPage ? isScrolled ? 'h-14 py-0' : transparentLandingHeader ? 'h-16 py-0' : 'py-4' : isScrolled ? 'py-2' : 'py-4'}`}
       style={{
         backgroundColor: landingHeaderAtTop
-          ? headerSettings.bg_color === 'transparent'
-            ? headerSettings.transparent_darkness > 0 ? `rgba(0, 0, 0, ${headerSettings.transparent_darkness / 100})` : 'transparent'
-            : headerSettings.bg_color
+          ? headerSettings.bg_color === 'transparent' ? 'transparent' : 'rgba(35, 22, 15, 0.16)'
           : isLandingPage || isCatalogPage ? '#ffffff' : headerSettings.bg_color
       }}
     >
