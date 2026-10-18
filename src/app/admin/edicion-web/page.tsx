@@ -74,6 +74,7 @@ interface MenuLink {
 interface HeaderSettings {
   id: string
   bg_color: string
+  transparent_darkness: number
   text_color: string
   active_color: string
   sticky: boolean
@@ -661,6 +662,7 @@ export default function WebsiteEditionPage() {
   const [headerSettings, setHeaderSettings] = useState<HeaderSettings | null>(null)
   const [headerForm, setHeaderForm] = useState({
     bg_color: '#ffffff',
+    transparent_darkness: 16,
     text_color: '#374151',
     active_color: '#2563eb',
     sticky: true,
@@ -780,6 +782,7 @@ export default function WebsiteEditionPage() {
         setHeaderSettings(h)
         setHeaderForm({
           bg_color: h.bg_color,
+          transparent_darkness: h.transparent_darkness ?? 16,
           text_color: h.text_color,
           active_color: h.active_color,
           sticky: h.sticky,
@@ -2559,6 +2562,23 @@ export default function WebsiteEditionPage() {
                     </label>
                     {headerForm.bg_color !== 'transparent' && (
                       <ColorPicker label="Color de fondo" value={headerForm.bg_color} onChange={(hex) => setHeaderForm({ ...headerForm, bg_color: hex })} palette={palette} />
+                    )}
+                    {headerForm.bg_color === 'transparent' && (
+                      <label className="block rounded-xl border border-border p-3">
+                        <span className="flex items-center justify-between gap-2 text-sm font-semibold">
+                          <span>Oscurecer fondo</span><span>{headerForm.transparent_darkness}%</span>
+                        </span>
+                        <span className="mt-1 block text-xs text-text-muted">Agrega una capa oscura sobre la imagen para resaltar el texto.</span>
+                        <input
+                          type="range"
+                          min="0"
+                          max="60"
+                          step="1"
+                          value={headerForm.transparent_darkness}
+                          onChange={(e) => setHeaderForm({ ...headerForm, transparent_darkness: Number(e.target.value) })}
+                          className="mt-2 w-full"
+                        />
+                      </label>
                     )}
                   </div>
                   <ColorPicker label="Color de texto" value={headerForm.text_color} onChange={(hex) => setHeaderForm({ ...headerForm, text_color: hex })} palette={palette} />
