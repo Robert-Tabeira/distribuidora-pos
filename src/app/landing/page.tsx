@@ -128,7 +128,7 @@ function LandingBlockRenderer({
   const categoryIconStyle = {
     '--category-icon-size-mobile': `${settings.category_icon_size_mobile || 44}px`,
     '--category-icon-size-desktop': `${settings.category_icon_size_desktop || 44}px`,
-    '--category-custom-icon-weight': `${settings.category_custom_icon_weight || 0}px`,
+    '--category-custom-icon-expansion': `${(settings.category_custom_icon_weight || 0) / 2}px`,
     '--category-icon-bg': settings.category_icon_bg_color || '#f2e9e3',
     '--category-icon-color': settings.category_icon_color || '#8b4a2f',
     '--category-icon-hover-bg': settings.category_icon_hover_bg_color || '#8b4a2f',

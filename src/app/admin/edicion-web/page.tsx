@@ -3997,7 +3997,7 @@ export default function WebsiteEditionPage() {
                       </label>
                     })}
                     <label className="block text-sm font-medium text-text-muted sm:col-span-2">Grosor del icono personalizado: {sectionForm.settings.category_custom_icon_weight ?? 0} px
-                      <input type="range" min="0" max="3" step="0.5" value={sectionForm.settings.category_custom_icon_weight ?? 0} onChange={e => updateLandingSettings({ category_custom_icon_weight: Number(e.target.value) })} className="mt-2 w-full" />
+                      <input type="range" min="0" max="6" step="1" value={sectionForm.settings.category_custom_icon_weight ?? 0} onChange={e => updateLandingSettings({ category_custom_icon_weight: Number(e.target.value) })} className="mt-2 w-full" />
                     </label>
                     {([
                       ['category_icon_bg_color', 'Fondo normal', '#f2e9e3'],
@@ -4020,8 +4020,17 @@ export default function WebsiteEditionPage() {
                     return (
                       <div key={category.id} className="grid items-center gap-3 rounded-lg bg-gray-50 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
                         <div className="flex min-w-0 items-center gap-3">
-                          <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-primary/10 text-primary">
-                            {customImage ? <img src={customImage} alt="" className="h-full w-full object-contain p-1" /> : <Icon name={selectedIcon} className="h-5 w-5" />}
+                          <span
+                            className="category-icon-container flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl"
+                            style={{
+                              '--category-icon-bg': sectionForm.settings.category_icon_bg_color || '#f2e9e3',
+                              '--category-icon-color': sectionForm.settings.category_icon_color || '#8b4a2f',
+                              '--category-icon-hover-bg': sectionForm.settings.category_icon_hover_bg_color || '#8b4a2f',
+                              '--category-icon-hover-color': sectionForm.settings.category_icon_hover_color || '#ffffff',
+                              '--category-custom-icon-expansion': `${(sectionForm.settings.category_custom_icon_weight || 0) / 2}px`,
+                            } as React.CSSProperties}
+                          >
+                            {customImage ? <span aria-hidden="true" className="category-custom-icon block h-6 w-6" style={{ maskImage: `url("${customImage}")`, WebkitMaskImage: `url("${customImage}")` }} /> : <Icon name={selectedIcon} className="h-5 w-5" />}
                           </span>
                           <span className="truncate text-sm font-semibold text-text">{category.name}</span>
                         </div>
