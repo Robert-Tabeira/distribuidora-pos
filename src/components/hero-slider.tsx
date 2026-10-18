@@ -18,6 +18,8 @@ interface HeroSlide {
   mobile_text_position?: 'left' | 'center' | 'right' | null
   desktop_image_position?: 'center' | 'top' | 'bottom' | 'left' | 'right' | null
   mobile_image_position?: 'center' | 'top' | 'bottom' | 'left' | 'right' | null
+  title_font?: 'lora' | 'dm_sans' | 'georgia' | null
+  body_font?: 'lora' | 'dm_sans' | 'georgia' | null
 }
 
 const HORIZONTAL_POSITION = { left: 'justify-start', center: 'justify-center', right: 'justify-end' } as const
@@ -26,6 +28,7 @@ const IMAGE_POSITION = { center: 'object-center', top: 'object-top', bottom: 'ob
 const DESKTOP_IMAGE_POSITION = { center: 'md:object-center', top: 'md:object-top', bottom: 'md:object-bottom', left: 'md:object-left', right: 'md:object-right' } as const
 const TEXT_ALIGNMENT = { left: 'text-left', center: 'text-center', right: 'text-right' } as const
 const DESKTOP_TEXT_ALIGNMENT = { left: 'md:text-left', center: 'md:text-center', right: 'md:text-right' } as const
+const HERO_FONT_FAMILY = { lora: "'Lora', Georgia, serif", dm_sans: "'DM Sans', sans-serif", georgia: "Georgia, 'Times New Roman', serif" } as const
 
 const DEFAULT_SLIDES: HeroSlide[] = [
   {
@@ -156,17 +159,18 @@ export function HeroSlider() {
       <div className="pointer-events-none absolute inset-0">
         <div className={`mx-auto flex h-full w-full max-w-7xl items-center px-4 sm:px-6 ${HORIZONTAL_POSITION[currentSlideData.mobile_text_position || 'left']} ${DESKTOP_HORIZONTAL_POSITION[currentSlideData.desktop_text_position || 'left']}`}>
           <div className={`w-full max-w-2xl ${TEXT_ALIGNMENT[currentSlideData.mobile_text_position || 'left']} ${DESKTOP_TEXT_ALIGNMENT[currentSlideData.desktop_text_position || 'left']}`}>
-            <h1 className="font-serif text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-6 animate-fade-in drop-shadow-lg">
+            <h1 style={{ fontFamily: HERO_FONT_FAMILY[currentSlideData.title_font || 'lora'] }} className="text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-6 animate-fade-in drop-shadow-lg">
               {currentSlideData.title}
             </h1>
             {currentSlideData.description && (
-              <p className="text-xl md:text-2xl text-white/95 mb-8 leading-relaxed animate-fade-in-delay drop-shadow-md">
+              <p style={{ fontFamily: HERO_FONT_FAMILY[currentSlideData.body_font || 'dm_sans'] }} className="text-xl md:text-2xl text-white/95 mb-8 leading-relaxed animate-fade-in-delay drop-shadow-md">
                 {currentSlideData.description}
               </p>
             )}
             {currentSlideData.cta_text && currentSlideData.cta_url && (
               <button
                 onClick={() => router.push(currentSlideData.cta_url!)}
+                style={{ fontFamily: HERO_FONT_FAMILY[currentSlideData.body_font || 'dm_sans'] }}
                 className="pointer-events-auto inline-block px-8 py-4 bg-[#f8efe2] text-[#4b2e20] rounded-xl font-bold hover:bg-white transition-all text-lg animate-fade-in-delay-2 shadow-lg"
               >
                 {currentSlideData.cta_text}

@@ -127,6 +127,8 @@ interface HeroSlide {
   mobile_text_position?: string | null
   desktop_image_position?: string | null
   mobile_image_position?: string | null
+  title_font?: string | null
+  body_font?: string | null
   title: string
   description: string | null
   cta_text: string | null
@@ -193,6 +195,8 @@ interface LandingSectionSettings {
   mobile_image_position?: 'center' | 'top' | 'bottom' | 'left' | 'right'
   desktop_image_side?: 'left' | 'right'
   mobile_image_order?: 'first' | 'last'
+  heading_font?: 'inherit' | 'lora' | 'dm_sans' | 'georgia'
+  body_font?: 'inherit' | 'lora' | 'dm_sans' | 'georgia'
 }
 
 interface AnnouncementMessage {
@@ -237,18 +241,26 @@ const LANDING_BLOCK_LABELS: Record<LandingBlockType, string> = {
   product_grid: 'Productos u ofertas'
 }
 
+const LANDING_FONT_FAMILIES: Record<string, string | undefined> = {
+  inherit: undefined,
+  lora: "'Lora', Georgia, serif",
+  dm_sans: "'DM Sans', sans-serif",
+  georgia: 'Georgia, serif'
+}
+
 function defaultLandingSettings(type: LandingBlockType): LandingSectionSettings {
-  if (type === 'banner') return { button_text: 'Ver catálogo', button_url: '/catalogo', background_color: '#fff7ed' }
+  const typography: Pick<LandingSectionSettings, 'heading_font' | 'body_font'> = { heading_font: 'lora', body_font: 'dm_sans' }
+  if (type === 'banner') return { ...typography, button_text: 'Ver catálogo', button_url: '/catalogo', background_color: '#fff7ed' }
   if (type === 'feature_cards') return { cards: [
     { title: '', description: '', image_url: '', link_url: '', button_text: '' },
     { title: '', description: '', image_url: '', link_url: '', button_text: '' }
-  ] }
-  if (type === 'business_info') return { show_phone: true, show_email: true, show_address: true, show_business_hours: true }
-  if (type === 'location_map') return { map_address: '67P2+8WC Los Primos, Ruta Interbalnearia Gral. Líber Seregni, 15200 Las Toscas, Departamento de Canelones', map_link_text: 'Abrir en Google Maps' }
-  if (type === 'categories') return { category_icons: {} }
-  if (type === 'image_carousel') return { slides: [] }
-  if (type === 'product_grid') return { mode: 'popular', limit: 5, button_text: 'Ver catálogo', button_url: '/catalogo' }
-  return {}
+  ], ...typography }
+  if (type === 'business_info') return { ...typography, show_phone: true, show_email: true, show_address: true, show_business_hours: true }
+  if (type === 'location_map') return { ...typography, map_address: '67P2+8WC Los Primos, Ruta Interbalnearia Gral. Líber Seregni, 15200 Las Toscas, Departamento de Canelones', map_link_text: 'Abrir en Google Maps' }
+  if (type === 'categories') return { ...typography, category_icons: {} }
+  if (type === 'image_carousel') return { ...typography, slides: [] }
+  if (type === 'product_grid') return { ...typography, mode: 'popular', limit: 5, button_text: 'Ver catálogo', button_url: '/catalogo' }
+  return typography
 }
 
 // Genera una versión más clara/oscura de un color hex (para previews de degradado)
@@ -579,7 +591,7 @@ export default function WebsiteEditionPage() {
   // Hero Slides
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([])
   const [editingHero, setEditingHero] = useState<HeroSlide | null>(null)
-  const [heroForm, setHeroForm] = useState({ title: '', description: '', cta_text: '', cta_url: '', image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center' })
+  const [heroForm, setHeroForm] = useState({ title: '', description: '', cta_text: '', cta_url: '', image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', title_font: 'lora', body_font: 'dm_sans' })
   const [savingHero, setSavingHero] = useState(false)
   const [showHeroModal, setShowHeroModal] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -983,6 +995,8 @@ export default function WebsiteEditionPage() {
             mobile_text_position: heroForm.mobile_text_position,
             desktop_image_position: heroForm.desktop_image_position,
             mobile_image_position: heroForm.mobile_image_position,
+            title_font: heroForm.title_font,
+            body_font: heroForm.body_font,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingHero.id)
@@ -1002,7 +1016,9 @@ export default function WebsiteEditionPage() {
                 desktop_text_position: heroForm.desktop_text_position,
                 mobile_text_position: heroForm.mobile_text_position,
                 desktop_image_position: heroForm.desktop_image_position,
-                mobile_image_position: heroForm.mobile_image_position
+                mobile_image_position: heroForm.mobile_image_position,
+                title_font: heroForm.title_font,
+                body_font: heroForm.body_font
               }
             : s
         ))
@@ -1022,6 +1038,8 @@ export default function WebsiteEditionPage() {
             mobile_text_position: heroForm.mobile_text_position,
             desktop_image_position: heroForm.desktop_image_position,
             mobile_image_position: heroForm.mobile_image_position,
+            title_font: heroForm.title_font,
+            body_font: heroForm.body_font,
             order_position: maxOrder + 1,
             is_active: true
           }])
@@ -1070,13 +1088,15 @@ export default function WebsiteEditionPage() {
         desktop_text_position: hero.desktop_text_position || 'left',
         mobile_text_position: hero.mobile_text_position || 'left',
         desktop_image_position: hero.desktop_image_position || 'center',
-        mobile_image_position: hero.mobile_image_position || 'center'
+        mobile_image_position: hero.mobile_image_position || 'center',
+        title_font: hero.title_font || 'lora',
+        body_font: hero.body_font || 'dm_sans'
       })
       setImagePreview(hero.image_url)
       setMobileHeroPreview(hero.mobile_image_url || '')
     } else {
       setEditingHero(null)
-      setHeroForm({ title: '', description: '', cta_text: '', cta_url: '', image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center' })
+      setHeroForm({ title: '', description: '', cta_text: '', cta_url: '', image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', title_font: 'lora', body_font: 'dm_sans' })
       setImagePreview('')
       setMobileHeroPreview('')
     }
@@ -3307,6 +3327,20 @@ export default function WebsiteEditionPage() {
                 />
               </div>
 
+              <div className="grid gap-3 rounded-xl border border-border p-4 sm:grid-cols-2">
+                <p className="text-sm font-semibold text-text sm:col-span-2">Tipografía del hero</p>
+                <label className="block text-sm font-medium text-text-muted">Título
+                  <select className="input mt-1" value={heroForm.title_font} onChange={e => setHeroForm(current => ({ ...current, title_font: e.target.value }))}>
+                    <option value="lora">Lora (recomendada)</option><option value="dm_sans">DM Sans</option><option value="georgia">Georgia</option>
+                  </select>
+                </label>
+                <label className="block text-sm font-medium text-text-muted">Descripción y botón
+                  <select className="input mt-1" value={heroForm.body_font} onChange={e => setHeroForm(current => ({ ...current, body_font: e.target.value }))}>
+                    <option value="dm_sans">DM Sans (recomendada)</option><option value="lora">Lora</option><option value="georgia">Georgia</option>
+                  </select>
+                </label>
+              </div>
+
               <div>
                 <label className="block text-sm font-semibold text-text-muted mb-2">Botón - Texto</label>
                 <input
@@ -3427,6 +3461,18 @@ export default function WebsiteEditionPage() {
               </div>
 
               <div className="grid gap-3 rounded-xl border border-border p-4 sm:grid-cols-2">
+                <p className="text-sm font-semibold text-text sm:col-span-2">Tipografía de esta sección</p>
+                <label className="block text-sm font-medium text-text-muted">Títulos
+                  <select className="input mt-1" value={sectionForm.settings.heading_font || 'inherit'} onChange={e => updateLandingSettings({ heading_font: e.target.value as LandingSectionSettings['heading_font'] })}>
+                    <option value="inherit">Estilo actual</option><option value="lora">Lora (recomendada, cálida)</option><option value="dm_sans">DM Sans</option><option value="georgia">Georgia</option>
+                  </select>
+                </label>
+                <label className="block text-sm font-medium text-text-muted">Texto y descripciones
+                  <select className="input mt-1" value={sectionForm.settings.body_font || 'inherit'} onChange={e => updateLandingSettings({ body_font: e.target.value as LandingSectionSettings['body_font'] })}>
+                    <option value="inherit">Estilo actual</option><option value="dm_sans">DM Sans (recomendada, legible)</option><option value="lora">Lora</option><option value="georgia">Georgia</option>
+                  </select>
+                </label>
+                <p className="text-xs text-text-muted sm:col-span-2">Sugerencia para el estilo del local: Lora en títulos y DM Sans en textos.</p>
                 <p className="text-sm font-semibold text-text sm:col-span-2">Alineación del texto por dispositivo</p>
                 {(['desktop', 'mobile'] as const).map(device => {
                   const key = device === 'desktop' ? 'desktop_text_alignment' : 'mobile_text_alignment'

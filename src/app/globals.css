@@ -26,6 +26,14 @@
   }
 }
 
+/* Tipografías seleccionables para los bloques personalizados de la landing. */
+.landing-section[data-body-font="lora"] { font-family: 'Lora', Georgia, serif; }
+.landing-section[data-body-font="dm_sans"] { font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif; }
+.landing-section[data-body-font="georgia"] { font-family: Georgia, 'Times New Roman', serif; }
+.landing-section[data-heading-font="lora"] :is(h1, h2, h3) { font-family: 'Lora', Georgia, serif; }
+.landing-section[data-heading-font="dm_sans"] :is(h1, h2, h3) { font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif; }
+.landing-section[data-heading-font="georgia"] :is(h1, h2, h3) { font-family: Georgia, 'Times New Roman', serif; }
+
 @layer components {
   /* Botones modernos */
   .btn {
