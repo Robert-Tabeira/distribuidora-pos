@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Icon } from '@/components/ui/icon'
+import { getSiteFontFamily } from '@/lib/site-fonts'
 
 interface FooterSettings {
   brand_title?: string
@@ -15,6 +16,8 @@ interface FooterSettings {
   show_email?: boolean
   show_address?: boolean
   show_hours?: boolean
+  heading_font?: string
+  body_font?: string
 }
 
 interface FooterData {
@@ -36,7 +39,9 @@ const DEFAULT_FOOTER: Required<FooterSettings> = {
   show_phone: true,
   show_email: true,
   show_address: true,
-  show_hours: true
+  show_hours: true,
+  heading_font: 'lora',
+  body_font: 'dm_sans'
 }
 
 export function PublicFooter() {
@@ -67,16 +72,16 @@ export function PublicFooter() {
   const showHours = footer.show_hours && data?.business_hours
 
   return (
-    <footer className="bg-gray-900 px-4 py-12 text-gray-300">
+    <footer className="bg-gray-900 px-4 py-12 text-gray-300" style={{ fontFamily: getSiteFontFamily(footer.body_font) }}>
       <div className="mx-auto max-w-7xl">
         <div className={`grid grid-cols-1 gap-8 pb-8 ${showContact && showHours ? 'md:grid-cols-3' : showContact || showHours ? 'md:grid-cols-2' : ''}`}>
           <div>
-            <h2 className="mb-2 text-2xl font-black text-white">{name}</h2>
+            <h2 className="mb-2 text-2xl font-black text-white" style={{ fontFamily: getSiteFontFamily(footer.heading_font) }}>{name}</h2>
             {footer.description && <p className="max-w-sm text-sm leading-6">{footer.description}</p>}
           </div>
 
           {showContact && <div>
-            <h3 className="mb-4 font-bold text-white">{footer.contact_title}</h3>
+            <h3 className="mb-4 font-bold text-white" style={{ fontFamily: getSiteFontFamily(footer.heading_font) }}>{footer.contact_title}</h3>
             <ul className="space-y-3 text-sm">
               {footer.show_phone && phone && <li><a href={`https://wa.me/${phoneLink}`} target="_blank" rel="noreferrer" className="inline-flex items-start gap-2 transition hover:text-white"><Icon name="phone" className="mt-0.5 h-4 w-4 shrink-0" /><span>WhatsApp: {phone}</span></a></li>}
               {footer.show_email && data?.email && <li><a href={`mailto:${data.email}`} className="inline-flex items-start gap-2 transition hover:text-white"><Icon name="mail" className="mt-0.5 h-4 w-4 shrink-0" /><span>{data.email}</span></a></li>}
@@ -85,7 +90,7 @@ export function PublicFooter() {
           </div>}
 
           {showHours && <div>
-            <h3 className="mb-4 font-bold text-white">{footer.hours_title}</h3>
+            <h3 className="mb-4 font-bold text-white" style={{ fontFamily: getSiteFontFamily(footer.heading_font) }}>{footer.hours_title}</h3>
             <p className="whitespace-pre-line text-sm leading-6">{data?.business_hours}</p>
           </div>}
         </div>

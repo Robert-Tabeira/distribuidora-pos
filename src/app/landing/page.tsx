@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type CSSProperties } from 'react'
 import { PublicLayout } from '@/components/public-layout'
 import { useRouter } from 'next/navigation'
 import { HeroSlider } from '@/components/hero-slider'
@@ -9,6 +9,7 @@ import type { Category, Product, Discount } from '@/types/database'
 import { Icon } from '@/components/ui/icon'
 import { getCategoryIconName } from '@/lib/category-icons'
 import Link from 'next/link'
+import { getSiteFontFamily } from '@/lib/site-fonts'
 
 interface ProductWithDiscount extends Product {
   discount?: Discount
@@ -37,8 +38,8 @@ interface LandingSectionSettings {
   mobile_image_position?: 'center' | 'top' | 'bottom' | 'left' | 'right'
   desktop_image_side?: 'left' | 'right'
   mobile_image_order?: 'first' | 'last'
-  heading_font?: 'inherit' | 'lora' | 'dm_sans' | 'fira_sans' | 'georgia'
-  body_font?: 'inherit' | 'lora' | 'dm_sans' | 'fira_sans' | 'georgia'
+  heading_font?: string
+  body_font?: string
 }
 interface LandingSection {
   id: string
@@ -109,12 +110,16 @@ function LandingBlockRenderer({
   const desktopTextOrder = DESKTOP_TEXT_ORDER_CLASS[settings.desktop_image_side || 'left']
   const headingFont = settings.heading_font && settings.heading_font !== 'inherit' ? settings.heading_font : undefined
   const bodyFont = settings.body_font && settings.body_font !== 'inherit' ? settings.body_font : undefined
+  const fontStyle = {
+    '--landing-heading-font': getSiteFontFamily(headingFont),
+    '--landing-body-font': getSiteFontFamily(bodyFont),
+  } as CSSProperties
 
   if (section.block_type === 'categories') {
     const mainCategories = categories.filter(category => !category.parent_id && category.show_in_catalog !== false)
     if (mainCategories.length === 0) return null
     return (
-      <section data-heading-font={headingFont} data-body-font={bodyFont} className={`landing-section bg-[#fbf7f0] px-4 py-14 ${responsiveTextClasses(settings)}`}>
+      <section data-heading-font={headingFont} data-body-font={bodyFont} style={fontStyle} className={`landing-section bg-[#fbf7f0] px-4 py-14 ${responsiveTextClasses(settings)}`}>
         <div className="mx-auto max-w-7xl">
           <h2 className={`font-serif text-3xl font-bold text-[#3b2a20] sm:text-4xl ${responsiveTextClasses(settings, 'center')}`}>{heading}</h2>
           {section.subtitle && <p className={`mt-2 text-gray-600 ${responsiveTextClasses(settings, 'center')}`}>{section.subtitle}</p>}
@@ -133,7 +138,7 @@ function LandingBlockRenderer({
 
   if (section.block_type === 'banner') {
     return (
-      <section data-heading-font={headingFont} data-body-font={bodyFont} className={`landing-section px-4 py-10 ${responsiveTextClasses(settings)}`} style={{ backgroundColor: settings.background_color || '#fff7ed' }}>
+      <section data-heading-font={headingFont} data-body-font={bodyFont} style={{ ...fontStyle, backgroundColor: settings.background_color || '#fff7ed' }} className={`landing-section px-4 py-10 ${responsiveTextClasses(settings)}`}>
         <div className={`mx-auto flex max-w-7xl flex-col overflow-hidden rounded-3xl bg-white/60 shadow-sm md:flex-row ${section.image_url ? 'items-stretch' : 'items-center text-center'}`}>
           {section.image_url && <div className={`w-full md:w-2/5 ${mobileImageOrder} ${desktopImageOrder}`}><ResponsiveImage desktopSrc={section.image_url} mobileSrc={settings.mobile_image_url} alt={heading} settings={settings} className="max-h-72 min-h-48 w-full object-cover" /></div>}
           <div className={`flex flex-1 flex-col items-center justify-center p-7 md:p-10 ${section.image_url ? `${mobileTextOrder} ${desktopTextOrder}` : ''}`}>
@@ -149,7 +154,7 @@ function LandingBlockRenderer({
 
   if (section.block_type === 'feature_cards') {
     return (
-      <section data-heading-font={headingFont} data-body-font={bodyFont} className={`landing-section bg-[#fffdf9] px-4 py-14 ${responsiveTextClasses(settings)}`}>
+      <section data-heading-font={headingFont} data-body-font={bodyFont} style={fontStyle} className={`landing-section bg-[#fffdf9] px-4 py-14 ${responsiveTextClasses(settings)}`}>
         <div className="mx-auto max-w-7xl">
           <h2 className={`text-3xl font-bold text-gray-900 sm:text-4xl ${responsiveTextClasses(settings, 'center')}`}>{heading}</h2>
           {section.subtitle && <p className={`mt-2 text-gray-600 ${responsiveTextClasses(settings, 'center')}`}>{section.subtitle}</p>}
@@ -178,7 +183,7 @@ function LandingBlockRenderer({
       settings.show_email !== false && businessSettings?.email ? { icon: 'mail' as const, label: 'Email', value: businessSettings.email, href: `mailto:${businessSettings.email}` } : null
     ].filter(Boolean) as Array<{ icon: 'clock' | 'location' | 'phone' | 'mail'; label: string; value: string; href?: string }>
     return (
-      <section data-heading-font={headingFont} data-body-font={bodyFont} className={`landing-section bg-[#f6efe5] px-4 py-14 ${responsiveTextClasses(settings)}`}>
+      <section data-heading-font={headingFont} data-body-font={bodyFont} style={fontStyle} className={`landing-section bg-[#f6efe5] px-4 py-14 ${responsiveTextClasses(settings)}`}>
         <div className="mx-auto max-w-6xl">
           <h2 className={`text-3xl font-bold text-gray-900 sm:text-4xl ${responsiveTextClasses(settings, 'center')}`}>{heading}</h2>
           {section.subtitle && <p className={`mt-2 text-gray-600 ${responsiveTextClasses(settings, 'center')}`}>{section.subtitle}</p>}
@@ -203,7 +208,7 @@ function LandingBlockRenderer({
     const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`
     const embedUrl = `https://maps.google.com/maps?q=${encodedAddress}&output=embed`
     return (
-      <section data-heading-font={headingFont} data-body-font={bodyFont} className={`landing-section bg-[#f6efe5] px-4 py-14 ${responsiveTextClasses(settings)}`}>
+      <section data-heading-font={headingFont} data-body-font={bodyFont} style={fontStyle} className={`landing-section bg-[#f6efe5] px-4 py-14 ${responsiveTextClasses(settings)}`}>
         <div className="mx-auto max-w-6xl">
           <div className={`mb-6 ${responsiveTextClasses(settings, 'center')}`}>
             <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">{heading}</h2>
@@ -237,7 +242,7 @@ function LandingBlockRenderer({
     const slides = (settings.slides || []).filter(slide => slide.image_url)
     if (slides.length === 0) return null
     return (
-      <section data-heading-font={headingFont} data-body-font={bodyFont} className={`landing-section bg-[#fffdf9] px-4 py-14 ${responsiveTextClasses(settings)}`}>
+      <section data-heading-font={headingFont} data-body-font={bodyFont} style={fontStyle} className={`landing-section bg-[#fffdf9] px-4 py-14 ${responsiveTextClasses(settings)}`}>
         <div className="mx-auto max-w-7xl">
           <h2 className={`text-3xl font-bold text-gray-900 sm:text-4xl ${responsiveTextClasses(settings, 'center')}`}>{heading}</h2>
           {section.subtitle && <p className={`mt-2 text-gray-600 ${responsiveTextClasses(settings, 'center')}`}>{section.subtitle}</p>}
@@ -258,7 +263,7 @@ function LandingBlockRenderer({
     const shownProducts = settings.mode === 'discounts' ? products.filter(product => product.discount) : products
     if (shownProducts.length === 0) return null
     return (
-      <section data-heading-font={headingFont} data-body-font={bodyFont} className={`landing-section bg-[#fbf7f0] px-4 py-14 ${responsiveTextClasses(settings)}`}>
+      <section data-heading-font={headingFont} data-body-font={bodyFont} style={fontStyle} className={`landing-section bg-[#fbf7f0] px-4 py-14 ${responsiveTextClasses(settings)}`}>
         <div className="mx-auto max-w-7xl">
           <h2 className={`text-3xl font-bold text-gray-900 sm:text-4xl ${responsiveTextClasses(settings, 'center')}`}>{heading}</h2>
           {section.subtitle && <p className={`mt-2 text-gray-600 ${responsiveTextClasses(settings, 'center')}`}>{section.subtitle}</p>}
@@ -277,7 +282,7 @@ function LandingBlockRenderer({
   }
 
   return (
-      <section data-heading-font={headingFont} data-body-font={bodyFont} className={`landing-section bg-[#fffdf9] px-4 py-14 ${responsiveTextClasses(settings)}`}>
+      <section data-heading-font={headingFont} data-body-font={bodyFont} style={fontStyle} className={`landing-section bg-[#fffdf9] px-4 py-14 ${responsiveTextClasses(settings)}`}>
       <div className={`mx-auto grid max-w-6xl items-center gap-8 ${section.image_url ? 'md:grid-cols-2' : 'max-w-4xl text-center'}`}>
         {section.image_url && <div className={`${mobileImageOrder} ${desktopImageOrder}`}><ResponsiveImage desktopSrc={section.image_url} mobileSrc={settings.mobile_image_url} alt={heading} settings={settings} className="max-h-[28rem] min-h-56 w-full rounded-2xl object-cover" /></div>}
         <div className={`${section.image_url ? `${mobileTextOrder} ${desktopTextOrder}` : ''}`}><h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">{heading}</h2>{section.subtitle && <p className="mt-3 text-lg font-medium text-primary">{section.subtitle}</p>}{section.description && <p className="mt-4 whitespace-pre-line leading-7 text-gray-600">{section.description}</p>}</div>

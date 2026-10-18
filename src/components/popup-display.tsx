@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { PopupFrame, type PopupFrameStyle } from '@/components/popup-frame'
+import { getSiteFontFamily } from '@/lib/site-fonts'
 
 interface Popup extends PopupFrameStyle {
   id: string
@@ -11,6 +12,7 @@ interface Popup extends PopupFrameStyle {
   is_active: boolean
   order_position: number
   content_mode: 'builder' | 'image'
+  font_family?: string | null
   title: string | null
   message: string | null
   image_url: string | null
@@ -123,7 +125,7 @@ export default function PopupDisplay() {
       onClick={close}
     >
       {activePopup.content_mode === 'image' ? (
-        <div className="relative max-w-md w-full" onClick={e => e.stopPropagation()}>
+        <div className="relative max-w-md w-full" onClick={e => e.stopPropagation()} style={{ fontFamily: getSiteFontFamily(activePopup.font_family) }}>
           <button
             onClick={close}
             className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-white shadow-lg flex items-center justify-center font-bold text-gray-700 hover:bg-gray-100 z-20"

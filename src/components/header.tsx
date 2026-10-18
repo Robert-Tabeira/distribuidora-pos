@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import { getSiteFontFamily } from '@/lib/site-fonts'
 
 interface WebsiteSettings {
   phone_number: string | null
@@ -43,6 +44,7 @@ interface HeaderSettings {
   nav_underline: boolean
   nav_letter_spacing: 'normal' | 'wide' | 'wider'
   nav_font_weight: '500' | '600' | '700'
+  font_family?: string
 }
 
 const DEFAULT_HEADER_SETTINGS: HeaderSettings = {
@@ -54,7 +56,8 @@ const DEFAULT_HEADER_SETTINGS: HeaderSettings = {
   nav_uppercase: true,
   nav_underline: true,
   nav_letter_spacing: 'wide',
-  nav_font_weight: '700'
+  nav_font_weight: '700',
+  font_family: 'dm_sans'
 }
 
 const LETTER_SPACING_MAP: Record<string, string> = { normal: 'normal', wide: '0.025em', wider: '0.05em' }
@@ -157,6 +160,7 @@ export function Header() {
         landingHeaderAtTop ? 'border-transparent shadow-none' : isLandingPage ? 'border-stone-200 shadow-md' : `border-gray-200 ${headerSettings.shadow ? 'shadow-sm' : ''}`
       } ${isLandingPage ? isScrolled ? 'h-14 py-0' : transparentLandingHeader ? 'h-16 py-0' : 'py-4' : isScrolled ? 'py-2' : 'py-4'}`}
       style={{
+        fontFamily: getSiteFontFamily(headerSettings.font_family),
         backgroundColor: landingHeaderAtTop
           ? headerSettings.bg_color === 'transparent' ? 'transparent' : 'rgba(35, 22, 15, 0.16)'
           : isLandingPage || isCatalogPage ? '#ffffff' : headerSettings.bg_color

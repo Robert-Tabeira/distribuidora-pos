@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, type CSSProperties } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { getSiteFontFamily } from '@/lib/site-fonts'
 
 interface HeroSlide {
   id: string
@@ -22,13 +23,17 @@ interface HeroSlide {
   mobile_image_position?: 'center' | 'top' | 'bottom' | 'left' | 'right' | null
   desktop_image_fit?: 'cover' | 'contain' | null
   mobile_image_fit?: 'cover' | 'contain' | null
-  title_font?: 'lora' | 'dm_sans' | 'fira_sans' | 'georgia' | null
-  body_font?: 'lora' | 'dm_sans' | 'fira_sans' | 'georgia' | null
+  title_font?: string | null
+  body_font?: string | null
   title_size_desktop?: number | null
   title_size_mobile?: number | null
   body_size_desktop?: number | null
   body_size_mobile?: number | null
   image_darkness?: number | null
+  show_title_mobile?: boolean | null
+  show_title_desktop?: boolean | null
+  show_description_mobile?: boolean | null
+  show_description_desktop?: boolean | null
 }
 
 const HORIZONTAL_POSITION = { left: 'justify-start', center: 'justify-center', right: 'justify-end' } as const
@@ -39,7 +44,12 @@ const IMAGE_FIT = { cover: 'object-cover', contain: 'object-contain' } as const
 const DESKTOP_IMAGE_FIT = { cover: 'md:object-cover', contain: 'md:object-contain' } as const
 const TEXT_ALIGNMENT = { left: 'text-left', center: 'text-center', right: 'text-right' } as const
 const DESKTOP_TEXT_ALIGNMENT = { left: 'md:text-left', center: 'md:text-center', right: 'md:text-right' } as const
-const HERO_FONT_FAMILY = { lora: "'Lora', Georgia, serif", dm_sans: "'DM Sans', sans-serif", fira_sans: "'Fira Sans', sans-serif", georgia: "Georgia, 'Times New Roman', serif" } as const
+const responsiveVisibility = (mobileVisible?: boolean | null, desktopVisible?: boolean | null) => {
+  if (mobileVisible === false && desktopVisible === false) return 'hidden'
+  if (mobileVisible === false) return 'hidden md:block'
+  if (desktopVisible === false) return 'block md:hidden'
+  return 'block'
+}
 
 const DEFAULT_SLIDES: HeroSlide[] = [
   {
@@ -202,19 +212,19 @@ export function HeroSlider() {
         <div className={`mx-auto flex h-full w-full max-w-7xl items-center px-4 sm:px-6 ${HORIZONTAL_POSITION[currentSlideData.mobile_text_position || 'left']} ${DESKTOP_HORIZONTAL_POSITION[currentSlideData.desktop_text_position || 'left']}`}>
           <div className={`w-full max-w-2xl ${TEXT_ALIGNMENT[currentSlideData.mobile_text_position || 'left']} ${DESKTOP_TEXT_ALIGNMENT[currentSlideData.desktop_text_position || 'left']}`}>
             {currentSlideData.title && (
-              <h1 style={{ fontFamily: HERO_FONT_FAMILY[currentSlideData.title_font || 'lora'], '--hero-title-mobile': `${currentSlideData.title_size_mobile || 48}px`, '--hero-title-desktop': `${currentSlideData.title_size_desktop || 72}px` } as CSSProperties} className="hero-title font-black text-white leading-tight mb-6 animate-fade-in drop-shadow-lg">
+              <h1 style={{ fontFamily: getSiteFontFamily(currentSlideData.title_font || 'lora'), '--hero-title-mobile': `${currentSlideData.title_size_mobile || 48}px`, '--hero-title-desktop': `${currentSlideData.title_size_desktop || 72}px` } as CSSProperties} className={`hero-title font-black text-white leading-tight mb-6 animate-fade-in drop-shadow-lg ${responsiveVisibility(currentSlideData.show_title_mobile, currentSlideData.show_title_desktop)}`}>
                 {currentSlideData.title}
               </h1>
             )}
             {currentSlideData.description && (
-              <p style={{ fontFamily: HERO_FONT_FAMILY[currentSlideData.body_font || 'dm_sans'], '--hero-body-mobile': `${currentSlideData.body_size_mobile || 20}px`, '--hero-body-desktop': `${currentSlideData.body_size_desktop || 24}px` } as CSSProperties} className="hero-description text-white/95 mb-8 leading-relaxed animate-fade-in-delay drop-shadow-md">
+              <p style={{ fontFamily: getSiteFontFamily(currentSlideData.body_font || 'dm_sans'), '--hero-body-mobile': `${currentSlideData.body_size_mobile || 20}px`, '--hero-body-desktop': `${currentSlideData.body_size_desktop || 24}px` } as CSSProperties} className={`hero-description text-white/95 mb-8 leading-relaxed animate-fade-in-delay drop-shadow-md ${responsiveVisibility(currentSlideData.show_description_mobile, currentSlideData.show_description_desktop)}`}>
                 {currentSlideData.description}
               </p>
             )}
             {currentSlideData.cta_text && currentSlideData.cta_url && currentSlideData.cta_bottom_offset == null && (
               <button
                 onClick={() => router.push(currentSlideData.cta_url!)}
-                style={{ fontFamily: HERO_FONT_FAMILY[currentSlideData.body_font || 'dm_sans'] }}
+                style={{ fontFamily: getSiteFontFamily(currentSlideData.body_font || 'dm_sans') }}
                 className="pointer-events-auto inline-block px-8 py-4 bg-[#f8efe2] text-[#4b2e20] rounded-xl font-bold hover:bg-white transition-all text-lg animate-fade-in-delay-2 shadow-lg"
               >
                 {currentSlideData.cta_text}
@@ -231,7 +241,7 @@ export function HeroSlider() {
           <div className={`mx-auto flex w-full max-w-7xl ${HORIZONTAL_POSITION[currentSlideData.mobile_text_position || 'left']} ${DESKTOP_HORIZONTAL_POSITION[currentSlideData.desktop_text_position || 'left']}`}>
             <button
               onClick={() => router.push(currentSlideData.cta_url!)}
-              style={{ fontFamily: HERO_FONT_FAMILY[currentSlideData.body_font || 'dm_sans'] }}
+              style={{ fontFamily: getSiteFontFamily(currentSlideData.body_font || 'dm_sans') }}
               className="pointer-events-auto inline-block rounded-xl bg-[#f8efe2] px-8 py-4 text-lg font-bold text-[#4b2e20] shadow-lg transition-all hover:bg-white animate-fade-in-delay-2"
             >
               {currentSlideData.cta_text}

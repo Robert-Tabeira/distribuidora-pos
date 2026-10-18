@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { getSiteFontFamily } from '@/lib/site-fonts'
 
 interface AnnouncementMessage {
   id: string
@@ -169,7 +170,7 @@ export default function AnnouncementBar() {
       <div
         className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-center gap-2 text-center"
         style={{
-          fontFamily: FONT_FAMILY_MAP[settings.font_family] || FONT_FAMILY_MAP.default,
+          fontFamily: getSiteFontFamily(settings.font_family) || FONT_FAMILY_MAP.default,
           fontSize: settings.font_size,
           fontWeight: settings.font_weight,
           letterSpacing: LETTER_SPACING_MAP[settings.letter_spacing] || 'normal'

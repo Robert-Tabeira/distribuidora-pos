@@ -8,6 +8,7 @@ import { PopupFrame } from '@/components/popup-frame'
 import { Icon, type IconName } from '@/components/ui/icon'
 import { CATEGORY_ICON_OPTIONS, getCategoryIconName } from '@/lib/category-icons'
 import type { Employee } from '@/types/database'
+import { getSiteFontFamily, type SiteFont } from '@/lib/site-fonts'
 
 interface ColorSwatch {
   name: string
@@ -36,6 +37,7 @@ interface WebsiteSettings {
   logo_sticky_width?: number
   use_logo_image?: boolean
   footer_settings?: FooterSettings
+  custom_fonts?: SiteFont[]
 }
 
 interface FooterSettings {
@@ -49,6 +51,8 @@ interface FooterSettings {
   show_email: boolean
   show_address: boolean
   show_hours: boolean
+  heading_font?: string
+  body_font?: string
 }
 
 const DEFAULT_FOOTER_SETTINGS: FooterSettings = {
@@ -61,7 +65,9 @@ const DEFAULT_FOOTER_SETTINGS: FooterSettings = {
   show_phone: true,
   show_email: true,
   show_address: true,
-  show_hours: true
+  show_hours: true,
+  heading_font: 'lora',
+  body_font: 'dm_sans'
 }
 
 interface MenuLink {
@@ -83,6 +89,7 @@ interface HeaderSettings {
   nav_underline: boolean
   nav_letter_spacing: 'normal' | 'wide' | 'wider'
   nav_font_weight: '500' | '600' | '700'
+  font_family?: string
 }
 
 interface Popup {
@@ -90,6 +97,7 @@ interface Popup {
   name: string
   is_active: boolean
   content_mode: string
+  font_family?: string | null
   title: string | null
   message: string | null
   image_url: string | null
@@ -139,6 +147,10 @@ interface HeroSlide {
   body_size_desktop?: number | null
   body_size_mobile?: number | null
   image_darkness?: number | null
+  show_title_mobile?: boolean | null
+  show_title_desktop?: boolean | null
+  show_description_mobile?: boolean | null
+  show_description_desktop?: boolean | null
   title: string | null
   description: string | null
   cta_text: string | null
@@ -205,8 +217,8 @@ interface LandingSectionSettings {
   mobile_image_position?: 'center' | 'top' | 'bottom' | 'left' | 'right'
   desktop_image_side?: 'left' | 'right'
   mobile_image_order?: 'first' | 'last'
-  heading_font?: 'inherit' | 'lora' | 'dm_sans' | 'fira_sans' | 'georgia'
-  body_font?: 'inherit' | 'lora' | 'dm_sans' | 'fira_sans' | 'georgia'
+  heading_font?: string
+  body_font?: string
 }
 
 interface AnnouncementMessage {
@@ -251,13 +263,12 @@ const LANDING_BLOCK_LABELS: Record<LandingBlockType, string> = {
   product_grid: 'Productos u ofertas'
 }
 
-const LANDING_FONT_FAMILIES: Record<string, string | undefined> = {
-  inherit: undefined,
-  lora: "'Lora', Georgia, serif",
-  dm_sans: "'DM Sans', sans-serif",
-  fira_sans: "'Fira Sans', sans-serif",
-  georgia: 'Georgia, serif'
-}
+const BUILT_IN_FONT_OPTIONS = [
+  { value: 'dm_sans', label: 'DM Sans' },
+  { value: 'fira_sans', label: 'Fira Sans' },
+  { value: 'lora', label: 'Lora' },
+  { value: 'georgia', label: 'Georgia' },
+]
 
 function defaultLandingSettings(type: LandingBlockType): LandingSectionSettings {
   const typography: Pick<LandingSectionSettings, 'heading_font' | 'body_font'> = { heading_font: 'lora', body_font: 'dm_sans' }
@@ -338,17 +349,19 @@ function SitePreviewPanel({
   menuLinks,
   landingSections,
   footerForm,
-  editingPopupForm
+  editingPopupForm,
+  customFonts
 }: {
   sectionView: string | null
   barForm: { bg_color: string; text_color: string; font_family: string; font_size: string; font_weight: string; letter_spacing: string; animation: string }
   announcements: AnnouncementMessage[]
   logoForm: { site_name: string; site_tagline: string; logo_url: string; logo_transparent_url: string; logo_width: number; logo_sticky_width: number; use_logo_image: boolean }
-  headerForm: { bg_color: string; text_color: string; active_color: string; sticky: boolean; shadow: boolean; nav_uppercase: boolean; nav_underline: boolean; nav_letter_spacing: string; nav_font_weight: string }
+  headerForm: { bg_color: string; text_color: string; active_color: string; sticky: boolean; shadow: boolean; nav_uppercase: boolean; nav_underline: boolean; nav_letter_spacing: string; nav_font_weight: string; font_family?: string }
   menuLinks: MenuLink[]
   landingSections: LandingSection[]
   footerForm: FooterSettings
   editingPopupForm?: any
+  customFonts: SiteFont[]
 }) {
   const FONT_FAMILY_MAP: Record<string, string> = {
     default: "'DM Sans', sans-serif",
@@ -388,7 +401,7 @@ function SitePreviewPanel({
               backgroundImage: isGradient ? `linear-gradient(270deg, ${barForm.bg_color}, ${shadeColor(barForm.bg_color, 45)}, ${barForm.bg_color})` : undefined,
               backgroundColor: isGradient ? undefined : barForm.bg_color,
               color: barForm.text_color,
-              fontFamily: FONT_FAMILY_MAP[barForm.font_family],
+              fontFamily: getSiteFontFamily(barForm.font_family, customFonts) || FONT_FAMILY_MAP[barForm.font_family],
               fontSize: `calc(${barForm.font_size} * 0.9)`,
               fontWeight: barForm.font_weight,
               letterSpacing: LETTER_SPACING_MAP[barForm.letter_spacing]
@@ -402,13 +415,13 @@ function SitePreviewPanel({
         {/* Header */}
         <div
           className={`px-3 py-2.5 flex items-center justify-between transition-all ${headerForm.shadow ? 'shadow-sm' : ''} ${highlight('header')}`}
-          style={{ backgroundColor: headerForm.bg_color }}
+          style={{ backgroundColor: headerForm.bg_color, fontFamily: getSiteFontFamily(headerForm.font_family, customFonts) }}
         >
           {logoForm.use_logo_image && logoForm.logo_url ? (
             <img src={logoForm.logo_url} alt={logoForm.site_name} className="h-6 object-contain" style={{ width: `${logoForm.logo_width}px` }} />
           ) : (
             <div className="min-w-0">
-              <p className="font-black text-xs truncate" style={{ color: headerForm.text_color }}>{logoForm.site_name}</p>
+              <p className="font-black text-xs truncate" style={{ color: headerForm.text_color, fontFamily: getSiteFontFamily(headerForm.font_family, customFonts) }}>{logoForm.site_name}</p>
               <p className="text-[8px] font-semibold truncate" style={{ color: headerForm.text_color, opacity: 0.7 }}>{logoForm.site_tagline}</p>
             </div>
           )}
@@ -420,7 +433,8 @@ function SitePreviewPanel({
                 style={{
                   color: idx === 0 ? headerForm.active_color : headerForm.text_color,
                   letterSpacing: LETTER_SPACING_MAP[headerForm.nav_letter_spacing],
-                  fontWeight: headerForm.nav_font_weight
+                  fontWeight: headerForm.nav_font_weight,
+                  fontFamily: getSiteFontFamily(headerForm.font_family, customFonts)
                 }}
               >
                 {link.label}
@@ -578,7 +592,7 @@ export default function WebsiteEditionPage() {
   const [employee, setEmployee] = useState<Employee | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'settings' | 'sections'>('settings')
-  const [sectionView, setSectionView] = useState<'announcement' | 'header' | 'hero' | 'landing' | 'popups' | 'footer'>('announcement')
+  const [sectionView, setSectionView] = useState<'announcement' | 'header' | 'hero' | 'landing' | 'popups' | 'footer' | 'fonts'>('announcement')
 
   // Settings
   const [settings, setSettings] = useState<WebsiteSettings | null>(null)
@@ -599,11 +613,15 @@ export default function WebsiteEditionPage() {
   const [footerForm, setFooterForm] = useState<FooterSettings>(DEFAULT_FOOTER_SETTINGS)
   const [savingFooter, setSavingFooter] = useState(false)
   const [footerMessage, setFooterMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [customFonts, setCustomFonts] = useState<SiteFont[]>([])
+  const [fontFile, setFontFile] = useState<File | null>(null)
+  const [fontName, setFontName] = useState('')
+  const [uploadingFont, setUploadingFont] = useState(false)
 
   // Hero Slides
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([])
   const [editingHero, setEditingHero] = useState<HeroSlide | null>(null)
-  const [heroForm, setHeroForm] = useState({ internal_name: '', title: '', description: '', cta_text: '', cta_url: '', cta_bottom_offset: null as number | null, image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain' as 'cover' | 'contain', mobile_image_fit: 'contain' as 'cover' | 'contain', image_darkness: 18, title_font: 'lora', body_font: 'dm_sans', title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
+  const [heroForm, setHeroForm] = useState({ internal_name: '', title: '', description: '', cta_text: '', cta_url: '', cta_bottom_offset: null as number | null, show_title_mobile: true, show_title_desktop: true, show_description_mobile: true, show_description_desktop: true, image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain' as 'cover' | 'contain', mobile_image_fit: 'contain' as 'cover' | 'contain', image_darkness: 18, title_font: 'lora', body_font: 'dm_sans', title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
   const [savingHero, setSavingHero] = useState(false)
   const [heroAutoplaySeconds, setHeroAutoplaySeconds] = useState(5)
   const [savingHeroAutoplay, setSavingHeroAutoplay] = useState(false)
@@ -677,7 +695,8 @@ export default function WebsiteEditionPage() {
     nav_uppercase: true,
     nav_underline: true,
     nav_letter_spacing: 'wide' as 'normal' | 'wide' | 'wider',
-    nav_font_weight: '700' as '500' | '600' | '700'
+    nav_font_weight: '700' as '500' | '600' | '700',
+    font_family: 'dm_sans'
   })
   const [savingHeaderSettings, setSavingHeaderSettings] = useState(false)
 
@@ -692,6 +711,7 @@ export default function WebsiteEditionPage() {
     name: '',
     is_active: true,
     content_mode: 'builder',
+    font_family: 'dm_sans',
     title: '',
     message: '',
     image_url: '',
@@ -751,6 +771,7 @@ export default function WebsiteEditionPage() {
 
       if (settingsRes.data) {
         setSettings(settingsRes.data as WebsiteSettings)
+        setCustomFonts(Array.isArray(settingsRes.data.custom_fonts) ? settingsRes.data.custom_fonts as SiteFont[] : [])
         setHeroAutoplaySeconds(settingsRes.data.hero_autoplay_seconds ?? 5)
         setFooterForm({ ...DEFAULT_FOOTER_SETTINGS, ...(settingsRes.data.footer_settings || {}) })
         setSettingsForm({
@@ -797,7 +818,8 @@ export default function WebsiteEditionPage() {
           nav_uppercase: h.nav_uppercase ?? true,
           nav_underline: h.nav_underline ?? true,
           nav_letter_spacing: h.nav_letter_spacing ?? 'wide',
-          nav_font_weight: h.nav_font_weight ?? '700'
+          nav_font_weight: h.nav_font_weight ?? '700',
+          font_family: h.font_family || 'dm_sans'
         })
       }
       if (popupsRes.data) setPopups(popupsRes.data as Popup[])
@@ -982,6 +1004,63 @@ export default function WebsiteEditionPage() {
     }
   }
 
+  async function uploadCustomFont() {
+    if (!settings?.id || !fontFile) return
+    const extension = fontFile.name.split('.').pop()?.toLowerCase() || ''
+    if (!['woff2', 'woff', 'ttf', 'otf'].includes(extension)) {
+      alert('Usá un archivo de fuente .woff2, .woff, .ttf o .otf.')
+      return
+    }
+    if (fontFile.size > 8 * 1024 * 1024) {
+      alert('La fuente no puede superar los 8 MB.')
+      return
+    }
+
+    setUploadingFont(true)
+    const id = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const path = `site-fonts/${id}.${extension}`
+    try {
+      const { error: uploadError } = await supabase.storage.from('product-images').upload(path, fontFile, {
+        cacheControl: '31536000',
+        contentType: fontFile.type || `font/${extension}`,
+        upsert: false
+      })
+      if (uploadError) throw uploadError
+
+      const { data } = supabase.storage.from('product-images').getPublicUrl(path)
+      const nextFonts = [...customFonts, { id, name: fontName.trim() || fontFile.name.replace(/\.[^.]+$/, ''), url: data.publicUrl, path }]
+      const { error } = await supabase.from('website_settings').update({ custom_fonts: nextFonts, updated_at: new Date().toISOString() }).eq('id', settings.id)
+      if (error) {
+        await supabase.storage.from('product-images').remove([path])
+        throw error
+      }
+      setCustomFonts(nextFonts)
+      setSettings({ ...settings, custom_fonts: nextFonts })
+      setFontFile(null)
+      setFontName('')
+      alert('Tipografía agregada. Ya está disponible en los selectores del editor.')
+    } catch (error) {
+      console.error('Error uploading custom font:', error)
+      alert(`No se pudo guardar la tipografía: ${error instanceof Error ? error.message : 'error desconocido'}`)
+    } finally {
+      setUploadingFont(false)
+    }
+  }
+
+  async function deleteCustomFont(font: SiteFont) {
+    if (!settings?.id || !confirm(`¿Eliminar la tipografía «${font.name}»? Dejará de estar disponible para las secciones que la usen.`)) return
+    const nextFonts = customFonts.filter(item => item.id !== font.id)
+    const { error } = await supabase.from('website_settings').update({ custom_fonts: nextFonts, updated_at: new Date().toISOString() }).eq('id', settings.id)
+    if (error) {
+      alert('No se pudo eliminar la tipografía de la biblioteca.')
+      return
+    }
+    setCustomFonts(nextFonts)
+    setSettings({ ...settings, custom_fonts: nextFonts })
+    const { error: storageError } = await supabase.storage.from('product-images').remove([font.path])
+    if (storageError) console.error('No se pudo borrar el archivo de fuente:', storageError)
+  }
+
   // ===== IMAGE UPLOAD =====
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>, variant: 'desktop' | 'mobile' = 'desktop') {
     const file = e.target.files?.[0]
@@ -1025,6 +1104,10 @@ export default function WebsiteEditionPage() {
             internal_name: heroForm.internal_name.trim(),
             title: heroForm.title.trim() || null,
             cta_bottom_offset: heroForm.cta_bottom_offset,
+            show_title_mobile: heroForm.show_title_mobile,
+            show_title_desktop: heroForm.show_title_desktop,
+            show_description_mobile: heroForm.show_description_mobile,
+            show_description_desktop: heroForm.show_description_desktop,
             description: heroForm.description.trim() || null,
             cta_text: heroForm.cta_text.trim() || null,
             cta_url: heroForm.cta_url.trim() || null,
@@ -1056,6 +1139,10 @@ export default function WebsiteEditionPage() {
                 internal_name: heroForm.internal_name.trim(),
                 title: heroForm.title.trim() || null,
                 cta_bottom_offset: heroForm.cta_bottom_offset,
+                show_title_mobile: heroForm.show_title_mobile,
+                show_title_desktop: heroForm.show_title_desktop,
+                show_description_mobile: heroForm.show_description_mobile,
+                show_description_desktop: heroForm.show_description_desktop,
                 description: heroForm.description.trim() || null,
                 cta_text: heroForm.cta_text.trim() || null,
                 cta_url: heroForm.cta_url.trim() || null,
@@ -1086,6 +1173,10 @@ export default function WebsiteEditionPage() {
             internal_name: heroForm.internal_name.trim(),
             title: heroForm.title.trim() || null,
             cta_bottom_offset: heroForm.cta_bottom_offset,
+            show_title_mobile: heroForm.show_title_mobile,
+            show_title_desktop: heroForm.show_title_desktop,
+            show_description_mobile: heroForm.show_description_mobile,
+            show_description_desktop: heroForm.show_description_desktop,
             description: heroForm.description.trim() || null,
             cta_text: heroForm.cta_text.trim() || null,
             cta_url: heroForm.cta_url.trim() || null,
@@ -1146,6 +1237,10 @@ export default function WebsiteEditionPage() {
         internal_name: hero.internal_name || hero.title || `Hero ${hero.order_position}`,
         title: hero.title || '',
         cta_bottom_offset: hero.cta_bottom_offset ?? null,
+        show_title_mobile: hero.show_title_mobile !== false,
+        show_title_desktop: hero.show_title_desktop !== false,
+        show_description_mobile: hero.show_description_mobile !== false,
+        show_description_desktop: hero.show_description_desktop !== false,
         description: hero.description || '',
         cta_text: hero.cta_text || '',
         cta_url: hero.cta_url || '',
@@ -1169,7 +1264,7 @@ export default function WebsiteEditionPage() {
       setMobileHeroPreview(hero.mobile_image_url || '')
     } else {
       setEditingHero(null)
-      setHeroForm({ internal_name: '', title: '', description: '', cta_text: '', cta_url: '', cta_bottom_offset: null, image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain', mobile_image_fit: 'contain', image_darkness: 18, title_font: 'lora', body_font: 'dm_sans', title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
+      setHeroForm({ internal_name: '', title: '', description: '', cta_text: '', cta_url: '', cta_bottom_offset: null, show_title_mobile: true, show_title_desktop: true, show_description_mobile: true, show_description_desktop: true, image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain', mobile_image_fit: 'contain', image_darkness: 18, title_font: 'lora', body_font: 'dm_sans', title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
       setImagePreview('')
       setMobileHeroPreview('')
     }
@@ -1717,6 +1812,7 @@ export default function WebsiteEditionPage() {
         name: popup.name,
         is_active: popup.is_active,
         content_mode: popup.content_mode,
+        font_family: popup.font_family || 'dm_sans',
         title: popup.title || '',
         message: popup.message || '',
         image_url: popup.image_url || '',
@@ -1747,7 +1843,7 @@ export default function WebsiteEditionPage() {
     } else {
       setEditingPopup(null)
       setPopupForm({
-        name: '', is_active: true, content_mode: 'builder',
+        name: '', is_active: true, content_mode: 'builder', font_family: 'dm_sans',
         title: '', message: '', image_url: '', cta_text: '', cta_url: '',
         bg_color: '#ffffff', text_color: '#111827', button_bg_color: '#2563eb', button_text_color: '#ffffff',
         clickable_image_url: '', clickable_image_link: '',
@@ -1944,6 +2040,7 @@ export default function WebsiteEditionPage() {
                 { key: 'landing', label: 'Bloques de landing', icon: 'document' as IconName },
                 { key: 'popups', label: 'Pop-ups', icon: 'chat' as IconName },
                 { key: 'footer', label: 'Footer', icon: 'shoe' as IconName },
+                { key: 'fonts', label: 'Tipografías', icon: 'type' as IconName },
               ].map(item => (
                 <button
                   key={item.key}
@@ -2225,7 +2322,7 @@ export default function WebsiteEditionPage() {
                       backgroundImage: isGradient ? `linear-gradient(270deg, ${barForm.bg_color}, ${shadeColor(barForm.bg_color, 45)}, ${barForm.bg_color})` : undefined,
                       backgroundColor: isGradient ? undefined : barForm.bg_color,
                       color: barForm.text_color,
-                      fontFamily: FONT_FAMILY_MAP[barForm.font_family],
+                      fontFamily: getSiteFontFamily(barForm.font_family, customFonts) || FONT_FAMILY_MAP[barForm.font_family],
                       fontSize: barForm.font_size,
                       fontWeight: barForm.font_weight,
                       letterSpacing: LETTER_SPACING_MAP[barForm.letter_spacing]
@@ -2272,6 +2369,7 @@ export default function WebsiteEditionPage() {
                     <option value="fira_sans">Fira Sans</option>
                     <option value="serif">Serif</option>
                     <option value="mono">Monoespaciada</option>
+                    {customFonts.map(font => <option key={font.id} value={`custom:${font.id}`}>{font.name} (personalizada)</option>)}
                   </select>
                 </div>
 
@@ -2415,6 +2513,34 @@ export default function WebsiteEditionPage() {
           </div>
         )}
 
+        {activeTab === 'sections' && sectionView === 'fonts' && (
+          <div className="space-y-5">
+            <div>
+              <h3 className="font-bold text-xl mb-1">Biblioteca de tipografías</h3>
+              <p className="text-sm text-text-muted">Subí una fuente una sola vez y aparecerá en los editores de hero, header, barra de anuncios, landing y footer.</p>
+            </div>
+            <div className="card space-y-4 max-w-2xl">
+              <h4 className="font-bold text-text">Agregar una tipografía</h4>
+              <p className="text-xs text-text-muted">Formatos admitidos: WOFF2, WOFF, TTF y OTF. Máximo 8 MB. Asegurate de tener permiso para usar el archivo.</p>
+              <label className="block text-sm font-medium text-text-muted">Nombre para identificarla
+                <input className="input mt-1" value={fontName} onChange={event => setFontName(event.target.value)} placeholder="Ej.: Montserrat" />
+              </label>
+              <input className="input" type="file" accept=".woff2,.woff,.ttf,.otf,font/woff2,font/woff,font/ttf,font/otf" onChange={event => setFontFile(event.target.files?.[0] || null)} />
+              {fontFile && <p className="text-xs text-text-muted">Seleccionada: {fontFile.name}</p>}
+              <button type="button" onClick={uploadCustomFont} disabled={!fontFile || uploadingFont || !settings?.id} className="btn btn-primary w-full">{uploadingFont ? 'Subiendo tipografía…' : 'Subir y agregar a la biblioteca'}</button>
+            </div>
+            <div className="card max-w-2xl">
+              <h4 className="mb-4 font-bold text-text">Tipografías disponibles</h4>
+              {customFonts.length === 0 ? <p className="text-sm text-text-muted">Todavía no agregaste fuentes propias. Las fuentes incluidas siguen disponibles en los editores.</p> : <div className="space-y-3">
+                {customFonts.map(font => <div key={font.id} className="flex items-center gap-3 rounded-xl border border-border p-3">
+                  <span className="min-w-0 flex-1"><span className="block truncate font-semibold text-text">{font.name}</span><span className="block truncate text-xs text-text-muted" style={{ fontFamily: getSiteFontFamily(`custom:${font.id}`) }}>Vista previa · Aa Bb 123</span></span>
+                  <button type="button" onClick={() => deleteCustomFont(font)} className="rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-100">Eliminar</button>
+                </div>)}
+              </div>}
+            </div>
+          </div>
+        )}
+
         {/* HEADER / MENÚ */}
         {activeTab === 'sections' && sectionView === 'header' && (() => {
           const sortedLinks = [...menuLinks].sort((a, b) => a.order_position - b.order_position)
@@ -2431,7 +2557,7 @@ export default function WebsiteEditionPage() {
                 <p className="text-xs font-semibold text-text-muted mb-2">VISTA PREVIA</p>
                 <div
                   className={`rounded-lg border border-gray-200 px-4 py-3 flex items-center justify-between ${headerForm.shadow ? 'shadow-md' : ''}`}
-                  style={{ backgroundColor: headerForm.bg_color }}
+                  style={{ backgroundColor: headerForm.bg_color, fontFamily: getSiteFontFamily(headerForm.font_family, customFonts) }}
                 >
                   {logoForm.use_logo_image && logoForm.logo_url ? (
                     <img src={logoForm.logo_url} alt={logoForm.site_name} className="h-8 object-contain" />
@@ -2650,6 +2776,12 @@ export default function WebsiteEditionPage() {
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-5">
+                  <label className="block text-sm font-semibold text-text-muted sm:col-span-2">Tipografía del header y menú
+                    <select className="input mt-2" value={headerForm.font_family} onChange={e => setHeaderForm({ ...headerForm, font_family: e.target.value })}>
+                      {BUILT_IN_FONT_OPTIONS.map(font => <option key={font.value} value={font.value}>{font.label}</option>)}
+                      {customFonts.map(font => <option key={font.id} value={`custom:${font.id}`}>{font.name} (personalizada)</option>)}
+                    </select>
+                  </label>
                   <div>
                     <label className="block text-sm font-semibold text-text-muted mb-2">Espaciado entre letras</label>
                     <select
@@ -3028,6 +3160,12 @@ export default function WebsiteEditionPage() {
                   <ColorPicker label="Texto" value={popupForm.text_color} onChange={(hex) => setPopupForm({ ...popupForm, text_color: hex })} palette={palette} />
                   <ColorPicker label="Fondo del botón" value={popupForm.button_bg_color} onChange={(hex) => setPopupForm({ ...popupForm, button_bg_color: hex })} palette={palette} />
                   <ColorPicker label="Texto del botón" value={popupForm.button_text_color} onChange={(hex) => setPopupForm({ ...popupForm, button_text_color: hex })} palette={palette} />
+                  <label className="block text-sm font-semibold text-text-muted sm:col-span-2">Tipografía del pop-up
+                    <select className="input mt-2" value={popupForm.font_family} onChange={e => setPopupForm({ ...popupForm, font_family: e.target.value })}>
+                      {BUILT_IN_FONT_OPTIONS.map(font => <option key={font.value} value={font.value}>{font.label}</option>)}
+                      {customFonts.map(font => <option key={font.id} value={`custom:${font.id}`}>{font.name} (personalizada)</option>)}
+                    </select>
+                  </label>
                 </div>
               </CollapsibleCard>
             )}
@@ -3281,6 +3419,22 @@ export default function WebsiteEditionPage() {
               </div>
             </div>
 
+            <div className="card grid gap-4 sm:grid-cols-2">
+              <h4 className="font-bold text-text sm:col-span-2">Tipografía del footer</h4>
+              <label className="block text-sm font-medium text-text-muted">Títulos
+                <select className="input mt-1" value={footerForm.heading_font || 'lora'} onChange={e => setFooterForm({ ...footerForm, heading_font: e.target.value })}>
+                  {BUILT_IN_FONT_OPTIONS.map(font => <option key={font.value} value={font.value}>{font.label}</option>)}
+                  {customFonts.map(font => <option key={font.id} value={`custom:${font.id}`}>{font.name} (personalizada)</option>)}
+                </select>
+              </label>
+              <label className="block text-sm font-medium text-text-muted">Texto y descripciones
+                <select className="input mt-1" value={footerForm.body_font || 'dm_sans'} onChange={e => setFooterForm({ ...footerForm, body_font: e.target.value })}>
+                  {BUILT_IN_FONT_OPTIONS.map(font => <option key={font.value} value={font.value}>{font.label}</option>)}
+                  {customFonts.map(font => <option key={font.id} value={`custom:${font.id}`}>{font.name} (personalizada)</option>)}
+                </select>
+              </label>
+            </div>
+
             <div className="card space-y-4">
               <h4 className="font-bold text-text">Secciones e información</h4>
               <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-border p-3 text-sm font-medium text-text-muted"><input type="checkbox" checked={footerForm.show_contact} onChange={e => setFooterForm({ ...footerForm, show_contact: e.target.checked })} className="h-4 w-4 rounded" />Mostrar sección de contacto</label>
@@ -3317,6 +3471,7 @@ export default function WebsiteEditionPage() {
           landingSections={sections}
           footerForm={footerForm}
           editingPopupForm={sectionView === 'popups' && showPopupModal ? popupForm : null}
+          customFonts={customFonts}
         />
       </div>
       </div>
@@ -3454,16 +3609,39 @@ export default function WebsiteEditionPage() {
                 />
               </div>
 
+              <div className="grid gap-4 rounded-xl border border-border p-4 sm:grid-cols-2">
+                <p className="text-sm font-semibold text-text sm:col-span-2">Visibilidad del texto por dispositivo</p>
+                {([
+                  { label: 'Título', mobile: 'show_title_mobile', desktop: 'show_title_desktop' },
+                  { label: 'Descripción', mobile: 'show_description_mobile', desktop: 'show_description_desktop' }
+                ] as const).map(item => (
+                  <fieldset key={item.label} className="rounded-lg border border-border p-3">
+                    <legend className="px-1 text-sm font-semibold text-text">{item.label}</legend>
+                    <div className="mt-1 flex flex-wrap gap-x-5 gap-y-2">
+                      {([
+                        { key: item.mobile, label: 'Celular' },
+                        { key: item.desktop, label: 'Computadora' }
+                      ] as const).map(option => (
+                        <label key={option.key} className="flex items-center gap-2 text-sm text-text-muted">
+                          <input type="checkbox" checked={heroForm[option.key]} onChange={e => setHeroForm(current => ({ ...current, [option.key]: e.target.checked }))} className="h-4 w-4 rounded border-gray-300" />
+                          {option.label}
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                ))}
+              </div>
+
               <div className="grid gap-3 rounded-xl border border-border p-4 sm:grid-cols-2">
                 <p className="text-sm font-semibold text-text sm:col-span-2">Tipografía del hero</p>
                 <label className="block text-sm font-medium text-text-muted">Título
                   <select className="input mt-1" value={heroForm.title_font} onChange={e => setHeroForm(current => ({ ...current, title_font: e.target.value }))}>
-                    <option value="lora">Lora (recomendada)</option><option value="dm_sans">DM Sans</option><option value="fira_sans">Fira Sans</option><option value="georgia">Georgia</option>
+                    <option value="lora">Lora (recomendada)</option><option value="dm_sans">DM Sans</option><option value="fira_sans">Fira Sans</option><option value="georgia">Georgia</option>{customFonts.map(font => <option key={font.id} value={`custom:${font.id}`}>{font.name} (personalizada)</option>)}
                   </select>
                 </label>
                 <label className="block text-sm font-medium text-text-muted">Descripción y botón
                   <select className="input mt-1" value={heroForm.body_font} onChange={e => setHeroForm(current => ({ ...current, body_font: e.target.value }))}>
-                    <option value="dm_sans">DM Sans (recomendada)</option><option value="fira_sans">Fira Sans</option><option value="lora">Lora</option><option value="georgia">Georgia</option>
+                    <option value="dm_sans">DM Sans (recomendada)</option><option value="fira_sans">Fira Sans</option><option value="lora">Lora</option><option value="georgia">Georgia</option>{customFonts.map(font => <option key={font.id} value={`custom:${font.id}`}>{font.name} (personalizada)</option>)}
                   </select>
                 </label>
               </div>
@@ -3635,12 +3813,12 @@ export default function WebsiteEditionPage() {
                 <p className="text-sm font-semibold text-text sm:col-span-2">Tipografía de esta sección</p>
                 <label className="block text-sm font-medium text-text-muted">Títulos
                   <select className="input mt-1" value={sectionForm.settings.heading_font || 'inherit'} onChange={e => updateLandingSettings({ heading_font: e.target.value as LandingSectionSettings['heading_font'] })}>
-                    <option value="inherit">Estilo actual</option><option value="lora">Lora (recomendada, cálida)</option><option value="dm_sans">DM Sans</option><option value="fira_sans">Fira Sans</option><option value="georgia">Georgia</option>
+                    <option value="inherit">Estilo actual</option><option value="lora">Lora (recomendada, cálida)</option><option value="dm_sans">DM Sans</option><option value="fira_sans">Fira Sans</option><option value="georgia">Georgia</option>{customFonts.map(font => <option key={font.id} value={`custom:${font.id}`}>{font.name} (personalizada)</option>)}
                   </select>
                 </label>
                 <label className="block text-sm font-medium text-text-muted">Texto y descripciones
                   <select className="input mt-1" value={sectionForm.settings.body_font || 'inherit'} onChange={e => updateLandingSettings({ body_font: e.target.value as LandingSectionSettings['body_font'] })}>
-                    <option value="inherit">Estilo actual</option><option value="dm_sans">DM Sans (recomendada, legible)</option><option value="fira_sans">Fira Sans</option><option value="lora">Lora</option><option value="georgia">Georgia</option>
+                    <option value="inherit">Estilo actual</option><option value="dm_sans">DM Sans (recomendada, legible)</option><option value="fira_sans">Fira Sans</option><option value="lora">Lora</option><option value="georgia">Georgia</option>{customFonts.map(font => <option key={font.id} value={`custom:${font.id}`}>{font.name} (personalizada)</option>)}
                   </select>
                 </label>
                 <p className="text-xs text-text-muted sm:col-span-2">Sugerencia para el estilo del local: Lora en títulos y DM Sans en textos.</p>
