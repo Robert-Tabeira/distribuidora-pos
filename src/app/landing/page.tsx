@@ -29,6 +29,12 @@ interface LandingSectionSettings {
   map_address?: string
   map_link_text?: string
   category_icons?: Record<string, string>
+  category_icon_size_desktop?: number
+  category_icon_size_mobile?: number
+  category_icon_bg_color?: string
+  category_icon_color?: string
+  category_icon_hover_bg_color?: string
+  category_icon_hover_color?: string
   cards?: Array<{ title: string; description: string; image_url: string; mobile_image_url?: string; link_url: string; button_text: string }>
   slides?: Array<{ image_url: string; mobile_image_url?: string; link_url: string }>
   mobile_image_url?: string
@@ -118,22 +124,30 @@ function LandingBlockRenderer({
     '--landing-heading-weight': settings.heading_weight || '700',
     '--landing-body-weight': settings.body_weight || '400',
   } as CSSProperties
+  const categoryIconStyle = {
+    '--category-icon-size-mobile': `${settings.category_icon_size_mobile || 44}px`,
+    '--category-icon-size-desktop': `${settings.category_icon_size_desktop || 44}px`,
+    '--category-icon-bg': settings.category_icon_bg_color || '#f2e9e3',
+    '--category-icon-color': settings.category_icon_color || '#8b4a2f',
+    '--category-icon-hover-bg': settings.category_icon_hover_bg_color || '#8b4a2f',
+    '--category-icon-hover-color': settings.category_icon_hover_color || '#ffffff',
+  } as CSSProperties
 
   if (section.block_type === 'categories') {
     const mainCategories = categories.filter(category => !category.parent_id && category.show_in_catalog !== false)
     if (mainCategories.length === 0) return null
     return (
-      <section data-heading-font={headingFont} data-body-font={bodyFont} style={fontStyle} className={`landing-section bg-[#fbf7f0] px-4 py-14 ${responsiveTextClasses(settings)}`}>
+      <section data-heading-font={headingFont} data-body-font={bodyFont} style={{ ...fontStyle, ...categoryIconStyle }} className={`landing-section bg-[#fbf7f0] px-4 py-14 ${responsiveTextClasses(settings)}`}>
         <div className="mx-auto max-w-7xl">
           <h2 className={`font-serif text-3xl font-bold text-[#3b2a20] sm:text-4xl ${responsiveTextClasses(settings, 'center')}`}>{heading}</h2>
           {section.subtitle && <p className={`mt-2 text-gray-600 ${responsiveTextClasses(settings, 'center')}`}>{section.subtitle}</p>}
           <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {mainCategories.map(category => (
-              <Link key={category.id} href={`/catalogo?categoria=${encodeURIComponent(category.id)}`} className="group flex min-h-28 flex-col items-center justify-center gap-3 rounded-2xl border border-[#e7d9c8] bg-[#fffdf9] p-4 text-center transition hover:-translate-y-1 hover:border-[#b77a4d] hover:shadow-md">
-                <span className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-[#8b4a2f]/10 text-[#8b4a2f] transition group-hover:bg-[#8b4a2f] group-hover:text-white">
+              <Link key={category.id} href={`/catalogo?categoria=${encodeURIComponent(category.id)}`} className="category-card group flex min-h-28 flex-col items-center justify-center gap-3 rounded-2xl border border-[#e7d9c8] bg-[#fffdf9] p-4 text-center transition hover:-translate-y-1 hover:border-[#b77a4d] hover:shadow-md">
+                <span className="category-icon-container flex items-center justify-center overflow-hidden rounded-full transition-colors">
                   {isCategoryIconImage(settings.category_icons?.[category.id])
-                    ? <img src={settings.category_icons?.[category.id]} alt="" className="h-full w-full object-contain p-1.5" />
-                    : <Icon name={getCategoryIconName(category.name, settings.category_icons?.[category.id])} className="h-5 w-5" />}
+                    ? <span aria-hidden="true" className="category-custom-icon block" style={{ maskImage: `url("${settings.category_icons[category.id]}")`, WebkitMaskImage: `url("${settings.category_icons[category.id]}")` }} />
+                    : <Icon name={getCategoryIconName(category.name, settings.category_icons?.[category.id])} className="category-icon-glyph" />}
                 </span>
                 <span className="text-sm font-semibold text-gray-800">{category.name}</span>
               </Link>

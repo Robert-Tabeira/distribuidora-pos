@@ -30,6 +30,40 @@
 .landing-section[data-body-font] { font-family: var(--landing-body-font, inherit); font-weight: var(--landing-body-weight, 400); }
 .landing-section[data-heading-font] :is(h1, h2, h3) { font-family: var(--landing-heading-font, inherit); font-weight: var(--landing-heading-weight, 700); }
 
+.category-icon-container {
+  width: var(--category-icon-size-mobile, 44px);
+  height: var(--category-icon-size-mobile, 44px);
+  background-color: var(--category-icon-bg, #f2e9e3);
+  color: var(--category-icon-color, #8b4a2f);
+}
+.category-icon-glyph { width: 50%; height: 50%; }
+.category-custom-icon {
+  width: 58%;
+  height: 58%;
+  background-color: var(--category-icon-color, #8b4a2f);
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  -webkit-mask-size: contain;
+}
+.category-card:hover .category-icon-container,
+.category-card:focus-visible .category-icon-container {
+  background-color: var(--category-icon-hover-bg, #8b4a2f);
+  color: var(--category-icon-hover-color, #fff);
+}
+.category-card:hover .category-custom-icon,
+.category-card:focus-visible .category-custom-icon {
+  background-color: var(--category-icon-hover-color, #fff);
+}
+@media (min-width: 768px) {
+  .category-icon-container {
+    width: var(--category-icon-size-desktop, 44px);
+    height: var(--category-icon-size-desktop, 44px);
+  }
+}
+
 .hero-title { font-size: var(--hero-title-mobile, 48px); }
 .hero-description { font-size: var(--hero-body-mobile, 20px); }
 @media (min-width: 768px) and (max-width: 1023px) {

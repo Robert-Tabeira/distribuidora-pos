@@ -217,6 +217,12 @@ interface LandingSectionSettings {
   map_address?: string
   map_link_text?: string
   category_icons?: Record<string, string>
+  category_icon_size_desktop?: number
+  category_icon_size_mobile?: number
+  category_icon_bg_color?: string
+  category_icon_color?: string
+  category_icon_hover_bg_color?: string
+  category_icon_hover_color?: string
   cards?: LandingFeatureCard[]
   slides?: LandingCarouselSlide[]
   mobile_image_url?: string
@@ -299,7 +305,16 @@ function defaultLandingSettings(type: LandingBlockType): LandingSectionSettings 
   ], ...typography }
   if (type === 'business_info') return { ...typography, show_phone: true, show_email: true, show_address: true, show_business_hours: true }
   if (type === 'location_map') return { ...typography, map_address: '67P2+8WC Los Primos, Ruta Interbalnearia Gral. Líber Seregni, 15200 Las Toscas, Departamento de Canelones', map_link_text: 'Abrir en Google Maps' }
-  if (type === 'categories') return { ...typography, category_icons: {} }
+  if (type === 'categories') return {
+    ...typography,
+    category_icons: {},
+    category_icon_size_desktop: 44,
+    category_icon_size_mobile: 44,
+    category_icon_bg_color: '#f2e9e3',
+    category_icon_color: '#8b4a2f',
+    category_icon_hover_bg_color: '#8b4a2f',
+    category_icon_hover_color: '#ffffff',
+  }
   if (type === 'image_carousel') return { ...typography, slides: [] }
   if (type === 'product_grid') return { ...typography, mode: 'popular', limit: 5, button_text: 'Ver catálogo', button_url: '/catalogo' }
   return typography
@@ -3967,6 +3982,28 @@ export default function WebsiteEditionPage() {
 
               {sectionForm.block_type === 'categories' && (
                 <div className="space-y-3 rounded-xl border border-border p-4">
+                  <div>
+                    <h4 className="font-semibold text-text">Tamaño y colores de los iconos</h4>
+                    <p className="mt-1 text-xs text-text-muted">Los colores también se aplican a los SVG y PNG personalizados como una silueta. Usá archivos con fondo transparente.</p>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {(['desktop', 'mobile'] as const).map(device => {
+                      const key = device === 'desktop' ? 'category_icon_size_desktop' : 'category_icon_size_mobile'
+                      const size = sectionForm.settings[key] ?? (device === 'desktop' ? 44 : 44)
+                      return <label key={key} className="block text-sm font-medium text-text-muted">Tamaño en {device === 'desktop' ? 'escritorio' : 'móvil'}: {size} px
+                        <input type="range" min="28" max="88" step="2" value={size} onChange={e => updateLandingSettings({ [key]: Number(e.target.value) })} className="mt-2 w-full" />
+                      </label>
+                    })}
+                    {([
+                      ['category_icon_bg_color', 'Fondo normal', '#f2e9e3'],
+                      ['category_icon_color', 'Icono normal', '#8b4a2f'],
+                      ['category_icon_hover_bg_color', 'Fondo al pasar el cursor', '#8b4a2f'],
+                      ['category_icon_hover_color', 'Icono al pasar el cursor', '#ffffff'],
+                    ] as const).map(([key, label, fallback]) => <label key={key} className="flex items-center gap-3 text-sm font-medium text-text-muted">
+                      <input type="color" value={sectionForm.settings[key] || fallback} onChange={e => updateLandingSettings({ [key]: e.target.value })} className="h-10 w-12 cursor-pointer rounded-lg border border-border bg-transparent p-1" />
+                      <span>{label}</span>
+                    </label>)}
+                  </div>
                   <div>
                     <h4 className="font-semibold text-text">Icono para cada categoría</h4>
                     <p className="mt-1 text-xs text-text-muted">Subí un SVG o PNG propio, o elegí uno de los iconos disponibles. Si no personalizás, se sugiere automáticamente según el nombre.</p>
