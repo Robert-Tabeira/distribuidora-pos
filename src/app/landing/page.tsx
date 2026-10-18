@@ -7,7 +7,7 @@ import { HeroSlider } from '@/components/hero-slider'
 import { supabase } from '@/lib/supabase'
 import type { Category, Product, Discount } from '@/types/database'
 import { Icon } from '@/components/ui/icon'
-import { getCategoryIconName } from '@/lib/category-icons'
+import { getCategoryIconName, isCategoryIconImage } from '@/lib/category-icons'
 import Link from 'next/link'
 import { getSiteFontFamily } from '@/lib/site-fonts'
 
@@ -130,7 +130,11 @@ function LandingBlockRenderer({
           <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {mainCategories.map(category => (
               <Link key={category.id} href={`/catalogo?categoria=${encodeURIComponent(category.id)}`} className="group flex min-h-28 flex-col items-center justify-center gap-3 rounded-2xl border border-[#e7d9c8] bg-[#fffdf9] p-4 text-center transition hover:-translate-y-1 hover:border-[#b77a4d] hover:shadow-md">
-                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#8b4a2f]/10 text-[#8b4a2f] transition group-hover:bg-[#8b4a2f] group-hover:text-white"><Icon name={getCategoryIconName(category.name, settings.category_icons?.[category.id])} className="h-5 w-5" /></span>
+                <span className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-[#8b4a2f]/10 text-[#8b4a2f] transition group-hover:bg-[#8b4a2f] group-hover:text-white">
+                  {isCategoryIconImage(settings.category_icons?.[category.id])
+                    ? <img src={settings.category_icons?.[category.id]} alt="" className="h-full w-full object-contain p-1.5" />
+                    : <Icon name={getCategoryIconName(category.name, settings.category_icons?.[category.id])} className="h-5 w-5" />}
+                </span>
                 <span className="text-sm font-semibold text-gray-800">{category.name}</span>
               </Link>
             ))}

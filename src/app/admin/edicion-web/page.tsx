@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { uploadImageToSupabase } from '@/lib/image-upload-helper'
 import { PopupFrame } from '@/components/popup-frame'
 import { Icon, type IconName } from '@/components/ui/icon'
-import { CATEGORY_ICON_OPTIONS, getCategoryIconName } from '@/lib/category-icons'
+import { CATEGORY_ICON_OPTIONS, getCategoryIconName, isCategoryIconImage } from '@/lib/category-icons'
 import type { Employee } from '@/types/database'
 import { getSiteFontFamily, type SiteFont } from '@/lib/site-fonts'
 
@@ -3824,21 +3824,6 @@ export default function WebsiteEditionPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-text-muted mb-2">Tipo de sección</label>
-                <select
-                  value={sectionForm.block_type}
-                  onChange={(e) => {
-                    const block_type = e.target.value as LandingBlockType
-                    setSectionForm(current => ({ ...current, block_type, settings: defaultLandingSettings(block_type) }))
-                  }}
-                  className="input"
-                >
-                  {Object.entries(LANDING_BLOCK_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                </select>
-                <p className="mt-1 text-xs text-text-muted">El tipo define cómo se presenta este bloque en la landing.</p>
-              </div>
-
-              <div>
                 <label className="block text-sm font-semibold text-text-muted mb-2">Título *</label>
                 <input
                   type="text"
@@ -3924,26 +3909,52 @@ export default function WebsiteEditionPage() {
                 <div className="space-y-3 rounded-xl border border-border p-4">
                   <div>
                     <h4 className="font-semibold text-text">Icono para cada categoría</h4>
-                    <p className="mt-1 text-xs text-text-muted">El catálogo sugiere uno según el nombre; podés cambiarlo por cualquiera de estos iconos.</p>
+                    <p className="mt-1 text-xs text-text-muted">Subí un SVG o PNG propio, o elegí uno de los iconos disponibles. Si no personalizás, se sugiere automáticamente según el nombre.</p>
                   </div>
                   {landingCategories.filter(category => !category.parent_id && category.show_in_catalog !== false).map(category => {
                     const customIcon = sectionForm.settings.category_icons?.[category.id] || ''
                     const selectedIcon = getCategoryIconName(category.name, customIcon)
+                    const customImage = isCategoryIconImage(customIcon) ? customIcon : ''
                     return (
-                      <div key={category.id} className="grid items-center gap-3 rounded-lg bg-gray-50 p-3 sm:grid-cols-[1fr_2fr]">
+                      <div key={category.id} className="grid items-center gap-3 rounded-lg bg-gray-50 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
                         <div className="flex min-w-0 items-center gap-3">
-                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Icon name={selectedIcon} className="h-5 w-5" /></span>
+                          <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-primary/10 text-primary">
+                            {customImage ? <img src={customImage} alt="" className="h-full w-full object-contain p-1" /> : <Icon name={selectedIcon} className="h-5 w-5" />}
+                          </span>
                           <span className="truncate text-sm font-semibold text-text">{category.name}</span>
                         </div>
-                        <select
-                          aria-label={`Icono para ${category.name}`}
-                          className="input"
-                          value={customIcon}
-                          onChange={e => setSectionForm(current => ({ ...current, settings: { ...current.settings, category_icons: { ...(current.settings.category_icons || {}), [category.id]: e.target.value } } }))}
-                        >
-                          <option value="">Sugerido automáticamente</option>
-                          {CATEGORY_ICON_OPTIONS.map(option => <option key={option.name} value={option.name}>{option.label}</option>)}
-                        </select>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <select
+                            aria-label={`Icono predeterminado para ${category.name}`}
+                            className="input"
+                            value={customImage ? '' : customIcon}
+                            onChange={e => setSectionForm(current => ({ ...current, settings: { ...current.settings, category_icons: { ...(current.settings.category_icons || {}), [category.id]: e.target.value } } }))}
+                          >
+                            <option value="">Sugerido automáticamente</option>
+                            {CATEGORY_ICON_OPTIONS.map(option => <option key={option.name} value={option.name}>{option.label}</option>)}
+                          </select>
+                          <label className="flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-primary/40 px-3 py-2 text-center text-sm font-semibold text-primary">
+                            {uploadingImage ? 'Subiendo…' : customImage ? 'Reemplazar icono' : 'Subir SVG o PNG'}
+                            <input
+                              type="file"
+                              accept="image/svg+xml,image/png"
+                              className="hidden"
+                              disabled={uploadingImage}
+                              onChange={e => {
+                                const file = e.currentTarget.files?.[0]
+                                void uploadLandingAsset(file, url => setSectionForm(current => ({
+                                  ...current,
+                                  settings: { ...current.settings, category_icons: { ...(current.settings.category_icons || {}), [category.id]: url } }
+                                })))
+                                e.currentTarget.value = ''
+                              }}
+                            />
+                          </label>
+                          {customImage && <button type="button" className="text-xs font-medium text-red-600 hover:underline sm:col-span-2 sm:justify-self-start" onClick={() => setSectionForm(current => ({
+                            ...current,
+                            settings: { ...current.settings, category_icons: { ...(current.settings.category_icons || {}), [category.id]: '' } }
+                          }))}>Quitar imagen y usar icono sugerido</button>}
+                        </div>
                       </div>
                     )
                   })}

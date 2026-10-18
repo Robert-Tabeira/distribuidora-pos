@@ -19,6 +19,10 @@ export const CATEGORY_ICON_OPTIONS: { name: IconName; label: string }[] = [
   { name: 'grid', label: 'Categoría general' }
 ]
 
+export function isCategoryIconImage(value?: string | null): value is string {
+  return Boolean(value && /^https?:\/\//i.test(value))
+}
+
 export function getCategoryIconName(categoryName: string, customIcon?: string): IconName {
   if (customIcon && CATEGORY_ICON_OPTIONS.some(option => option.name === customIcon)) return customIcon as IconName
 
