@@ -147,8 +147,8 @@ export function Header() {
   const activeLogoWidth = !transparentHeaderAtTop && isScrolled
     ? settings?.logo_sticky_width || 144
     : settings?.logo_width || 180
-  const headerTextColor = landingHeaderAtTop ? '#ffffff' : isLandingPage ? '#3b2a20' : headerSettings.text_color
-  const headerActiveColor = landingHeaderAtTop ? '#ffffff' : isLandingPage ? '#8b4a2f' : headerSettings.active_color
+  const headerTextColor = landingHeaderAtTop ? '#ffffff' : headerSettings.text_color
+  const headerActiveColor = landingHeaderAtTop ? '#ffffff' : headerSettings.active_color
 
   return (
     <header
