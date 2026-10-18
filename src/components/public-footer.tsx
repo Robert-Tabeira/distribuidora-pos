@@ -74,7 +74,7 @@ export function PublicFooter() {
   return (
     <footer className="bg-gray-900 px-4 py-12 text-gray-300" style={{ fontFamily: getSiteFontFamily(footer.body_font) }}>
       <div className="mx-auto max-w-7xl">
-        <div className={`grid grid-cols-1 gap-8 pb-8 ${showContact && showHours ? 'md:grid-cols-3' : showContact || showHours ? 'md:grid-cols-2' : ''}`}>
+        <div className={`grid grid-cols-1 gap-8 pb-8 ${showContact && showHours ? 'md:grid-cols-2 lg:grid-cols-3' : showContact || showHours ? 'md:grid-cols-2' : ''}`}>
           <div>
             <h2 className="mb-2 text-2xl font-black text-white" style={{ fontFamily: getSiteFontFamily(footer.heading_font) }}>{name}</h2>
             {footer.description && <p className="max-w-sm text-sm leading-6">{footer.description}</p>}

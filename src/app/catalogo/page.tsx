@@ -425,14 +425,14 @@ export default function CatalogPage() {
     <PublicLayout>
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3 lg:grid-cols-4">
           {/* SIDEBAR FILTROS */}
           <div
             className={`md:block ${
               sidebarOpen ? 'block' : 'hidden'
             } md:col-span-1`}
           >
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm md:sticky md:top-24 md:max-h-[calc(100vh-7rem)] md:overflow-y-auto">
+            <div className="bg-white rounded-2xl p-4 lg:p-6 border border-gray-200 shadow-sm lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-black text-lg text-gray-900">Filtros</h3>
                 <button
@@ -537,7 +537,7 @@ export default function CatalogPage() {
           </div>
 
           {/* GRID PRODUCTOS */}
-          <div className="md:col-span-3">
+          <div className="md:col-span-2 lg:col-span-3">
             {/* Info y Búsqueda */}
             <div className="mb-6">
               <div className="mb-4">

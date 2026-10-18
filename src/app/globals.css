@@ -32,7 +32,11 @@
 
 .hero-title { font-size: var(--hero-title-mobile, 48px); }
 .hero-description { font-size: var(--hero-body-mobile, 20px); }
-@media (min-width: 768px) {
+@media (min-width: 768px) and (max-width: 1023px) {
+  .hero-title { font-size: clamp(var(--hero-title-mobile, 48px), calc(3.8vw + 22px), var(--hero-title-desktop, 72px)); }
+  .hero-description { font-size: clamp(var(--hero-body-mobile, 20px), calc(0.7vw + 18px), var(--hero-body-desktop, 24px)); }
+}
+@media (min-width: 1024px) {
   .hero-title { font-size: var(--hero-title-desktop, 72px); }
   .hero-description { font-size: var(--hero-body-desktop, 24px); }
 }

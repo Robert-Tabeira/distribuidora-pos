@@ -169,7 +169,7 @@ export function Header() {
       <div className={`max-w-7xl mx-auto px-4 sm:px-6 ${isLandingPage && (isScrolled || transparentLandingHeader) ? 'h-full' : ''}`}>
         <div className={`relative flex items-center justify-between ${isLandingPage && (isScrolled || transparentLandingHeader) ? 'h-full' : ''}`}>
           {/* Logo */}
-          <Link href={settings?.logo_link_url || '/landing'} className="absolute left-1/2 z-10 flex max-w-[calc(100vw-7rem)] -translate-x-1/2 items-center justify-center gap-3 md:static md:max-w-none md:translate-x-0">
+          <Link href={settings?.logo_link_url || '/landing'} className="absolute left-1/2 z-10 flex max-w-[calc(100vw-7rem)] -translate-x-1/2 items-center justify-center gap-3 lg:static lg:max-w-none lg:translate-x-0">
             {settings?.use_logo_image && activeLogoUrl ? (
               <img
                 key={activeLogoUrl}
@@ -179,7 +179,7 @@ export function Header() {
                 style={{ width: `${activeLogoWidth}px`, maxHeight: isScrolled ? '48px' : '64px', height: 'auto' }}
               />
             ) : (
-              <div className="flex min-w-0 flex-col items-center text-center md:items-start md:text-left">
+              <div className="flex min-w-0 flex-col items-center text-center lg:items-start lg:text-left">
                 <h1
                   className={`font-black transition-all duration-300 truncate ${isScrolled ? 'text-lg' : 'text-2xl'}`}
                   style={{ color: headerTextColor }}
@@ -197,7 +197,7 @@ export function Header() {
           </Link>
 
           {/* Nav Links - Desktop */}
-          <nav className="hidden md:flex gap-7">
+          <nav className="hidden lg:flex gap-7">
             {visibleMenuLinks.map(link => {
               const active = isActive(link.url)
               return (
@@ -225,7 +225,7 @@ export function Header() {
 
           <div className="flex items-center gap-2">
             {/* Business Info Button (desktop) */}
-            <div className="relative hidden md:block">
+            <div className="relative hidden lg:block">
               <button
                 onClick={() => setShowInfo(!showInfo)}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg font-bold text-sm uppercase tracking-wide transition-all hover:opacity-80"
@@ -315,7 +315,7 @@ export function Header() {
             {(visibleMenuLinks.length > 0 || hasBusinessInfo) && (
               <button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
-                className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg transition-all hover:opacity-70"
+                className="lg:hidden flex items-center justify-center w-9 h-9 rounded-lg transition-all hover:opacity-70"
                 style={{ backgroundColor: showMobileMenu ? `${headerTextColor}0d` : 'transparent' }}
               >
                 {showMobileMenu ? (
@@ -334,7 +334,7 @@ export function Header() {
 
         {/* Menú - Mobile: tarjeta con links + info del negocio */}
         {showMobileMenu && (visibleMenuLinks.length > 0 || hasBusinessInfo) && (
-          <div className="md:hidden mt-3 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+          <div className="lg:hidden mt-3 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
             {visibleMenuLinks.length > 0 && (
               <nav className="p-2">
                 {visibleMenuLinks.map(link => {

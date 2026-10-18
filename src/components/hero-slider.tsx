@@ -37,13 +37,13 @@ interface HeroSlide {
 }
 
 const HORIZONTAL_POSITION = { left: 'justify-start', center: 'justify-center', right: 'justify-end' } as const
-const DESKTOP_HORIZONTAL_POSITION = { left: 'md:justify-start', center: 'md:justify-center', right: 'md:justify-end' } as const
+const DESKTOP_HORIZONTAL_POSITION = { left: 'lg:justify-start', center: 'lg:justify-center', right: 'lg:justify-end' } as const
 const IMAGE_POSITION = { center: 'object-center', top: 'object-top', bottom: 'object-bottom', left: 'object-left', right: 'object-right' } as const
-const DESKTOP_IMAGE_POSITION = { center: 'md:object-center', top: 'md:object-top', bottom: 'md:object-bottom', left: 'md:object-left', right: 'md:object-right' } as const
+const DESKTOP_IMAGE_POSITION = { center: 'lg:object-center', top: 'lg:object-top', bottom: 'lg:object-bottom', left: 'lg:object-left', right: 'lg:object-right' } as const
 const IMAGE_FIT = { cover: 'object-cover', contain: 'object-contain' } as const
-const DESKTOP_IMAGE_FIT = { cover: 'md:object-cover', contain: 'md:object-contain' } as const
+const DESKTOP_IMAGE_FIT = { cover: 'lg:object-cover', contain: 'lg:object-contain' } as const
 const TEXT_ALIGNMENT = { left: 'text-left', center: 'text-center', right: 'text-right' } as const
-const DESKTOP_TEXT_ALIGNMENT = { left: 'md:text-left', center: 'md:text-center', right: 'md:text-right' } as const
+const DESKTOP_TEXT_ALIGNMENT = { left: 'lg:text-left', center: 'lg:text-center', right: 'lg:text-right' } as const
 const responsiveVisibility = (mobileVisible?: boolean | null, desktopVisible?: boolean | null) => {
   if (mobileVisible === false && desktopVisible === false) return 'hidden'
   if (mobileVisible === false) return 'hidden md:block'
@@ -255,9 +255,9 @@ export function HeroSlider() {
         onClick={prevSlide}
         onMouseEnter={() => setIsAutoPlay(false)}
         onMouseLeave={() => setIsAutoPlay(true)}
-        className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-20 hidden w-12 h-12 md:flex md:w-16 md:h-16 bg-white/20 hover:bg-white/40 backdrop-blur-sm rounded-full items-center justify-center text-white transition-all opacity-0 group-hover:opacity-100"
+        className="absolute left-4 lg:left-8 top-1/2 -translate-y-1/2 z-20 hidden w-12 h-12 lg:flex lg:w-16 lg:h-16 bg-white/20 hover:bg-white/40 backdrop-blur-sm rounded-full items-center justify-center text-white transition-all opacity-0 group-hover:opacity-100"
       >
-        <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-6 h-6 lg:w-8 lg:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
       </button>
@@ -266,9 +266,9 @@ export function HeroSlider() {
         onClick={nextSlide}
         onMouseEnter={() => setIsAutoPlay(false)}
         onMouseLeave={() => setIsAutoPlay(true)}
-        className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-20 hidden w-12 h-12 md:flex md:w-16 md:h-16 bg-white/20 hover:bg-white/40 backdrop-blur-sm rounded-full items-center justify-center text-white transition-all opacity-0 group-hover:opacity-100"
+        className="absolute right-4 lg:right-8 top-1/2 -translate-y-1/2 z-20 hidden w-12 h-12 lg:flex lg:w-16 lg:h-16 bg-white/20 hover:bg-white/40 backdrop-blur-sm rounded-full items-center justify-center text-white transition-all opacity-0 group-hover:opacity-100"
       >
-        <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-6 h-6 lg:w-8 lg:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
       </button>

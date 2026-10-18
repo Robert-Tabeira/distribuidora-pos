@@ -66,13 +66,13 @@ interface BusinessSettings {
 }
 
 const TEXT_ALIGNMENT_CLASS = { left: 'text-left', center: 'text-center', right: 'text-right' } as const
-const DESKTOP_TEXT_ALIGNMENT_CLASS = { left: 'md:text-left', center: 'md:text-center', right: 'md:text-right' } as const
+const DESKTOP_TEXT_ALIGNMENT_CLASS = { left: 'lg:text-left', center: 'lg:text-center', right: 'lg:text-right' } as const
 const OBJECT_POSITION_CLASS = { center: 'object-center', top: 'object-top', bottom: 'object-bottom', left: 'object-left', right: 'object-right' } as const
-const DESKTOP_OBJECT_POSITION_CLASS = { center: 'md:object-center', top: 'md:object-top', bottom: 'md:object-bottom', left: 'md:object-left', right: 'md:object-right' } as const
+const DESKTOP_OBJECT_POSITION_CLASS = { center: 'lg:object-center', top: 'lg:object-top', bottom: 'lg:object-bottom', left: 'lg:object-left', right: 'lg:object-right' } as const
 const MOBILE_IMAGE_ORDER_CLASS = { first: 'order-1', last: 'order-2' } as const
 const MOBILE_TEXT_ORDER_CLASS = { first: 'order-2', last: 'order-1' } as const
-const DESKTOP_IMAGE_ORDER_CLASS = { left: 'md:order-1', right: 'md:order-2' } as const
-const DESKTOP_TEXT_ORDER_CLASS = { left: 'md:order-2', right: 'md:order-1' } as const
+const DESKTOP_IMAGE_ORDER_CLASS = { left: 'lg:order-1', right: 'lg:order-2' } as const
+const DESKTOP_TEXT_ORDER_CLASS = { left: 'lg:order-2', right: 'lg:order-1' } as const
 
 function responsiveTextClasses(settings: LandingSectionSettings, fallback?: 'left' | 'center' | 'right') {
   const mobileAlignment = settings.mobile_text_alignment && settings.mobile_text_alignment !== 'inherit' ? settings.mobile_text_alignment : fallback
@@ -139,9 +139,9 @@ function LandingBlockRenderer({
   if (section.block_type === 'banner') {
     return (
       <section data-heading-font={headingFont} data-body-font={bodyFont} style={{ ...fontStyle, backgroundColor: settings.background_color || '#fff7ed' }} className={`landing-section px-4 py-10 ${responsiveTextClasses(settings)}`}>
-        <div className={`mx-auto flex max-w-7xl flex-col overflow-hidden rounded-3xl bg-white/60 shadow-sm md:flex-row ${section.image_url ? 'items-stretch' : 'items-center text-center'}`}>
-          {section.image_url && <div className={`w-full md:w-2/5 ${mobileImageOrder} ${desktopImageOrder}`}><ResponsiveImage desktopSrc={section.image_url} mobileSrc={settings.mobile_image_url} alt={heading} settings={settings} className="max-h-72 min-h-48 w-full object-cover" /></div>}
-          <div className={`flex flex-1 flex-col items-center justify-center p-7 md:p-10 ${section.image_url ? `${mobileTextOrder} ${desktopTextOrder}` : ''}`}>
+        <div className={`mx-auto flex max-w-7xl flex-col overflow-hidden rounded-3xl bg-white/60 shadow-sm lg:flex-row ${section.image_url ? 'items-stretch' : 'items-center text-center'}`}>
+          {section.image_url && <div className={`w-full lg:w-2/5 ${mobileImageOrder} ${desktopImageOrder}`}><ResponsiveImage desktopSrc={section.image_url} mobileSrc={settings.mobile_image_url} alt={heading} settings={settings} className="max-h-72 min-h-48 w-full object-cover" /></div>}
+          <div className={`flex flex-1 flex-col items-center justify-center p-7 lg:p-10 ${section.image_url ? `${mobileTextOrder} ${desktopTextOrder}` : ''}`}>
             <h2 className="text-3xl font-black text-gray-900 sm:text-4xl">{heading}</h2>
             {section.subtitle && <p className="mt-2 text-lg font-semibold text-gray-700">{section.subtitle}</p>}
             {section.description && <p className="mt-3 max-w-2xl whitespace-pre-line text-gray-600">{section.description}</p>}
@@ -160,9 +160,9 @@ function LandingBlockRenderer({
           {section.subtitle && <p className={`mt-2 text-gray-600 ${responsiveTextClasses(settings, 'center')}`}>{section.subtitle}</p>}
           <div className="mt-8 grid gap-5 md:grid-cols-2">
             {(settings.cards || []).filter(card => card.title || card.image_url || card.description).map((card, index) => (
-              <article key={`${section.id}-${index}`} className={`flex flex-col overflow-hidden rounded-2xl border border-[#e7d9c8] bg-white shadow-sm ${settings.desktop_image_side ? 'md:flex-row' : ''}`}>
-                {card.image_url && <div className={`${mobileImageOrder} ${settings.desktop_image_side ? `${desktopImageOrder} md:w-2/5` : ''}`}><ResponsiveImage desktopSrc={card.image_url} mobileSrc={card.mobile_image_url} alt={card.title} settings={settings} className="h-56 w-full object-cover" /></div>}
-                <div className={`p-6 ${settings.desktop_image_side ? `${mobileTextOrder} ${desktopTextOrder} md:flex-1` : ''}`}>
+              <article key={`${section.id}-${index}`} className={`flex flex-col overflow-hidden rounded-2xl border border-[#e7d9c8] bg-white shadow-sm ${settings.desktop_image_side ? 'lg:flex-row' : ''}`}>
+                {card.image_url && <div className={`${mobileImageOrder} ${settings.desktop_image_side ? `${desktopImageOrder} lg:w-2/5` : ''}`}><ResponsiveImage desktopSrc={card.image_url} mobileSrc={card.mobile_image_url} alt={card.title} settings={settings} className="h-56 w-full object-cover" /></div>}
+                <div className={`p-6 ${settings.desktop_image_side ? `${mobileTextOrder} ${desktopTextOrder} lg:flex-1` : ''}`}>
                   <h3 className="text-xl font-bold text-gray-900">{card.title}</h3>
                   {card.description && <p className="mt-2 whitespace-pre-line leading-6 text-gray-600">{card.description}</p>}
                   {card.button_text && <Link href={card.link_url || '/catalogo'} className="mt-4 inline-flex font-semibold text-primary hover:underline">{card.button_text}<span className="ml-1" aria-hidden="true">→</span></Link>}
@@ -215,7 +215,7 @@ function LandingBlockRenderer({
             {section.subtitle && <p className="mt-2 text-gray-600">{section.subtitle}</p>}
             {section.description && <p className="mx-auto mt-3 max-w-3xl whitespace-pre-line text-gray-600">{section.description}</p>}
           </div>
-          <div className="grid overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.6fr)]">
+          <div className="grid overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.6fr)]">
             <div className="flex flex-col items-start justify-center p-6 sm:p-8">
               <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary"><Icon name="location" className="h-5 w-5" /></span>
               <h3 className="mt-4 font-bold text-gray-900">Encontranos</h3>
@@ -227,7 +227,7 @@ function LandingBlockRenderer({
             <iframe
               title={`Mapa de ubicación: ${address}`}
               src={embedUrl}
-              className="h-72 w-full border-0 md:h-full md:min-h-[360px]"
+              className="h-72 w-full border-0 lg:h-full lg:min-h-[360px]"
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
               allowFullScreen
@@ -283,7 +283,7 @@ function LandingBlockRenderer({
 
   return (
       <section data-heading-font={headingFont} data-body-font={bodyFont} style={fontStyle} className={`landing-section bg-[#fffdf9] px-4 py-14 ${responsiveTextClasses(settings)}`}>
-      <div className={`mx-auto grid max-w-6xl items-center gap-8 ${section.image_url ? 'md:grid-cols-2' : 'max-w-4xl text-center'}`}>
+      <div className={`mx-auto grid max-w-6xl items-center gap-8 ${section.image_url ? 'lg:grid-cols-2' : 'max-w-4xl text-center'}`}>
         {section.image_url && <div className={`${mobileImageOrder} ${desktopImageOrder}`}><ResponsiveImage desktopSrc={section.image_url} mobileSrc={settings.mobile_image_url} alt={heading} settings={settings} className="max-h-[28rem] min-h-56 w-full rounded-2xl object-cover" /></div>}
         <div className={`${section.image_url ? `${mobileTextOrder} ${desktopTextOrder}` : ''}`}><h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">{heading}</h2>{section.subtitle && <p className="mt-3 text-lg font-medium text-primary">{section.subtitle}</p>}{section.description && <p className="mt-4 whitespace-pre-line leading-7 text-gray-600">{section.description}</p>}</div>
       </div>
