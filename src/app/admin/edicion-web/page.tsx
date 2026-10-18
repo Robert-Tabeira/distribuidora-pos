@@ -53,6 +53,8 @@ interface FooterSettings {
   show_hours: boolean
   heading_font?: string
   body_font?: string
+  heading_weight?: string
+  body_weight?: string
 }
 
 const DEFAULT_FOOTER_SETTINGS: FooterSettings = {
@@ -67,7 +69,9 @@ const DEFAULT_FOOTER_SETTINGS: FooterSettings = {
   show_address: true,
   show_hours: true,
   heading_font: 'lora',
-  body_font: 'dm_sans'
+  body_font: 'dm_sans',
+  heading_weight: '700',
+  body_weight: '400'
 }
 
 interface MenuLink {
@@ -88,8 +92,9 @@ interface HeaderSettings {
   nav_uppercase: boolean
   nav_underline: boolean
   nav_letter_spacing: 'normal' | 'wide' | 'wider'
-  nav_font_weight: '500' | '600' | '700'
+  nav_font_weight: string
   font_family?: string
+  brand_font_weight?: number
 }
 
 interface Popup {
@@ -98,6 +103,7 @@ interface Popup {
   is_active: boolean
   content_mode: string
   font_family?: string | null
+  font_weight?: number | null
   title: string | null
   message: string | null
   image_url: string | null
@@ -142,6 +148,8 @@ interface HeroSlide {
   mobile_image_fit?: 'cover' | 'contain' | null
   title_font?: string | null
   body_font?: string | null
+  title_font_weight?: number | null
+  body_font_weight?: number | null
   title_size_desktop?: number | null
   title_size_mobile?: number | null
   body_size_desktop?: number | null
@@ -219,6 +227,8 @@ interface LandingSectionSettings {
   mobile_image_order?: 'first' | 'last'
   heading_font?: string
   body_font?: string
+  heading_weight?: string
+  body_weight?: string
 }
 
 interface AnnouncementMessage {
@@ -269,9 +279,18 @@ const BUILT_IN_FONT_OPTIONS = [
   { value: 'lora', label: 'Lora' },
   { value: 'georgia', label: 'Georgia' },
 ]
+const FONT_WEIGHT_OPTIONS = [
+  { value: '300', label: 'Liviano' },
+  { value: '400', label: 'Normal' },
+  { value: '500', label: 'Medio' },
+  { value: '600', label: 'Semi-negrita' },
+  { value: '700', label: 'Negrita' },
+  { value: '800', label: 'Extra-negrita' },
+  { value: '900', label: 'Negro' },
+]
 
 function defaultLandingSettings(type: LandingBlockType): LandingSectionSettings {
-  const typography: Pick<LandingSectionSettings, 'heading_font' | 'body_font'> = { heading_font: 'lora', body_font: 'dm_sans' }
+  const typography: Pick<LandingSectionSettings, 'heading_font' | 'body_font' | 'heading_weight' | 'body_weight'> = { heading_font: 'lora', body_font: 'dm_sans', heading_weight: '700', body_weight: '400' }
   if (type === 'banner') return { ...typography, button_text: 'Ver catálogo', button_url: '/catalogo', background_color: '#fff7ed' }
   if (type === 'feature_cards') return { cards: [
     { title: '', description: '', image_url: '', link_url: '', button_text: '' },
@@ -356,7 +375,7 @@ function SitePreviewPanel({
   barForm: { bg_color: string; text_color: string; font_family: string; font_size: string; font_weight: string; letter_spacing: string; animation: string }
   announcements: AnnouncementMessage[]
   logoForm: { site_name: string; site_tagline: string; logo_url: string; logo_transparent_url: string; logo_width: number; logo_sticky_width: number; use_logo_image: boolean }
-  headerForm: { bg_color: string; text_color: string; active_color: string; sticky: boolean; shadow: boolean; nav_uppercase: boolean; nav_underline: boolean; nav_letter_spacing: string; nav_font_weight: string; font_family?: string }
+  headerForm: { bg_color: string; text_color: string; active_color: string; sticky: boolean; shadow: boolean; nav_uppercase: boolean; nav_underline: boolean; nav_letter_spacing: string; nav_font_weight: string; font_family?: string; brand_font_weight?: number }
   menuLinks: MenuLink[]
   landingSections: LandingSection[]
   footerForm: FooterSettings
@@ -421,8 +440,8 @@ function SitePreviewPanel({
             <img src={logoForm.logo_url} alt={logoForm.site_name} className="h-6 object-contain" style={{ width: `${logoForm.logo_width}px` }} />
           ) : (
             <div className="min-w-0">
-              <p className="font-black text-xs truncate" style={{ color: headerForm.text_color, fontFamily: getSiteFontFamily(headerForm.font_family, customFonts) }}>{logoForm.site_name}</p>
-              <p className="text-[8px] font-semibold truncate" style={{ color: headerForm.text_color, opacity: 0.7 }}>{logoForm.site_tagline}</p>
+              <p className="font-black text-xs truncate" style={{ color: headerForm.text_color, fontFamily: getSiteFontFamily(headerForm.font_family, customFonts), fontWeight: headerForm.brand_font_weight }}>{logoForm.site_name}</p>
+              <p className="text-[8px] font-semibold truncate" style={{ color: headerForm.text_color, opacity: 0.7, fontWeight: headerForm.brand_font_weight }}>{logoForm.site_tagline}</p>
             </div>
           )}
           <div className="flex gap-2.5 flex-shrink-0">
@@ -621,7 +640,7 @@ export default function WebsiteEditionPage() {
   // Hero Slides
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([])
   const [editingHero, setEditingHero] = useState<HeroSlide | null>(null)
-  const [heroForm, setHeroForm] = useState({ internal_name: '', title: '', description: '', cta_text: '', cta_url: '', cta_bottom_offset: null as number | null, show_title_mobile: true, show_title_desktop: true, show_description_mobile: true, show_description_desktop: true, image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain' as 'cover' | 'contain', mobile_image_fit: 'contain' as 'cover' | 'contain', image_darkness: 18, title_font: 'lora', body_font: 'dm_sans', title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
+  const [heroForm, setHeroForm] = useState({ internal_name: '', title: '', description: '', cta_text: '', cta_url: '', cta_bottom_offset: null as number | null, show_title_mobile: true, show_title_desktop: true, show_description_mobile: true, show_description_desktop: true, image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain' as 'cover' | 'contain', mobile_image_fit: 'contain' as 'cover' | 'contain', image_darkness: 18, title_font: 'lora', body_font: 'dm_sans', title_font_weight: 900, body_font_weight: 400, title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
   const [savingHero, setSavingHero] = useState(false)
   const [heroAutoplaySeconds, setHeroAutoplaySeconds] = useState(5)
   const [savingHeroAutoplay, setSavingHeroAutoplay] = useState(false)
@@ -695,8 +714,9 @@ export default function WebsiteEditionPage() {
     nav_uppercase: true,
     nav_underline: true,
     nav_letter_spacing: 'wide' as 'normal' | 'wide' | 'wider',
-    nav_font_weight: '700' as '500' | '600' | '700',
-    font_family: 'dm_sans'
+    nav_font_weight: '700',
+    font_family: 'dm_sans',
+    brand_font_weight: 900
   })
   const [savingHeaderSettings, setSavingHeaderSettings] = useState(false)
 
@@ -712,6 +732,7 @@ export default function WebsiteEditionPage() {
     is_active: true,
     content_mode: 'builder',
     font_family: 'dm_sans',
+    font_weight: 400,
     title: '',
     message: '',
     image_url: '',
@@ -819,7 +840,8 @@ export default function WebsiteEditionPage() {
           nav_underline: h.nav_underline ?? true,
           nav_letter_spacing: h.nav_letter_spacing ?? 'wide',
           nav_font_weight: h.nav_font_weight ?? '700',
-          font_family: h.font_family || 'dm_sans'
+          font_family: h.font_family || 'dm_sans',
+          brand_font_weight: h.brand_font_weight || 900
         })
       }
       if (popupsRes.data) setPopups(popupsRes.data as Popup[])
@@ -1122,6 +1144,8 @@ export default function WebsiteEditionPage() {
             image_darkness: heroForm.image_darkness,
             title_font: heroForm.title_font,
             body_font: heroForm.body_font,
+            title_font_weight: heroForm.title_font_weight,
+            body_font_weight: heroForm.body_font_weight,
             title_size_desktop: heroForm.title_size_desktop,
             title_size_mobile: heroForm.title_size_mobile,
             body_size_desktop: heroForm.body_size_desktop,
@@ -1157,6 +1181,8 @@ export default function WebsiteEditionPage() {
                 image_darkness: heroForm.image_darkness,
                 title_font: heroForm.title_font,
                 body_font: heroForm.body_font,
+                title_font_weight: heroForm.title_font_weight,
+                body_font_weight: heroForm.body_font_weight,
                 title_size_desktop: heroForm.title_size_desktop,
                 title_size_mobile: heroForm.title_size_mobile,
                 body_size_desktop: heroForm.body_size_desktop,
@@ -1191,6 +1217,8 @@ export default function WebsiteEditionPage() {
             image_darkness: heroForm.image_darkness,
             title_font: heroForm.title_font,
             body_font: heroForm.body_font,
+            title_font_weight: heroForm.title_font_weight,
+            body_font_weight: heroForm.body_font_weight,
             title_size_desktop: heroForm.title_size_desktop,
             title_size_mobile: heroForm.title_size_mobile,
             body_size_desktop: heroForm.body_size_desktop,
@@ -1255,6 +1283,8 @@ export default function WebsiteEditionPage() {
         image_darkness: hero.image_darkness ?? 18,
         title_font: hero.title_font || 'lora',
         body_font: hero.body_font || 'dm_sans',
+        title_font_weight: hero.title_font_weight ?? 900,
+        body_font_weight: hero.body_font_weight ?? 400,
         title_size_desktop: hero.title_size_desktop || 72,
         title_size_mobile: hero.title_size_mobile || 48,
         body_size_desktop: hero.body_size_desktop || 24,
@@ -1264,7 +1294,7 @@ export default function WebsiteEditionPage() {
       setMobileHeroPreview(hero.mobile_image_url || '')
     } else {
       setEditingHero(null)
-      setHeroForm({ internal_name: '', title: '', description: '', cta_text: '', cta_url: '', cta_bottom_offset: null, show_title_mobile: true, show_title_desktop: true, show_description_mobile: true, show_description_desktop: true, image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain', mobile_image_fit: 'contain', image_darkness: 18, title_font: 'lora', body_font: 'dm_sans', title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
+      setHeroForm({ internal_name: '', title: '', description: '', cta_text: '', cta_url: '', cta_bottom_offset: null, show_title_mobile: true, show_title_desktop: true, show_description_mobile: true, show_description_desktop: true, image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain', mobile_image_fit: 'contain', image_darkness: 18, title_font: 'lora', body_font: 'dm_sans', title_font_weight: 900, body_font_weight: 400, title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
       setImagePreview('')
       setMobileHeroPreview('')
     }
@@ -1813,6 +1843,7 @@ export default function WebsiteEditionPage() {
         is_active: popup.is_active,
         content_mode: popup.content_mode,
         font_family: popup.font_family || 'dm_sans',
+        font_weight: popup.font_weight || 400,
         title: popup.title || '',
         message: popup.message || '',
         image_url: popup.image_url || '',
@@ -1843,7 +1874,7 @@ export default function WebsiteEditionPage() {
     } else {
       setEditingPopup(null)
       setPopupForm({
-        name: '', is_active: true, content_mode: 'builder', font_family: 'dm_sans',
+        name: '', is_active: true, content_mode: 'builder', font_family: 'dm_sans', font_weight: 400,
         title: '', message: '', image_url: '', cta_text: '', cta_url: '',
         bg_color: '#ffffff', text_color: '#111827', button_bg_color: '#2563eb', button_text_color: '#ffffff',
         clickable_image_url: '', clickable_image_link: '',
@@ -2356,7 +2387,7 @@ export default function WebsiteEditionPage() {
               </div>
             </CollapsibleCard>
 
-            <CollapsibleCard icon="type" title="Tipografía" subtitle="Fuente, tamaño y grosor">
+            <CollapsibleCard icon="type" title="Tipografía" subtitle="Fuente, tamaño y grosor" defaultOpen>
               <div className="grid sm:grid-cols-2 gap-5 mb-5">
                 <div>
                   <label className="block text-sm font-semibold text-text-muted mb-2">Tipografía</label>
@@ -2367,7 +2398,8 @@ export default function WebsiteEditionPage() {
                   >
                     <option value="default">Predeterminada (DM Sans)</option>
                     <option value="fira_sans">Fira Sans</option>
-                    <option value="serif">Serif</option>
+                    <option value="lora">Lora</option>
+                    <option value="georgia">Georgia</option>
                     <option value="mono">Monoespaciada</option>
                     {customFonts.map(font => <option key={font.id} value={`custom:${font.id}`}>{font.name} (personalizada)</option>)}
                   </select>
@@ -2380,10 +2412,7 @@ export default function WebsiteEditionPage() {
                     onChange={(e) => setBarForm({ ...barForm, font_weight: e.target.value })}
                     className="input"
                   >
-                    <option value="400">Normal</option>
-                    <option value="500">Medio</option>
-                    <option value="600">Semi-negrita</option>
-                    <option value="700">Negrita</option>
+                    {FONT_WEIGHT_OPTIONS.map(weight => <option key={weight.value} value={weight.value}>{weight.label}</option>)}
                   </select>
                 </div>
               </div>
@@ -2563,8 +2592,8 @@ export default function WebsiteEditionPage() {
                     <img src={logoForm.logo_url} alt={logoForm.site_name} className="h-8 object-contain" />
                   ) : (
                     <div>
-                      <p className="font-black text-lg" style={{ color: headerForm.text_color }}>{logoForm.site_name}</p>
-                      <p className="text-[10px] font-semibold" style={{ color: headerForm.text_color, opacity: 0.7 }}>{logoForm.site_tagline}</p>
+                      <p className="font-black text-lg" style={{ color: headerForm.text_color, fontWeight: headerForm.brand_font_weight }}>{logoForm.site_name}</p>
+                      <p className="text-[10px] font-semibold" style={{ color: headerForm.text_color, opacity: 0.7, fontWeight: headerForm.brand_font_weight }}>{logoForm.site_tagline}</p>
                     </div>
                   )}
                   <div className="hidden sm:flex gap-5">
@@ -2753,6 +2782,7 @@ export default function WebsiteEditionPage() {
                 icon="type"
                 title="Texto del menú"
                 subtitle={`${headerForm.nav_uppercase ? 'Mayúsculas' : 'Normal'}${headerForm.nav_underline ? ', subrayado' : ''}`}
+                defaultOpen
               >
                 <div className="flex flex-wrap gap-6 mb-6">
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -2776,7 +2806,7 @@ export default function WebsiteEditionPage() {
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-5">
-                  <label className="block text-sm font-semibold text-text-muted sm:col-span-2">Tipografía del header y menú
+                  <label className="block text-sm font-semibold text-text-muted sm:col-span-2">Familia tipográfica del header y menú
                     <select className="input mt-2" value={headerForm.font_family} onChange={e => setHeaderForm({ ...headerForm, font_family: e.target.value })}>
                       {BUILT_IN_FONT_OPTIONS.map(font => <option key={font.value} value={font.value}>{font.label}</option>)}
                       {customFonts.map(font => <option key={font.id} value={`custom:${font.id}`}>{font.name} (personalizada)</option>)}
@@ -2796,18 +2826,21 @@ export default function WebsiteEditionPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-text-muted mb-2">Grosor</label>
+                    <label className="block text-sm font-semibold text-text-muted mb-2">Grosor de los enlaces del menú</label>
                     <select
                       value={headerForm.nav_font_weight}
-                      onChange={(e) => setHeaderForm({ ...headerForm, nav_font_weight: e.target.value as typeof headerForm.nav_font_weight })}
+                      onChange={(e) => setHeaderForm({ ...headerForm, nav_font_weight: e.target.value })}
                       className="input"
                     >
-                      <option value="500">Medio</option>
-                      <option value="600">Semi-negrita</option>
-                      <option value="700">Negrita</option>
+                      {FONT_WEIGHT_OPTIONS.map(weight => <option key={weight.value} value={weight.value}>{weight.label}</option>)}
                     </select>
                   </div>
                 </div>
+                <label className="mt-5 block max-w-sm text-sm font-semibold text-text-muted">Grosor del nombre del sitio
+                  <select className="input mt-2" value={headerForm.brand_font_weight} onChange={e => setHeaderForm({ ...headerForm, brand_font_weight: Number(e.target.value) })}>
+                    {FONT_WEIGHT_OPTIONS.map(weight => <option key={weight.value} value={weight.value}>{weight.label}</option>)}
+                  </select>
+                </label>
               </CollapsibleCard>
 
               <button onClick={saveHeaderSettings} disabled={savingHeaderSettings} className="btn btn-primary w-full max-w-2xl">
@@ -3154,16 +3187,21 @@ export default function WebsiteEditionPage() {
 
             {/* DISEÑO (solo aplica al modo Constructor) */}
             {popupForm.content_mode === 'builder' && (
-              <CollapsibleCard icon="palette" title="Diseño" subtitle="Colores del pop-up y del botón">
+              <CollapsibleCard icon="palette" title="Diseño" subtitle="Colores, tipografía y peso del texto" defaultOpen>
                 <div className="grid sm:grid-cols-2 gap-5">
                   <ColorPicker label="Fondo" value={popupForm.bg_color} onChange={(hex) => setPopupForm({ ...popupForm, bg_color: hex })} palette={palette} />
                   <ColorPicker label="Texto" value={popupForm.text_color} onChange={(hex) => setPopupForm({ ...popupForm, text_color: hex })} palette={palette} />
                   <ColorPicker label="Fondo del botón" value={popupForm.button_bg_color} onChange={(hex) => setPopupForm({ ...popupForm, button_bg_color: hex })} palette={palette} />
                   <ColorPicker label="Texto del botón" value={popupForm.button_text_color} onChange={(hex) => setPopupForm({ ...popupForm, button_text_color: hex })} palette={palette} />
-                  <label className="block text-sm font-semibold text-text-muted sm:col-span-2">Tipografía del pop-up
+                  <label className="block text-sm font-semibold text-text-muted sm:col-span-2">Familia tipográfica del pop-up
                     <select className="input mt-2" value={popupForm.font_family} onChange={e => setPopupForm({ ...popupForm, font_family: e.target.value })}>
                       {BUILT_IN_FONT_OPTIONS.map(font => <option key={font.value} value={font.value}>{font.label}</option>)}
                       {customFonts.map(font => <option key={font.id} value={`custom:${font.id}`}>{font.name} (personalizada)</option>)}
+                    </select>
+                  </label>
+                  <label className="block text-sm font-semibold text-text-muted sm:col-span-2">Grosor del texto del pop-up
+                    <select className="input mt-2" value={popupForm.font_weight} onChange={e => setPopupForm({ ...popupForm, font_weight: Number(e.target.value) })}>
+                      {FONT_WEIGHT_OPTIONS.map(weight => <option key={weight.value} value={weight.value}>{weight.label}</option>)}
                     </select>
                   </label>
                 </div>
@@ -3427,10 +3465,20 @@ export default function WebsiteEditionPage() {
                   {customFonts.map(font => <option key={font.id} value={`custom:${font.id}`}>{font.name} (personalizada)</option>)}
                 </select>
               </label>
+              <label className="block text-sm font-medium text-text-muted">Grosor de títulos
+                <select className="input mt-1" value={footerForm.heading_weight || '700'} onChange={e => setFooterForm({ ...footerForm, heading_weight: e.target.value })}>
+                  {FONT_WEIGHT_OPTIONS.map(weight => <option key={weight.value} value={weight.value}>{weight.label}</option>)}
+                </select>
+              </label>
               <label className="block text-sm font-medium text-text-muted">Texto y descripciones
                 <select className="input mt-1" value={footerForm.body_font || 'dm_sans'} onChange={e => setFooterForm({ ...footerForm, body_font: e.target.value })}>
                   {BUILT_IN_FONT_OPTIONS.map(font => <option key={font.value} value={font.value}>{font.label}</option>)}
                   {customFonts.map(font => <option key={font.id} value={`custom:${font.id}`}>{font.name} (personalizada)</option>)}
+                </select>
+              </label>
+              <label className="block text-sm font-medium text-text-muted">Grosor del texto
+                <select className="input mt-1" value={footerForm.body_weight || '400'} onChange={e => setFooterForm({ ...footerForm, body_weight: e.target.value })}>
+                  {FONT_WEIGHT_OPTIONS.map(weight => <option key={weight.value} value={weight.value}>{weight.label}</option>)}
                 </select>
               </label>
             </div>
@@ -3644,6 +3692,16 @@ export default function WebsiteEditionPage() {
                     <option value="dm_sans">DM Sans (recomendada)</option><option value="fira_sans">Fira Sans</option><option value="lora">Lora</option><option value="georgia">Georgia</option>{customFonts.map(font => <option key={font.id} value={`custom:${font.id}`}>{font.name} (personalizada)</option>)}
                   </select>
                 </label>
+                <label className="block text-sm font-medium text-text-muted">Grosor del título
+                  <select className="input mt-1" value={heroForm.title_font_weight} onChange={e => setHeroForm(current => ({ ...current, title_font_weight: Number(e.target.value) }))}>
+                    {FONT_WEIGHT_OPTIONS.map(weight => <option key={weight.value} value={weight.value}>{weight.label}</option>)}
+                  </select>
+                </label>
+                <label className="block text-sm font-medium text-text-muted">Grosor de la descripción y el botón
+                  <select className="input mt-1" value={heroForm.body_font_weight} onChange={e => setHeroForm(current => ({ ...current, body_font_weight: Number(e.target.value) }))}>
+                    {FONT_WEIGHT_OPTIONS.map(weight => <option key={weight.value} value={weight.value}>{weight.label}</option>)}
+                  </select>
+                </label>
               </div>
 
               <div className="grid gap-4 rounded-xl border border-border p-4 sm:grid-cols-2">
@@ -3816,9 +3874,19 @@ export default function WebsiteEditionPage() {
                     <option value="inherit">Estilo actual</option><option value="lora">Lora (recomendada, cálida)</option><option value="dm_sans">DM Sans</option><option value="fira_sans">Fira Sans</option><option value="georgia">Georgia</option>{customFonts.map(font => <option key={font.id} value={`custom:${font.id}`}>{font.name} (personalizada)</option>)}
                   </select>
                 </label>
+                <label className="block text-sm font-medium text-text-muted">Grosor de títulos
+                  <select className="input mt-1" value={sectionForm.settings.heading_weight || '700'} onChange={e => updateLandingSettings({ heading_weight: e.target.value })}>
+                    {FONT_WEIGHT_OPTIONS.map(weight => <option key={weight.value} value={weight.value}>{weight.label}</option>)}
+                  </select>
+                </label>
                 <label className="block text-sm font-medium text-text-muted">Texto y descripciones
                   <select className="input mt-1" value={sectionForm.settings.body_font || 'inherit'} onChange={e => updateLandingSettings({ body_font: e.target.value as LandingSectionSettings['body_font'] })}>
                     <option value="inherit">Estilo actual</option><option value="dm_sans">DM Sans (recomendada, legible)</option><option value="fira_sans">Fira Sans</option><option value="lora">Lora</option><option value="georgia">Georgia</option>{customFonts.map(font => <option key={font.id} value={`custom:${font.id}`}>{font.name} (personalizada)</option>)}
+                  </select>
+                </label>
+                <label className="block text-sm font-medium text-text-muted">Grosor del texto
+                  <select className="input mt-1" value={sectionForm.settings.body_weight || '400'} onChange={e => updateLandingSettings({ body_weight: e.target.value })}>
+                    {FONT_WEIGHT_OPTIONS.map(weight => <option key={weight.value} value={weight.value}>{weight.label}</option>)}
                   </select>
                 </label>
                 <p className="text-xs text-text-muted sm:col-span-2">Sugerencia para el estilo del local: Lora en títulos y DM Sans en textos.</p>

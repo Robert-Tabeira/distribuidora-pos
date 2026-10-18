@@ -27,8 +27,8 @@
 }
 
 /* Tipografías seleccionables para los bloques personalizados de la landing. */
-.landing-section[data-body-font] { font-family: var(--landing-body-font, inherit); }
-.landing-section[data-heading-font] :is(h1, h2, h3) { font-family: var(--landing-heading-font, inherit); }
+.landing-section[data-body-font] { font-family: var(--landing-body-font, inherit); font-weight: var(--landing-body-weight, 400); }
+.landing-section[data-heading-font] :is(h1, h2, h3) { font-family: var(--landing-heading-font, inherit); font-weight: var(--landing-heading-weight, 700); }
 
 .hero-title { font-size: var(--hero-title-mobile, 48px); }
 .hero-description { font-size: var(--hero-body-mobile, 20px); }

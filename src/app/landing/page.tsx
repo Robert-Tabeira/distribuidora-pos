@@ -40,6 +40,8 @@ interface LandingSectionSettings {
   mobile_image_order?: 'first' | 'last'
   heading_font?: string
   body_font?: string
+  heading_weight?: string
+  body_weight?: string
 }
 interface LandingSection {
   id: string
@@ -113,6 +115,8 @@ function LandingBlockRenderer({
   const fontStyle = {
     '--landing-heading-font': getSiteFontFamily(headingFont),
     '--landing-body-font': getSiteFontFamily(bodyFont),
+    '--landing-heading-weight': settings.heading_weight || '700',
+    '--landing-body-weight': settings.body_weight || '400',
   } as CSSProperties
 
   if (section.block_type === 'categories') {

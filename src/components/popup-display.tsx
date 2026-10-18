@@ -13,6 +13,7 @@ interface Popup extends PopupFrameStyle {
   order_position: number
   content_mode: 'builder' | 'image'
   font_family?: string | null
+  font_weight?: number | null
   title: string | null
   message: string | null
   image_url: string | null
@@ -125,7 +126,7 @@ export default function PopupDisplay() {
       onClick={close}
     >
       {activePopup.content_mode === 'image' ? (
-        <div className="relative max-w-md w-full" onClick={e => e.stopPropagation()} style={{ fontFamily: getSiteFontFamily(activePopup.font_family) }}>
+        <div className="relative max-w-md w-full" onClick={e => e.stopPropagation()} style={{ fontFamily: getSiteFontFamily(activePopup.font_family), fontWeight: activePopup.font_weight || '400' }}>
           <button
             onClick={close}
             className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-white shadow-lg flex items-center justify-center font-bold text-gray-700 hover:bg-gray-100 z-20"
@@ -145,7 +146,11 @@ export default function PopupDisplay() {
           </PopupFrame>
         </div>
       ) : (
-        <div className="relative max-w-md w-full" onClick={e => e.stopPropagation()}>
+        <div
+          className="relative max-w-md w-full"
+          onClick={e => e.stopPropagation()}
+          style={{ fontFamily: getSiteFontFamily(activePopup.font_family), fontWeight: activePopup.font_weight || 400 }}
+        >
           <PopupFrame frame={activePopup} backgroundColor={activePopup.bg_color} className="p-8 text-center shadow-2xl">
             <button
               onClick={close}
@@ -159,14 +164,14 @@ export default function PopupDisplay() {
               {activePopup.image_url && (
                 <img src={activePopup.image_url} alt="" className="w-full h-auto rounded-lg mb-4" />
               )}
-              {activePopup.title && <h3 className="text-2xl font-black mb-3">{activePopup.title}</h3>}
+              {activePopup.title && <h3 className="text-2xl font-black mb-3" style={{ fontWeight: activePopup.font_weight || '400' }}>{activePopup.title}</h3>}
               {activePopup.message && <p className="mb-6 opacity-90">{activePopup.message}</p>}
 
               {activePopup.cta_text && activePopup.cta_url && (
                 <a
                   href={activePopup.cta_url}
                   className="inline-block px-6 py-3 rounded-xl font-bold hover:opacity-90 transition-opacity"
-                  style={{ backgroundColor: activePopup.button_bg_color, color: activePopup.button_text_color }}
+                  style={{ backgroundColor: activePopup.button_bg_color, color: activePopup.button_text_color, fontWeight: activePopup.font_weight || '400' }}
                 >
                   {activePopup.cta_text}
                 </a>

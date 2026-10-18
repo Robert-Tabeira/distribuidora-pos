@@ -43,8 +43,9 @@ interface HeaderSettings {
   nav_uppercase: boolean
   nav_underline: boolean
   nav_letter_spacing: 'normal' | 'wide' | 'wider'
-  nav_font_weight: '500' | '600' | '700'
+  nav_font_weight: string
   font_family?: string
+  brand_font_weight?: number
 }
 
 const DEFAULT_HEADER_SETTINGS: HeaderSettings = {
@@ -57,7 +58,8 @@ const DEFAULT_HEADER_SETTINGS: HeaderSettings = {
   nav_underline: true,
   nav_letter_spacing: 'wide',
   nav_font_weight: '700',
-  font_family: 'dm_sans'
+  font_family: 'dm_sans',
+  brand_font_weight: 900
 }
 
 const LETTER_SPACING_MAP: Record<string, string> = { normal: 'normal', wide: '0.025em', wider: '0.05em' }
@@ -182,7 +184,7 @@ export function Header() {
               <div className="flex min-w-0 flex-col items-center text-center lg:items-start lg:text-left">
                 <h1
                   className={`font-black transition-all duration-300 truncate ${isScrolled ? 'text-lg' : 'text-2xl'}`}
-                  style={{ color: headerTextColor }}
+                  style={{ color: headerTextColor, fontWeight: headerSettings.brand_font_weight || 900 }}
                 >
                   {siteName}
                 </h1>
