@@ -78,10 +78,12 @@ export function HeroSlider() {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isAutoPlay, setIsAutoPlay] = useState(true)
   const [loading, setLoading] = useState(true)
+  const [autoPlaySeconds, setAutoPlaySeconds] = useState(5)
   const touchStartX = useRef<number | null>(null)
 
   useEffect(() => {
     loadSlides()
+    loadAutoPlaySettings()
     
     // Recargar cada 5 segundos para ver cambios en tiempo real
     const interval = setInterval(() => {
@@ -90,6 +92,21 @@ export function HeroSlider() {
 
     return () => clearInterval(interval)
   }, [])
+
+  async function loadAutoPlaySettings() {
+    try {
+      const { data, error } = await supabase
+        .from('website_settings')
+        .select('hero_autoplay_seconds')
+        .single()
+      if (error) throw error
+      if (data?.hero_autoplay_seconds) {
+        setAutoPlaySeconds(Math.min(15, Math.max(2, data.hero_autoplay_seconds)))
+      }
+    } catch (error) {
+      console.error('Error loading hero autoplay interval:', error)
+    }
+  }
 
   async function loadSlides() {
     try {
@@ -122,24 +139,21 @@ export function HeroSlider() {
 
     const interval = setInterval(() => {
       setCurrentSlide(prev => (prev + 1) % slides.length)
-    }, 5000)
+    }, autoPlaySeconds * 1000)
 
     return () => clearInterval(interval)
-  }, [isAutoPlay, slides.length])
+  }, [isAutoPlay, slides.length, autoPlaySeconds])
 
   const goToSlide = (index: number) => {
     setCurrentSlide(index)
-    setIsAutoPlay(false)
   }
 
   const nextSlide = () => {
     setCurrentSlide(prev => (prev + 1) % slides.length)
-    setIsAutoPlay(false)
   }
 
   const prevSlide = () => {
     setCurrentSlide(prev => (prev - 1 + slides.length) % slides.length)
-    setIsAutoPlay(false)
   }
 
   if (loading || slides.length === 0) {
@@ -165,7 +179,6 @@ export function HeroSlider() {
         const distance = event.changedTouches[0].clientX - startX
         if (Math.abs(distance) < 50) return
         setCurrentSlide(index => (index + (distance < 0 ? 1 : -1) + slides.length) % slides.length)
-        setIsAutoPlay(false)
       }}
     >
       <picture className="absolute inset-0 block">

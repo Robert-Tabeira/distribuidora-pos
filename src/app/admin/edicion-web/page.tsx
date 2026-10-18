@@ -16,6 +16,7 @@ interface ColorSwatch {
 
 interface WebsiteSettings {
   id: string
+  hero_autoplay_seconds?: number
   phone_number: string | null
   email: string | null
   address: string | null
@@ -600,6 +601,9 @@ export default function WebsiteEditionPage() {
   const [editingHero, setEditingHero] = useState<HeroSlide | null>(null)
   const [heroForm, setHeroForm] = useState({ title: '', description: '', cta_text: '', cta_url: '', image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain' as 'cover' | 'contain', mobile_image_fit: 'contain' as 'cover' | 'contain', image_darkness: 18, title_font: 'lora', body_font: 'dm_sans', title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
   const [savingHero, setSavingHero] = useState(false)
+  const [heroAutoplaySeconds, setHeroAutoplaySeconds] = useState(5)
+  const [savingHeroAutoplay, setSavingHeroAutoplay] = useState(false)
+  const [heroAutoplayMessage, setHeroAutoplayMessage] = useState<string | null>(null)
   const [showHeroModal, setShowHeroModal] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [imagePreview, setImagePreview] = useState('')
@@ -743,6 +747,7 @@ export default function WebsiteEditionPage() {
 
       if (settingsRes.data) {
         setSettings(settingsRes.data as WebsiteSettings)
+        setHeroAutoplaySeconds(settingsRes.data.hero_autoplay_seconds ?? 5)
         setFooterForm({ ...DEFAULT_FOOTER_SETTINGS, ...(settingsRes.data.footer_settings || {}) })
         setSettingsForm({
           phone_number: settingsRes.data.phone_number || '',
@@ -924,6 +929,27 @@ export default function WebsiteEditionPage() {
       console.error('Error saving settings:', error)
     } finally {
       setSavingSettings(false)
+    }
+  }
+
+  async function saveHeroAutoplaySettings() {
+    if (!settings) return
+    setSavingHeroAutoplay(true)
+    setHeroAutoplayMessage(null)
+    try {
+      const { error } = await supabase
+        .from('website_settings')
+        .update({ hero_autoplay_seconds: heroAutoplaySeconds, updated_at: new Date().toISOString() })
+        .eq('id', settings.id)
+      if (error) throw error
+      setSettings({ ...settings, hero_autoplay_seconds: heroAutoplaySeconds })
+      setHeroAutoplayMessage('Intervalo guardado. Los cambios se aplican al recargar la landing.')
+    } catch (error) {
+      console.error('Error guardando intervalo del hero:', error)
+      const details = error instanceof Error ? error.message : JSON.stringify(error)
+      setHeroAutoplayMessage(`No se pudo guardar el intervalo: ${details}`)
+    } finally {
+      setSavingHeroAutoplay(false)
     }
   }
 
@@ -2654,6 +2680,21 @@ export default function WebsiteEditionPage() {
               >
                 + Nuevo Slide
               </button>
+            </div>
+
+            <div className="card mb-5">
+              <h4 className="font-semibold text-text">Rotación automática</h4>
+              <p className="mt-1 text-sm text-text-muted">Elegí cada cuántos segundos se muestra el siguiente hero.</p>
+              <label className="mt-4 block max-w-xl text-sm font-medium text-text-muted">
+                <span className="flex items-center justify-between"><span>Tiempo entre slides</span><strong className="text-text">{heroAutoplaySeconds} segundos</strong></span>
+                <input type="range" min="2" max="15" step="1" value={heroAutoplaySeconds} onChange={e => setHeroAutoplaySeconds(Number(e.target.value))} className="mt-2 w-full" />
+              </label>
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <button type="button" onClick={saveHeroAutoplaySettings} disabled={savingHeroAutoplay || !settings} className="btn btn-primary">
+                  {savingHeroAutoplay ? 'Guardando…' : 'Guardar intervalo'}
+                </button>
+                {heroAutoplayMessage && <p role="status" className="text-sm text-text-muted">{heroAutoplayMessage}</p>}
+              </div>
             </div>
 
             <div className="space-y-4">
