@@ -597,7 +597,7 @@ export default function WebsiteEditionPage() {
   // Hero Slides
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([])
   const [editingHero, setEditingHero] = useState<HeroSlide | null>(null)
-  const [heroForm, setHeroForm] = useState({ title: '', description: '', cta_text: '', cta_url: '', image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain', mobile_image_fit: 'contain', title_font: 'lora', body_font: 'dm_sans', title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
+  const [heroForm, setHeroForm] = useState({ title: '', description: '', cta_text: '', cta_url: '', image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain' as 'cover' | 'contain', mobile_image_fit: 'contain' as 'cover' | 'contain', title_font: 'lora', body_font: 'dm_sans', title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
   const [savingHero, setSavingHero] = useState(false)
   const [showHeroModal, setShowHeroModal] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -3337,7 +3337,7 @@ export default function WebsiteEditionPage() {
                   {(['desktop', 'mobile'] as const).map(device => {
                     const key = device === 'desktop' ? 'desktop_image_fit' : 'mobile_image_fit'
                     return <label key={key} className="block text-sm font-semibold text-text-muted">Ajuste de imagen en {device === 'desktop' ? 'escritorio' : 'móvil'}
-                      <select className="input mt-2" value={heroForm[key]} onChange={e => setHeroForm(current => ({ ...current, [key]: e.target.value }))}>
+                      <select className="input mt-2" value={heroForm[key]} onChange={e => setHeroForm(current => ({ ...current, [key]: e.target.value as 'cover' | 'contain' }))}>
                         <option value="contain">Mostrar completa (sin recortar)</option><option value="cover">Llenar el área (puede recortar)</option>
                       </select>
                     </label>
