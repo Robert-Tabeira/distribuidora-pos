@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type CSSProperties } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
@@ -20,6 +20,10 @@ interface HeroSlide {
   mobile_image_position?: 'center' | 'top' | 'bottom' | 'left' | 'right' | null
   title_font?: 'lora' | 'dm_sans' | 'georgia' | null
   body_font?: 'lora' | 'dm_sans' | 'georgia' | null
+  title_size_desktop?: number | null
+  title_size_mobile?: number | null
+  body_size_desktop?: number | null
+  body_size_mobile?: number | null
 }
 
 const HORIZONTAL_POSITION = { left: 'justify-start', center: 'justify-center', right: 'justify-end' } as const
@@ -159,11 +163,11 @@ export function HeroSlider() {
       <div className="pointer-events-none absolute inset-0">
         <div className={`mx-auto flex h-full w-full max-w-7xl items-center px-4 sm:px-6 ${HORIZONTAL_POSITION[currentSlideData.mobile_text_position || 'left']} ${DESKTOP_HORIZONTAL_POSITION[currentSlideData.desktop_text_position || 'left']}`}>
           <div className={`w-full max-w-2xl ${TEXT_ALIGNMENT[currentSlideData.mobile_text_position || 'left']} ${DESKTOP_TEXT_ALIGNMENT[currentSlideData.desktop_text_position || 'left']}`}>
-            <h1 style={{ fontFamily: HERO_FONT_FAMILY[currentSlideData.title_font || 'lora'] }} className="text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-6 animate-fade-in drop-shadow-lg">
+            <h1 style={{ fontFamily: HERO_FONT_FAMILY[currentSlideData.title_font || 'lora'], '--hero-title-mobile': `${currentSlideData.title_size_mobile || 48}px`, '--hero-title-desktop': `${currentSlideData.title_size_desktop || 72}px` } as CSSProperties} className="hero-title font-black text-white leading-tight mb-6 animate-fade-in drop-shadow-lg">
               {currentSlideData.title}
             </h1>
             {currentSlideData.description && (
-              <p style={{ fontFamily: HERO_FONT_FAMILY[currentSlideData.body_font || 'dm_sans'] }} className="text-xl md:text-2xl text-white/95 mb-8 leading-relaxed animate-fade-in-delay drop-shadow-md">
+              <p style={{ fontFamily: HERO_FONT_FAMILY[currentSlideData.body_font || 'dm_sans'], '--hero-body-mobile': `${currentSlideData.body_size_mobile || 20}px`, '--hero-body-desktop': `${currentSlideData.body_size_desktop || 24}px` } as CSSProperties} className="hero-description text-white/95 mb-8 leading-relaxed animate-fade-in-delay drop-shadow-md">
                 {currentSlideData.description}
               </p>
             )}

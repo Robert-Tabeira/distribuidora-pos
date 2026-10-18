@@ -129,6 +129,10 @@ interface HeroSlide {
   mobile_image_position?: string | null
   title_font?: string | null
   body_font?: string | null
+  title_size_desktop?: number | null
+  title_size_mobile?: number | null
+  body_size_desktop?: number | null
+  body_size_mobile?: number | null
   title: string
   description: string | null
   cta_text: string | null
@@ -591,7 +595,7 @@ export default function WebsiteEditionPage() {
   // Hero Slides
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([])
   const [editingHero, setEditingHero] = useState<HeroSlide | null>(null)
-  const [heroForm, setHeroForm] = useState({ title: '', description: '', cta_text: '', cta_url: '', image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', title_font: 'lora', body_font: 'dm_sans' })
+  const [heroForm, setHeroForm] = useState({ title: '', description: '', cta_text: '', cta_url: '', image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', title_font: 'lora', body_font: 'dm_sans', title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
   const [savingHero, setSavingHero] = useState(false)
   const [showHeroModal, setShowHeroModal] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -997,6 +1001,10 @@ export default function WebsiteEditionPage() {
             mobile_image_position: heroForm.mobile_image_position,
             title_font: heroForm.title_font,
             body_font: heroForm.body_font,
+            title_size_desktop: heroForm.title_size_desktop,
+            title_size_mobile: heroForm.title_size_mobile,
+            body_size_desktop: heroForm.body_size_desktop,
+            body_size_mobile: heroForm.body_size_mobile,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingHero.id)
@@ -1018,7 +1026,11 @@ export default function WebsiteEditionPage() {
                 desktop_image_position: heroForm.desktop_image_position,
                 mobile_image_position: heroForm.mobile_image_position,
                 title_font: heroForm.title_font,
-                body_font: heroForm.body_font
+                body_font: heroForm.body_font,
+                title_size_desktop: heroForm.title_size_desktop,
+                title_size_mobile: heroForm.title_size_mobile,
+                body_size_desktop: heroForm.body_size_desktop,
+                body_size_mobile: heroForm.body_size_mobile
               }
             : s
         ))
@@ -1040,6 +1052,10 @@ export default function WebsiteEditionPage() {
             mobile_image_position: heroForm.mobile_image_position,
             title_font: heroForm.title_font,
             body_font: heroForm.body_font,
+            title_size_desktop: heroForm.title_size_desktop,
+            title_size_mobile: heroForm.title_size_mobile,
+            body_size_desktop: heroForm.body_size_desktop,
+            body_size_mobile: heroForm.body_size_mobile,
             order_position: maxOrder + 1,
             is_active: true
           }])
@@ -1056,7 +1072,7 @@ export default function WebsiteEditionPage() {
     } catch (error) {
       console.error('Error saving hero:', error)
       const details = error instanceof Error ? error.message : JSON.stringify(error)
-      alert(`❌ Error al guardar el slide: ${details}. Si el error menciona una columna nueva, aplicá primero la migración responsive del hero en Supabase.`)
+      alert(`❌ Error al guardar el slide: ${details}. Si el error menciona columnas de tamaño, aplicá primero la migración de tamaño de texto del hero en Supabase.`)
     } finally {
       setSavingHero(false)
     }
@@ -1090,13 +1106,17 @@ export default function WebsiteEditionPage() {
         desktop_image_position: hero.desktop_image_position || 'center',
         mobile_image_position: hero.mobile_image_position || 'center',
         title_font: hero.title_font || 'lora',
-        body_font: hero.body_font || 'dm_sans'
+        body_font: hero.body_font || 'dm_sans',
+        title_size_desktop: hero.title_size_desktop || 72,
+        title_size_mobile: hero.title_size_mobile || 48,
+        body_size_desktop: hero.body_size_desktop || 24,
+        body_size_mobile: hero.body_size_mobile || 20
       })
       setImagePreview(hero.image_url)
       setMobileHeroPreview(hero.mobile_image_url || '')
     } else {
       setEditingHero(null)
-      setHeroForm({ title: '', description: '', cta_text: '', cta_url: '', image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', title_font: 'lora', body_font: 'dm_sans' })
+      setHeroForm({ title: '', description: '', cta_text: '', cta_url: '', image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', title_font: 'lora', body_font: 'dm_sans', title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
       setImagePreview('')
       setMobileHeroPreview('')
     }
@@ -3339,6 +3359,21 @@ export default function WebsiteEditionPage() {
                     <option value="dm_sans">DM Sans (recomendada)</option><option value="lora">Lora</option><option value="georgia">Georgia</option>
                   </select>
                 </label>
+              </div>
+
+              <div className="grid gap-4 rounded-xl border border-border p-4 sm:grid-cols-2">
+                <p className="text-sm font-semibold text-text sm:col-span-2">Tamaño del texto (px)</p>
+                {([
+                  ['title_size_mobile', 'Título en móvil', 28, 64],
+                  ['title_size_desktop', 'Título en escritorio', 36, 96],
+                  ['body_size_mobile', 'Descripción en móvil', 14, 32],
+                  ['body_size_desktop', 'Descripción en escritorio', 16, 40],
+                ] as const).map(([key, label, min, max]) => (
+                  <label key={key} className="block text-sm font-medium text-text-muted">
+                    <span className="flex items-center justify-between gap-2"><span>{label}</span><strong className="text-text">{heroForm[key]} px</strong></span>
+                    <input type="range" min={min} max={max} step={1} value={heroForm[key]} onChange={e => setHeroForm(current => ({ ...current, [key]: Number(e.target.value) }))} className="mt-2 w-full" />
+                  </label>
+                ))}
               </div>
 
               <div>

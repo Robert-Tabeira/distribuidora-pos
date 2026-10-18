@@ -34,6 +34,13 @@
 .landing-section[data-heading-font="dm_sans"] :is(h1, h2, h3) { font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif; }
 .landing-section[data-heading-font="georgia"] :is(h1, h2, h3) { font-family: Georgia, 'Times New Roman', serif; }
 
+.hero-title { font-size: var(--hero-title-mobile, 48px); }
+.hero-description { font-size: var(--hero-body-mobile, 20px); }
+@media (min-width: 768px) {
+  .hero-title { font-size: var(--hero-title-desktop, 72px); }
+  .hero-description { font-size: var(--hero-body-desktop, 24px); }
+}
+
 @layer components {
   /* Botones modernos */
   .btn {
