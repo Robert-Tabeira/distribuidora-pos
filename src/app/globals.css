@@ -41,6 +41,7 @@
   width: 58%;
   height: 58%;
   background-color: var(--category-icon-color, #8b4a2f);
+  filter: drop-shadow(0 0 var(--category-custom-icon-weight, 0px) var(--category-icon-color, #8b4a2f));
   mask-repeat: no-repeat;
   mask-position: center;
   mask-size: contain;
@@ -56,6 +57,7 @@
 .category-card:hover .category-custom-icon,
 .category-card:focus-visible .category-custom-icon {
   background-color: var(--category-icon-hover-color, #fff);
+  filter: drop-shadow(0 0 var(--category-custom-icon-weight, 0px) var(--category-icon-hover-color, #fff));
 }
 @media (min-width: 768px) {
   .category-icon-container {

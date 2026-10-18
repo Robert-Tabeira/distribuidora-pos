@@ -219,6 +219,7 @@ interface LandingSectionSettings {
   category_icons?: Record<string, string>
   category_icon_size_desktop?: number
   category_icon_size_mobile?: number
+  category_custom_icon_weight?: number
   category_icon_bg_color?: string
   category_icon_color?: string
   category_icon_hover_bg_color?: string
@@ -310,6 +311,7 @@ function defaultLandingSettings(type: LandingBlockType): LandingSectionSettings 
     category_icons: {},
     category_icon_size_desktop: 44,
     category_icon_size_mobile: 44,
+    category_custom_icon_weight: 0,
     category_icon_bg_color: '#f2e9e3',
     category_icon_color: '#8b4a2f',
     category_icon_hover_bg_color: '#8b4a2f',
@@ -3994,6 +3996,9 @@ export default function WebsiteEditionPage() {
                         <input type="range" min="28" max="88" step="2" value={size} onChange={e => updateLandingSettings({ [key]: Number(e.target.value) })} className="mt-2 w-full" />
                       </label>
                     })}
+                    <label className="block text-sm font-medium text-text-muted sm:col-span-2">Grosor del icono personalizado: {sectionForm.settings.category_custom_icon_weight ?? 0} px
+                      <input type="range" min="0" max="3" step="0.5" value={sectionForm.settings.category_custom_icon_weight ?? 0} onChange={e => updateLandingSettings({ category_custom_icon_weight: Number(e.target.value) })} className="mt-2 w-full" />
+                    </label>
                     {([
                       ['category_icon_bg_color', 'Fondo normal', '#f2e9e3'],
                       ['category_icon_color', 'Icono normal', '#8b4a2f'],
