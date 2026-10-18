@@ -33,6 +33,7 @@ interface WebsiteSettings {
   site_tagline?: string
   logo_url?: string | null
   logo_transparent_url?: string | null
+  favicon_url?: string | null
   logo_width?: number
   logo_sticky_width?: number
   use_logo_image?: boolean
@@ -688,6 +689,7 @@ export default function WebsiteEditionPage() {
     site_tagline: 'Distribuidora Oficial Sarubbi',
     logo_url: '',
     logo_transparent_url: '',
+    favicon_url: '',
     logo_width: 180,
     logo_sticky_width: 144,
     use_logo_image: false,
@@ -815,6 +817,7 @@ export default function WebsiteEditionPage() {
           site_tagline: settingsRes.data.site_tagline || 'Distribuidora Oficial Sarubbi',
           logo_url: settingsRes.data.logo_url || '',
           logo_transparent_url: settingsRes.data.logo_transparent_url || '',
+          favicon_url: settingsRes.data.favicon_url || '',
           logo_width: settingsRes.data.logo_width || 180,
           logo_sticky_width: settingsRes.data.logo_sticky_width || 144,
           use_logo_image: settingsRes.data.use_logo_image || false,
@@ -1697,6 +1700,7 @@ export default function WebsiteEditionPage() {
           site_tagline: logoForm.site_tagline.trim(),
           logo_url: logoForm.logo_url || null,
           logo_transparent_url: logoForm.logo_transparent_url || null,
+          favicon_url: logoForm.favicon_url || null,
           logo_width: logoForm.logo_width,
           logo_sticky_width: logoForm.logo_sticky_width,
           use_logo_image: logoForm.use_logo_image,
@@ -1712,6 +1716,47 @@ export default function WebsiteEditionPage() {
       alert('❌ Error al guardar')
     } finally {
       setSavingLogo(false)
+    }
+  }
+
+  async function handleFaviconUpload(file: File | undefined) {
+    if (!file || !settings) return
+    setUploadingLogo(true)
+    try {
+      const { url, error: uploadError } = await uploadImageToSupabase(file, 'favicons')
+      if (uploadError || !url) throw new Error(uploadError || 'No se recibió la URL del archivo')
+      const { error: saveError } = await supabase
+        .from('website_settings')
+        .update({ favicon_url: url, updated_at: new Date().toISOString() })
+        .eq('id', settings.id)
+      if (saveError) throw new Error(`El archivo se subió, pero no se guardó su URL: ${saveError.message}`)
+      setLogoForm(current => ({ ...current, favicon_url: url }))
+      setSettings(current => current ? { ...current, favicon_url: url } : current)
+      alert('✅ Favicon guardado. Puede tardar unos segundos en actualizarse en la pestaña del navegador.')
+    } catch (error) {
+      console.error('Error uploading/saving favicon:', error)
+      alert(`❌ No se pudo guardar el favicon. ${error instanceof Error ? error.message : String(error)}`)
+    } finally {
+      setUploadingLogo(false)
+    }
+  }
+
+  async function removeFavicon() {
+    if (!settings) return
+    setUploadingLogo(true)
+    try {
+      const { error } = await supabase
+        .from('website_settings')
+        .update({ favicon_url: null, updated_at: new Date().toISOString() })
+        .eq('id', settings.id)
+      if (error) throw error
+      setLogoForm(current => ({ ...current, favicon_url: '' }))
+      setSettings(current => current ? { ...current, favicon_url: null } : current)
+    } catch (error) {
+      console.error('Error removing favicon:', error)
+      alert('❌ No se pudo quitar el favicon.')
+    } finally {
+      setUploadingLogo(false)
     }
   }
 
@@ -2694,6 +2739,21 @@ export default function WebsiteEditionPage() {
                     placeholder="/landing"
                     className="input"
                   />
+                </div>
+
+                <div className="mb-5 rounded-xl border border-border p-4">
+                  <label className="mb-2 block text-sm font-semibold text-text">Favicon del sitio</label>
+                  <p className="mb-3 text-xs text-text-muted">Es el icono pequeño que aparece en la pestaña del navegador. Recomendado: imagen cuadrada en PNG o SVG (32×32 o 64×64 px).</p>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-border bg-white p-2">
+                      {logoForm.favicon_url ? <img src={logoForm.favicon_url} alt="Vista previa del favicon" className="h-full w-full object-contain" /> : <Icon name="image" className="h-6 w-6 text-text-muted" />}
+                    </div>
+                    <label className="flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-primary/40 px-4 py-3 text-sm font-semibold text-primary">
+                      {uploadingLogo ? 'Subiendo…' : logoForm.favicon_url ? 'Reemplazar favicon' : 'Subir favicon'}
+                      <input type="file" accept="image/png,image/svg+xml,image/x-icon,image/vnd.microsoft.icon" className="hidden" disabled={uploadingLogo} onChange={e => { void handleFaviconUpload(e.currentTarget.files?.[0]); e.currentTarget.value = '' }} />
+                    </label>
+                    {logoForm.favicon_url && <button type="button" onClick={removeFavicon} disabled={uploadingLogo} className="text-sm font-medium text-red-600 hover:underline">Quitar</button>}
+                  </div>
                 </div>
 
                 <button onClick={saveLogo} disabled={savingLogo || uploadingLogo} className="btn btn-primary w-full">

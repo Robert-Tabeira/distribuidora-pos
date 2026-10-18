@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { SiteFontLoader } from '@/components/site-font-loader'
+import { SiteFaviconLoader } from '@/components/site-favicon-loader'
 
 export const metadata: Metadata = {
   title: 'Distribuidora POS',
@@ -30,6 +31,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen">
         <SiteFontLoader />
+        <SiteFaviconLoader />
         {children}
       </body>
     </html>
