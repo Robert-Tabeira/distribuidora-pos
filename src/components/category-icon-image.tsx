@@ -19,6 +19,11 @@ function sanitizedSvg(source: string, extraStroke: number, displayWidth: number)
   const viewBox = root.getAttribute('viewBox')?.trim().split(/[\s,]+/)
   const viewBoxWidth = Number.parseFloat(viewBox?.[2] || '') || Number.parseFloat(root.getAttribute('width') || '') || 24
   const scaledStrokeIncrease = extraStroke * viewBoxWidth / Math.max(1, displayWidth)
+  const hasExplicitStroke = Array.from(document.querySelectorAll('*')).some(element => {
+    const stroke = element.getAttribute('stroke')
+    const style = element.getAttribute('style') || ''
+    return (stroke !== null && stroke.toLowerCase() !== 'none') || /(?:^|;)\s*stroke\s*:\s*(?!none\b)/i.test(style)
+  })
 
   function cleanElement(element: Element): boolean {
     if (!ALLOWED_ELEMENTS.has(element.localName.toLowerCase())) return false
@@ -54,6 +59,7 @@ function sanitizedSvg(source: string, extraStroke: number, displayWidth: number)
   if (!cleanElement(root)) return ''
 
   function increaseStroke(element: Element, inheritedStroke: boolean, inheritedWidth: string | null) {
+    const drawable = ['path', 'circle', 'ellipse', 'rect', 'line', 'polyline', 'polygon'].includes(element.localName.toLowerCase())
     const ownStroke = element.getAttribute('stroke')
     const hasStroke = ownStroke ? ownStroke.toLowerCase() !== 'none' : inheritedStroke
     const ownWidth = element.getAttribute('stroke-width')
@@ -62,6 +68,13 @@ function sanitizedSvg(source: string, extraStroke: number, displayWidth: number)
     if (hasStroke && (ownStroke !== null || ownWidth !== null)) {
       const width = Number.parseFloat(currentWidth || '1')
       if (Number.isFinite(width)) element.setAttribute('stroke-width', String(Math.max(0.25, width + scaledStrokeIncrease)))
+    } else if (drawable && !hasExplicitStroke && extraStroke > 0 && element.getAttribute('fill')?.toLowerCase() !== 'none') {
+      // Many uploaded outline icons are exported as filled paths. Giving those
+      // paths a matching stroke is the only reliable way to honor the weight slider.
+      element.setAttribute('stroke', 'currentColor')
+      element.setAttribute('stroke-width', String(scaledStrokeIncrease))
+      element.setAttribute('stroke-linejoin', 'round')
+      element.setAttribute('stroke-linecap', 'round')
     }
 
     const nextWidth = element.getAttribute('stroke-width') || inheritedWidth
@@ -81,6 +94,19 @@ function isSvgUrl(src: string) {
     return new URL(src, 'https://local.invalid').pathname.toLowerCase().endsWith('.svg')
   } catch {
     return false
+  }
+}
+
+function getSvgRequestUrl(src: string) {
+  try {
+    const url = new URL(src)
+    const prefix = '/storage/v1/object/public/product-images/landing-sections/'
+    if (!url.pathname.includes(prefix)) return src
+    const file = decodeURIComponent(url.pathname.split(prefix).pop() || '')
+    if (!/^[a-zA-Z0-9_-]+\.svg$/i.test(file)) return src
+    return `/api/category-icon?file=${encodeURIComponent(file)}`
+  } catch {
+    return src
   }
 }
 
@@ -108,7 +134,7 @@ export function CategoryIconImage({ src, weight = 0, className = '' }: { src: st
     let active = true
     async function load() {
       try {
-        const response = await fetch(src)
+        const response = await fetch(getSvgRequestUrl(src), { credentials: 'same-origin' })
         if (!response.ok) return
         const text = await response.text()
         if (text.length > 1_000_000) return
