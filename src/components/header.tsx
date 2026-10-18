@@ -138,9 +138,10 @@ export function Header() {
   const siteTagline = settings?.site_tagline || 'Distribuidora Oficial Sarubbi'
   const visibleMenuLinks = menuLinks.filter(link => settings?.customer_orders_enabled === true || !/^\/cliente(?:\/|$)/.test(link.url))
   const isLandingPage = pathname === '/landing' || pathname === '/'
+  const isCatalogPage = pathname === '/catalogo' || pathname.startsWith('/catalogo/')
   const landingHeaderAtTop = isLandingPage && !isScrolled
   const transparentLandingHeader = landingHeaderAtTop && headerSettings.bg_color === 'transparent'
-  const transparentHeaderAtTop = !isScrolled && (isLandingPage || headerSettings.bg_color === 'transparent')
+  const transparentHeaderAtTop = landingHeaderAtTop
   const activeLogoUrl = transparentHeaderAtTop
     ? settings?.logo_transparent_url || settings?.logo_url
     : settings?.logo_url
@@ -152,13 +153,13 @@ export function Header() {
 
   return (
     <header
-      className={`${headerSettings.sticky || isLandingPage ? 'sticky top-0' : ''} ${isLandingPage ? transparentLandingHeader ? '-mb-16' : isScrolled ? '-mb-14' : '-mb-[72px]' : ''} z-40 ${transparentLandingHeader ? '' : 'backdrop-blur-md'} border-b transition-all duration-300 ${
+      className={`${headerSettings.sticky || isLandingPage || isCatalogPage ? 'sticky top-0' : ''} ${isLandingPage ? transparentLandingHeader ? '-mb-16' : isScrolled ? '-mb-14' : '-mb-[72px]' : ''} z-40 ${transparentLandingHeader ? '' : 'backdrop-blur-md'} border-b transition-all duration-300 ${
         landingHeaderAtTop ? 'border-transparent shadow-none' : isLandingPage ? 'border-stone-200 shadow-md' : `border-gray-200 ${headerSettings.shadow ? 'shadow-sm' : ''}`
       } ${isLandingPage ? isScrolled ? 'h-14 py-0' : transparentLandingHeader ? 'h-16 py-0' : 'py-4' : isScrolled ? 'py-2' : 'py-4'}`}
       style={{
         backgroundColor: landingHeaderAtTop
           ? headerSettings.bg_color === 'transparent' ? 'transparent' : 'rgba(35, 22, 15, 0.16)'
-          : isLandingPage ? '#ffffff' : headerSettings.bg_color
+          : isLandingPage || isCatalogPage ? '#ffffff' : headerSettings.bg_color
       }}
     >
       <div className={`max-w-7xl mx-auto px-4 sm:px-6 ${isLandingPage && (isScrolled || transparentLandingHeader) ? 'h-full' : ''}`}>
