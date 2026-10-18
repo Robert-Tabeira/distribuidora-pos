@@ -37,8 +37,8 @@ interface LandingSectionSettings {
   mobile_image_position?: 'center' | 'top' | 'bottom' | 'left' | 'right'
   desktop_image_side?: 'left' | 'right'
   mobile_image_order?: 'first' | 'last'
-  heading_font?: 'inherit' | 'lora' | 'dm_sans' | 'georgia'
-  body_font?: 'inherit' | 'lora' | 'dm_sans' | 'georgia'
+  heading_font?: 'inherit' | 'lora' | 'dm_sans' | 'fira_sans' | 'georgia'
+  body_font?: 'inherit' | 'lora' | 'dm_sans' | 'fira_sans' | 'georgia'
 }
 interface LandingSection {
   id: string

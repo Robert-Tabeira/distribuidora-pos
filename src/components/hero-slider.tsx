@@ -20,8 +20,8 @@ interface HeroSlide {
   mobile_image_position?: 'center' | 'top' | 'bottom' | 'left' | 'right' | null
   desktop_image_fit?: 'cover' | 'contain' | null
   mobile_image_fit?: 'cover' | 'contain' | null
-  title_font?: 'lora' | 'dm_sans' | 'georgia' | null
-  body_font?: 'lora' | 'dm_sans' | 'georgia' | null
+  title_font?: 'lora' | 'dm_sans' | 'fira_sans' | 'georgia' | null
+  body_font?: 'lora' | 'dm_sans' | 'fira_sans' | 'georgia' | null
   title_size_desktop?: number | null
   title_size_mobile?: number | null
   body_size_desktop?: number | null
@@ -37,7 +37,7 @@ const IMAGE_FIT = { cover: 'object-cover', contain: 'object-contain' } as const
 const DESKTOP_IMAGE_FIT = { cover: 'md:object-cover', contain: 'md:object-contain' } as const
 const TEXT_ALIGNMENT = { left: 'text-left', center: 'text-center', right: 'text-right' } as const
 const DESKTOP_TEXT_ALIGNMENT = { left: 'md:text-left', center: 'md:text-center', right: 'md:text-right' } as const
-const HERO_FONT_FAMILY = { lora: "'Lora', Georgia, serif", dm_sans: "'DM Sans', sans-serif", georgia: "Georgia, 'Times New Roman', serif" } as const
+const HERO_FONT_FAMILY = { lora: "'Lora', Georgia, serif", dm_sans: "'DM Sans', sans-serif", fira_sans: "'Fira Sans', sans-serif", georgia: "Georgia, 'Times New Roman', serif" } as const
 
 const DEFAULT_SLIDES: HeroSlide[] = [
   {

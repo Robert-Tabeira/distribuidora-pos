@@ -35,6 +35,7 @@ const DEFAULT_SETTINGS: BarSettings = {
 
 const FONT_FAMILY_MAP: Record<string, string> = {
   default: "'DM Sans', sans-serif",
+  fira_sans: "'Fira Sans', sans-serif",
   serif: "Georgia, 'Times New Roman', serif",
   mono: "'Courier New', monospace"
 }

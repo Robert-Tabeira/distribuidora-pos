@@ -203,8 +203,8 @@ interface LandingSectionSettings {
   mobile_image_position?: 'center' | 'top' | 'bottom' | 'left' | 'right'
   desktop_image_side?: 'left' | 'right'
   mobile_image_order?: 'first' | 'last'
-  heading_font?: 'inherit' | 'lora' | 'dm_sans' | 'georgia'
-  body_font?: 'inherit' | 'lora' | 'dm_sans' | 'georgia'
+  heading_font?: 'inherit' | 'lora' | 'dm_sans' | 'fira_sans' | 'georgia'
+  body_font?: 'inherit' | 'lora' | 'dm_sans' | 'fira_sans' | 'georgia'
 }
 
 interface AnnouncementMessage {
@@ -253,6 +253,7 @@ const LANDING_FONT_FAMILIES: Record<string, string | undefined> = {
   inherit: undefined,
   lora: "'Lora', Georgia, serif",
   dm_sans: "'DM Sans', sans-serif",
+  fira_sans: "'Fira Sans', sans-serif",
   georgia: 'Georgia, serif'
 }
 
@@ -349,6 +350,7 @@ function SitePreviewPanel({
 }) {
   const FONT_FAMILY_MAP: Record<string, string> = {
     default: "'DM Sans', sans-serif",
+    fira_sans: "'Fira Sans', sans-serif",
     serif: "Georgia, 'Times New Roman', serif",
     mono: "'Courier New', monospace"
   }
@@ -2181,6 +2183,7 @@ export default function WebsiteEditionPage() {
               const preview = announcements.filter(a => a.is_active).sort((a, b) => a.order_position - b.order_position)[0]
               const FONT_FAMILY_MAP: Record<string, string> = {
                 default: "'DM Sans', sans-serif",
+                fira_sans: "'Fira Sans', sans-serif",
                 serif: "Georgia, 'Times New Roman', serif",
                 mono: "'Courier New', monospace"
               }
@@ -2256,6 +2259,7 @@ export default function WebsiteEditionPage() {
                     className="input"
                   >
                     <option value="default">Predeterminada (DM Sans)</option>
+                    <option value="fira_sans">Fira Sans</option>
                     <option value="serif">Serif</option>
                     <option value="mono">Monoespaciada</option>
                   </select>
@@ -3431,12 +3435,12 @@ export default function WebsiteEditionPage() {
                 <p className="text-sm font-semibold text-text sm:col-span-2">Tipografía del hero</p>
                 <label className="block text-sm font-medium text-text-muted">Título
                   <select className="input mt-1" value={heroForm.title_font} onChange={e => setHeroForm(current => ({ ...current, title_font: e.target.value }))}>
-                    <option value="lora">Lora (recomendada)</option><option value="dm_sans">DM Sans</option><option value="georgia">Georgia</option>
+                    <option value="lora">Lora (recomendada)</option><option value="dm_sans">DM Sans</option><option value="fira_sans">Fira Sans</option><option value="georgia">Georgia</option>
                   </select>
                 </label>
                 <label className="block text-sm font-medium text-text-muted">Descripción y botón
                   <select className="input mt-1" value={heroForm.body_font} onChange={e => setHeroForm(current => ({ ...current, body_font: e.target.value }))}>
-                    <option value="dm_sans">DM Sans (recomendada)</option><option value="lora">Lora</option><option value="georgia">Georgia</option>
+                    <option value="dm_sans">DM Sans (recomendada)</option><option value="fira_sans">Fira Sans</option><option value="lora">Lora</option><option value="georgia">Georgia</option>
                   </select>
                 </label>
               </div>
@@ -3579,12 +3583,12 @@ export default function WebsiteEditionPage() {
                 <p className="text-sm font-semibold text-text sm:col-span-2">Tipografía de esta sección</p>
                 <label className="block text-sm font-medium text-text-muted">Títulos
                   <select className="input mt-1" value={sectionForm.settings.heading_font || 'inherit'} onChange={e => updateLandingSettings({ heading_font: e.target.value as LandingSectionSettings['heading_font'] })}>
-                    <option value="inherit">Estilo actual</option><option value="lora">Lora (recomendada, cálida)</option><option value="dm_sans">DM Sans</option><option value="georgia">Georgia</option>
+                    <option value="inherit">Estilo actual</option><option value="lora">Lora (recomendada, cálida)</option><option value="dm_sans">DM Sans</option><option value="fira_sans">Fira Sans</option><option value="georgia">Georgia</option>
                   </select>
                 </label>
                 <label className="block text-sm font-medium text-text-muted">Texto y descripciones
                   <select className="input mt-1" value={sectionForm.settings.body_font || 'inherit'} onChange={e => updateLandingSettings({ body_font: e.target.value as LandingSectionSettings['body_font'] })}>
-                    <option value="inherit">Estilo actual</option><option value="dm_sans">DM Sans (recomendada, legible)</option><option value="lora">Lora</option><option value="georgia">Georgia</option>
+                    <option value="inherit">Estilo actual</option><option value="dm_sans">DM Sans (recomendada, legible)</option><option value="fira_sans">Fira Sans</option><option value="lora">Lora</option><option value="georgia">Georgia</option>
                   </select>
                 </label>
                 <p className="text-xs text-text-muted sm:col-span-2">Sugerencia para el estilo del local: Lora en títulos y DM Sans en textos.</p>

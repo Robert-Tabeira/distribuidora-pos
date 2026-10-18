@@ -29,9 +29,11 @@
 /* Tipografías seleccionables para los bloques personalizados de la landing. */
 .landing-section[data-body-font="lora"] { font-family: 'Lora', Georgia, serif; }
 .landing-section[data-body-font="dm_sans"] { font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif; }
+.landing-section[data-body-font="fira_sans"] { font-family: 'Fira Sans', ui-sans-serif, system-ui, sans-serif; }
 .landing-section[data-body-font="georgia"] { font-family: Georgia, 'Times New Roman', serif; }
 .landing-section[data-heading-font="lora"] :is(h1, h2, h3) { font-family: 'Lora', Georgia, serif; }
 .landing-section[data-heading-font="dm_sans"] :is(h1, h2, h3) { font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif; }
+.landing-section[data-heading-font="fira_sans"] :is(h1, h2, h3) { font-family: 'Fira Sans', ui-sans-serif, system-ui, sans-serif; }
 .landing-section[data-heading-font="georgia"] :is(h1, h2, h3) { font-family: Georgia, 'Times New Roman', serif; }
 
 .hero-title { font-size: var(--hero-title-mobile, 48px); }
