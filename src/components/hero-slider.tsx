@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, type CSSProperties } from 'react'
+import { useState, useEffect, useRef, type CSSProperties } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
@@ -78,6 +78,7 @@ export function HeroSlider() {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isAutoPlay, setIsAutoPlay] = useState(true)
   const [loading, setLoading] = useState(true)
+  const touchStartX = useRef<number | null>(null)
 
   useEffect(() => {
     loadSlides()
@@ -154,7 +155,19 @@ export function HeroSlider() {
   const currentSlideData = slides[currentSlide]
 
   return (
-    <div className="group relative h-screen w-full overflow-hidden bg-stone-900 transition-all duration-1000">
+    <div
+      className="group relative h-screen w-full overflow-hidden bg-stone-900 transition-all duration-1000"
+      onTouchStart={event => { touchStartX.current = event.changedTouches[0]?.clientX ?? null }}
+      onTouchEnd={event => {
+        const startX = touchStartX.current
+        touchStartX.current = null
+        if (startX === null) return
+        const distance = event.changedTouches[0].clientX - startX
+        if (Math.abs(distance) < 50) return
+        setCurrentSlide(index => (index + (distance < 0 ? 1 : -1) + slides.length) % slides.length)
+        setIsAutoPlay(false)
+      }}
+    >
       <picture className="absolute inset-0 block">
         {currentSlideData.mobile_image_url && <source media="(max-width: 767px)" srcSet={currentSlideData.mobile_image_url} />}
         <img
@@ -199,7 +212,7 @@ export function HeroSlider() {
         onClick={prevSlide}
         onMouseEnter={() => setIsAutoPlay(false)}
         onMouseLeave={() => setIsAutoPlay(true)}
-        className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-20 w-12 h-12 md:w-16 md:h-16 bg-white/20 hover:bg-white/40 backdrop-blur-sm rounded-full flex items-center justify-center text-white transition-all opacity-0 group-hover:opacity-100"
+        className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-20 hidden w-12 h-12 md:flex md:w-16 md:h-16 bg-white/20 hover:bg-white/40 backdrop-blur-sm rounded-full items-center justify-center text-white transition-all opacity-0 group-hover:opacity-100"
       >
         <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -210,7 +223,7 @@ export function HeroSlider() {
         onClick={nextSlide}
         onMouseEnter={() => setIsAutoPlay(false)}
         onMouseLeave={() => setIsAutoPlay(true)}
-        className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-20 w-12 h-12 md:w-16 md:h-16 bg-white/20 hover:bg-white/40 backdrop-blur-sm rounded-full flex items-center justify-center text-white transition-all opacity-0 group-hover:opacity-100"
+        className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-20 hidden w-12 h-12 md:flex md:w-16 md:h-16 bg-white/20 hover:bg-white/40 backdrop-blur-sm rounded-full items-center justify-center text-white transition-all opacity-0 group-hover:opacity-100"
       >
         <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
