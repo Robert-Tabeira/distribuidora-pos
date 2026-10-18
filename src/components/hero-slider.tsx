@@ -18,6 +18,8 @@ interface HeroSlide {
   mobile_text_position?: 'left' | 'center' | 'right' | null
   desktop_image_position?: 'center' | 'top' | 'bottom' | 'left' | 'right' | null
   mobile_image_position?: 'center' | 'top' | 'bottom' | 'left' | 'right' | null
+  desktop_image_fit?: 'cover' | 'contain' | null
+  mobile_image_fit?: 'cover' | 'contain' | null
   title_font?: 'lora' | 'dm_sans' | 'georgia' | null
   body_font?: 'lora' | 'dm_sans' | 'georgia' | null
   title_size_desktop?: number | null
@@ -30,6 +32,8 @@ const HORIZONTAL_POSITION = { left: 'justify-start', center: 'justify-center', r
 const DESKTOP_HORIZONTAL_POSITION = { left: 'md:justify-start', center: 'md:justify-center', right: 'md:justify-end' } as const
 const IMAGE_POSITION = { center: 'object-center', top: 'object-top', bottom: 'object-bottom', left: 'object-left', right: 'object-right' } as const
 const DESKTOP_IMAGE_POSITION = { center: 'md:object-center', top: 'md:object-top', bottom: 'md:object-bottom', left: 'md:object-left', right: 'md:object-right' } as const
+const IMAGE_FIT = { cover: 'object-cover', contain: 'object-contain' } as const
+const DESKTOP_IMAGE_FIT = { cover: 'md:object-cover', contain: 'md:object-contain' } as const
 const TEXT_ALIGNMENT = { left: 'text-left', center: 'text-center', right: 'text-right' } as const
 const DESKTOP_TEXT_ALIGNMENT = { left: 'md:text-left', center: 'md:text-center', right: 'md:text-right' } as const
 const HERO_FONT_FAMILY = { lora: "'Lora', Georgia, serif", dm_sans: "'DM Sans', sans-serif", georgia: "Georgia, 'Times New Roman', serif" } as const
@@ -156,7 +160,7 @@ export function HeroSlider() {
           src={currentSlideData.image_url}
           alt=""
           aria-hidden="true"
-          className={`h-full w-full object-cover ${IMAGE_POSITION[currentSlideData.mobile_image_position || 'center']} ${DESKTOP_IMAGE_POSITION[currentSlideData.desktop_image_position || 'center']}`}
+          className={`h-full w-full ${IMAGE_FIT[currentSlideData.mobile_image_fit || 'contain']} ${DESKTOP_IMAGE_FIT[currentSlideData.desktop_image_fit || 'contain']} ${IMAGE_POSITION[currentSlideData.mobile_image_position || 'center']} ${DESKTOP_IMAGE_POSITION[currentSlideData.desktop_image_position || 'center']}`}
         />
       </picture>
       {/* Content */}

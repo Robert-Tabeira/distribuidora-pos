@@ -127,6 +127,8 @@ interface HeroSlide {
   mobile_text_position?: string | null
   desktop_image_position?: string | null
   mobile_image_position?: string | null
+  desktop_image_fit?: 'cover' | 'contain' | null
+  mobile_image_fit?: 'cover' | 'contain' | null
   title_font?: string | null
   body_font?: string | null
   title_size_desktop?: number | null
@@ -595,7 +597,7 @@ export default function WebsiteEditionPage() {
   // Hero Slides
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([])
   const [editingHero, setEditingHero] = useState<HeroSlide | null>(null)
-  const [heroForm, setHeroForm] = useState({ title: '', description: '', cta_text: '', cta_url: '', image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', title_font: 'lora', body_font: 'dm_sans', title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
+  const [heroForm, setHeroForm] = useState({ title: '', description: '', cta_text: '', cta_url: '', image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain', mobile_image_fit: 'contain', title_font: 'lora', body_font: 'dm_sans', title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
   const [savingHero, setSavingHero] = useState(false)
   const [showHeroModal, setShowHeroModal] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -999,6 +1001,8 @@ export default function WebsiteEditionPage() {
             mobile_text_position: heroForm.mobile_text_position,
             desktop_image_position: heroForm.desktop_image_position,
             mobile_image_position: heroForm.mobile_image_position,
+            desktop_image_fit: heroForm.desktop_image_fit,
+            mobile_image_fit: heroForm.mobile_image_fit,
             title_font: heroForm.title_font,
             body_font: heroForm.body_font,
             title_size_desktop: heroForm.title_size_desktop,
@@ -1025,6 +1029,8 @@ export default function WebsiteEditionPage() {
                 mobile_text_position: heroForm.mobile_text_position,
                 desktop_image_position: heroForm.desktop_image_position,
                 mobile_image_position: heroForm.mobile_image_position,
+                desktop_image_fit: heroForm.desktop_image_fit,
+                mobile_image_fit: heroForm.mobile_image_fit,
                 title_font: heroForm.title_font,
                 body_font: heroForm.body_font,
                 title_size_desktop: heroForm.title_size_desktop,
@@ -1050,6 +1056,8 @@ export default function WebsiteEditionPage() {
             mobile_text_position: heroForm.mobile_text_position,
             desktop_image_position: heroForm.desktop_image_position,
             mobile_image_position: heroForm.mobile_image_position,
+            desktop_image_fit: heroForm.desktop_image_fit,
+            mobile_image_fit: heroForm.mobile_image_fit,
             title_font: heroForm.title_font,
             body_font: heroForm.body_font,
             title_size_desktop: heroForm.title_size_desktop,
@@ -1105,6 +1113,8 @@ export default function WebsiteEditionPage() {
         mobile_text_position: hero.mobile_text_position || 'left',
         desktop_image_position: hero.desktop_image_position || 'center',
         mobile_image_position: hero.mobile_image_position || 'center',
+        desktop_image_fit: hero.desktop_image_fit || 'contain',
+        mobile_image_fit: hero.mobile_image_fit || 'contain',
         title_font: hero.title_font || 'lora',
         body_font: hero.body_font || 'dm_sans',
         title_size_desktop: hero.title_size_desktop || 72,
@@ -1116,7 +1126,7 @@ export default function WebsiteEditionPage() {
       setMobileHeroPreview(hero.mobile_image_url || '')
     } else {
       setEditingHero(null)
-      setHeroForm({ title: '', description: '', cta_text: '', cta_url: '', image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', title_font: 'lora', body_font: 'dm_sans', title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
+      setHeroForm({ title: '', description: '', cta_text: '', cta_url: '', image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain', mobile_image_fit: 'contain', title_font: 'lora', body_font: 'dm_sans', title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
       setImagePreview('')
       setMobileHeroPreview('')
     }
@@ -3272,7 +3282,7 @@ export default function WebsiteEditionPage() {
                       <img 
                         src={imagePreview} 
                         alt="Preview" 
-                        className="w-full max-h-48 object-cover rounded-lg mx-auto"
+                        className="w-full max-h-48 object-contain rounded-lg bg-stone-900 mx-auto"
                         onError={(e) => {
                           e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Crect fill="%23ddd" width="100" height="100"/%3E%3C/svg%3E'
                         }}
@@ -3303,7 +3313,8 @@ export default function WebsiteEditionPage() {
                 <div className="mt-4 rounded-xl border border-border p-4">
                   <label className="block text-sm font-semibold text-text-muted">Imagen para móvil (opcional)</label>
                   <p className="mb-3 mt-1 text-xs text-text-muted">Si no subís una, se adapta la imagen de escritorio.</p>
-                  {mobileHeroPreview && <img src={mobileHeroPreview} alt="Vista previa móvil del hero" className="mb-3 h-32 w-full rounded-lg object-cover" />}
+                  {mobileHeroPreview && <img src={mobileHeroPreview} alt="Vista previa móvil del hero" className="mb-3 h-32 w-full rounded-lg bg-stone-900 object-contain" />}
+                  <p className="mb-3 mt-1 text-xs text-text-muted">Para evitar pixelado, usá una imagen de al menos 1920 px de ancho para escritorio y 1080 px para móvil.</p>
                   <input ref={mobileHeroInputRef} type="file" accept="image/*" onChange={e => handleImageUpload(e, 'mobile')} className="input" disabled={uploadingImage} />
                 </div>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -3320,6 +3331,14 @@ export default function WebsiteEditionPage() {
                     return <label key={key} className="block text-sm font-semibold text-text-muted">Encuadre en {device === 'desktop' ? 'escritorio' : 'móvil'}
                       <select className="input mt-2" value={heroForm[key]} onChange={e => setHeroForm(current => ({ ...current, [key]: e.target.value }))}>
                         <option value="center">Centro</option><option value="top">Arriba</option><option value="bottom">Abajo</option><option value="left">Izquierda</option><option value="right">Derecha</option>
+                      </select>
+                    </label>
+                  })}
+                  {(['desktop', 'mobile'] as const).map(device => {
+                    const key = device === 'desktop' ? 'desktop_image_fit' : 'mobile_image_fit'
+                    return <label key={key} className="block text-sm font-semibold text-text-muted">Ajuste de imagen en {device === 'desktop' ? 'escritorio' : 'móvil'}
+                      <select className="input mt-2" value={heroForm[key]} onChange={e => setHeroForm(current => ({ ...current, [key]: e.target.value }))}>
+                        <option value="contain">Mostrar completa (sin recortar)</option><option value="cover">Llenar el área (puede recortar)</option>
                       </select>
                     </label>
                   })}
