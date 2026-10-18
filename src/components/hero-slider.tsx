@@ -6,10 +6,12 @@ import { supabase } from '@/lib/supabase'
 
 interface HeroSlide {
   id: string
-  title: string
+  internal_name?: string
+  title: string | null
   description: string | null
   cta_text: string | null
   cta_url: string | null
+  cta_bottom_offset?: number | null
   is_active: boolean
   order_position: number
   image_url: string
@@ -199,15 +201,17 @@ export function HeroSlider() {
       <div className="pointer-events-none absolute inset-0">
         <div className={`mx-auto flex h-full w-full max-w-7xl items-center px-4 sm:px-6 ${HORIZONTAL_POSITION[currentSlideData.mobile_text_position || 'left']} ${DESKTOP_HORIZONTAL_POSITION[currentSlideData.desktop_text_position || 'left']}`}>
           <div className={`w-full max-w-2xl ${TEXT_ALIGNMENT[currentSlideData.mobile_text_position || 'left']} ${DESKTOP_TEXT_ALIGNMENT[currentSlideData.desktop_text_position || 'left']}`}>
-            <h1 style={{ fontFamily: HERO_FONT_FAMILY[currentSlideData.title_font || 'lora'], '--hero-title-mobile': `${currentSlideData.title_size_mobile || 48}px`, '--hero-title-desktop': `${currentSlideData.title_size_desktop || 72}px` } as CSSProperties} className="hero-title font-black text-white leading-tight mb-6 animate-fade-in drop-shadow-lg">
-              {currentSlideData.title}
-            </h1>
+            {currentSlideData.title && (
+              <h1 style={{ fontFamily: HERO_FONT_FAMILY[currentSlideData.title_font || 'lora'], '--hero-title-mobile': `${currentSlideData.title_size_mobile || 48}px`, '--hero-title-desktop': `${currentSlideData.title_size_desktop || 72}px` } as CSSProperties} className="hero-title font-black text-white leading-tight mb-6 animate-fade-in drop-shadow-lg">
+                {currentSlideData.title}
+              </h1>
+            )}
             {currentSlideData.description && (
               <p style={{ fontFamily: HERO_FONT_FAMILY[currentSlideData.body_font || 'dm_sans'], '--hero-body-mobile': `${currentSlideData.body_size_mobile || 20}px`, '--hero-body-desktop': `${currentSlideData.body_size_desktop || 24}px` } as CSSProperties} className="hero-description text-white/95 mb-8 leading-relaxed animate-fade-in-delay drop-shadow-md">
                 {currentSlideData.description}
               </p>
             )}
-            {currentSlideData.cta_text && currentSlideData.cta_url && (
+            {currentSlideData.cta_text && currentSlideData.cta_url && currentSlideData.cta_bottom_offset == null && (
               <button
                 onClick={() => router.push(currentSlideData.cta_url!)}
                 style={{ fontFamily: HERO_FONT_FAMILY[currentSlideData.body_font || 'dm_sans'] }}
@@ -219,6 +223,22 @@ export function HeroSlider() {
           </div>
         </div>
       </div>
+      {currentSlideData.cta_text && currentSlideData.cta_url && currentSlideData.cta_bottom_offset != null && (
+        <div
+          className="pointer-events-none absolute inset-x-0 z-10 flex px-4 sm:px-6"
+          style={{ bottom: `${currentSlideData.cta_bottom_offset}px` }}
+        >
+          <div className={`mx-auto flex w-full max-w-7xl ${HORIZONTAL_POSITION[currentSlideData.mobile_text_position || 'left']} ${DESKTOP_HORIZONTAL_POSITION[currentSlideData.desktop_text_position || 'left']}`}>
+            <button
+              onClick={() => router.push(currentSlideData.cta_url!)}
+              style={{ fontFamily: HERO_FONT_FAMILY[currentSlideData.body_font || 'dm_sans'] }}
+              className="pointer-events-auto inline-block rounded-xl bg-[#f8efe2] px-8 py-4 text-lg font-bold text-[#4b2e20] shadow-lg transition-all hover:bg-white animate-fade-in-delay-2"
+            >
+              {currentSlideData.cta_text}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Navigation Arrows */}
       <button

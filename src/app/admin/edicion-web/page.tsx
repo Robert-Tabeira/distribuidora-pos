@@ -121,6 +121,8 @@ interface Popup {
 
 interface HeroSlide {
   id: string
+  internal_name: string
+  cta_bottom_offset?: number | null
   order_position: number
   image_url: string
   mobile_image_url?: string | null
@@ -137,7 +139,7 @@ interface HeroSlide {
   body_size_desktop?: number | null
   body_size_mobile?: number | null
   image_darkness?: number | null
-  title: string
+  title: string | null
   description: string | null
   cta_text: string | null
   cta_url: string | null
@@ -601,7 +603,7 @@ export default function WebsiteEditionPage() {
   // Hero Slides
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([])
   const [editingHero, setEditingHero] = useState<HeroSlide | null>(null)
-  const [heroForm, setHeroForm] = useState({ title: '', description: '', cta_text: '', cta_url: '', image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain' as 'cover' | 'contain', mobile_image_fit: 'contain' as 'cover' | 'contain', image_darkness: 18, title_font: 'lora', body_font: 'dm_sans', title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
+  const [heroForm, setHeroForm] = useState({ internal_name: '', title: '', description: '', cta_text: '', cta_url: '', cta_bottom_offset: null as number | null, image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain' as 'cover' | 'contain', mobile_image_fit: 'contain' as 'cover' | 'contain', image_darkness: 18, title_font: 'lora', body_font: 'dm_sans', title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
   const [savingHero, setSavingHero] = useState(false)
   const [heroAutoplaySeconds, setHeroAutoplaySeconds] = useState(5)
   const [savingHeroAutoplay, setSavingHeroAutoplay] = useState(false)
@@ -1004,8 +1006,8 @@ export default function WebsiteEditionPage() {
 
   // ===== HERO SLIDES =====
   async function saveHeroSlide() {
-    if (!heroForm.title.trim()) {
-      alert('⚠️ El título es obligatorio')
+    if (!heroForm.internal_name.trim()) {
+      alert('⚠️ El nombre interno del hero es obligatorio')
       return
     }
 
@@ -1020,7 +1022,9 @@ export default function WebsiteEditionPage() {
         const { error } = await supabase
           .from('hero_slides')
           .update({
-            title: heroForm.title.trim(),
+            internal_name: heroForm.internal_name.trim(),
+            title: heroForm.title.trim() || null,
+            cta_bottom_offset: heroForm.cta_bottom_offset,
             description: heroForm.description.trim() || null,
             cta_text: heroForm.cta_text.trim() || null,
             cta_url: heroForm.cta_url.trim() || null,
@@ -1049,7 +1053,9 @@ export default function WebsiteEditionPage() {
           s.id === editingHero.id
             ? {
                 ...s,
-                title: heroForm.title.trim(),
+                internal_name: heroForm.internal_name.trim(),
+                title: heroForm.title.trim() || null,
+                cta_bottom_offset: heroForm.cta_bottom_offset,
                 description: heroForm.description.trim() || null,
                 cta_text: heroForm.cta_text.trim() || null,
                 cta_url: heroForm.cta_url.trim() || null,
@@ -1077,7 +1083,9 @@ export default function WebsiteEditionPage() {
         const { data, error } = await supabase
           .from('hero_slides')
           .insert([{
-            title: heroForm.title.trim(),
+            internal_name: heroForm.internal_name.trim(),
+            title: heroForm.title.trim() || null,
+            cta_bottom_offset: heroForm.cta_bottom_offset,
             description: heroForm.description.trim() || null,
             cta_text: heroForm.cta_text.trim() || null,
             cta_url: heroForm.cta_url.trim() || null,
@@ -1135,7 +1143,9 @@ export default function WebsiteEditionPage() {
     if (hero) {
       setEditingHero(hero)
       setHeroForm({
-        title: hero.title,
+        internal_name: hero.internal_name || hero.title || `Hero ${hero.order_position}`,
+        title: hero.title || '',
+        cta_bottom_offset: hero.cta_bottom_offset ?? null,
         description: hero.description || '',
         cta_text: hero.cta_text || '',
         cta_url: hero.cta_url || '',
@@ -1159,7 +1169,7 @@ export default function WebsiteEditionPage() {
       setMobileHeroPreview(hero.mobile_image_url || '')
     } else {
       setEditingHero(null)
-      setHeroForm({ title: '', description: '', cta_text: '', cta_url: '', image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain', mobile_image_fit: 'contain', image_darkness: 18, title_font: 'lora', body_font: 'dm_sans', title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
+      setHeroForm({ internal_name: '', title: '', description: '', cta_text: '', cta_url: '', cta_bottom_offset: null, image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain', mobile_image_fit: 'contain', image_darkness: 18, title_font: 'lora', body_font: 'dm_sans', title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
       setImagePreview('')
       setMobileHeroPreview('')
     }
@@ -2708,7 +2718,7 @@ export default function WebsiteEditionPage() {
                     {hero.image_url && (
                       <img
                         src={hero.image_url}
-                        alt={hero.title}
+                        alt={hero.title || hero.internal_name || 'Hero'}
                         className="w-24 h-24 rounded-lg object-cover"
                         onError={(e) => {
                           e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Crect fill="%23ddd" width="100" height="100"/%3E%3Ctext x="50" y="50" font-size="12" fill="%23999" text-anchor="middle" dominant-baseline="central"%3EError%3C/text%3E%3C/svg%3E'
@@ -2716,7 +2726,8 @@ export default function WebsiteEditionPage() {
                       />
                     )}
                     <div className="flex-1">
-                      <h4 className="font-bold text-text">{hero.title}</h4>
+                      <h4 className="font-bold text-text">{hero.internal_name || `Hero ${idx + 1}`}</h4>
+                      <p className="text-sm text-text-muted">{hero.title || 'Sin título visible'}</p>
                       <p className="text-sm text-text-muted line-clamp-2">{hero.description}</p>
                       <p className="text-xs text-primary mt-2">{hero.cta_text}</p>
                     </div>
@@ -3411,7 +3422,19 @@ export default function WebsiteEditionPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-text-muted mb-2">Título *</label>
+                <label className="block text-sm font-semibold text-text-muted mb-2">Nombre interno del hero *</label>
+                <input
+                  type="text"
+                  value={heroForm.internal_name}
+                  onChange={e => setHeroForm(current => ({ ...current, internal_name: e.target.value }))}
+                  className="input"
+                  placeholder="Ej: Hero de quesos"
+                />
+                <p className="mt-1 text-xs text-text-muted">Solo aparece en este editor para identificar el slide.</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-text-muted mb-2">Título visible (opcional)</label>
                 <input
                   type="text"
                   value={heroForm.title}
@@ -3480,6 +3503,35 @@ export default function WebsiteEditionPage() {
                   placeholder="/catalogo"
                   className="input"
                 />
+              </div>
+
+              <div className="rounded-xl border border-border p-4">
+                <label className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={heroForm.cta_bottom_offset !== null}
+                    onChange={e => setHeroForm(current => ({ ...current, cta_bottom_offset: e.target.checked ? 30 : null }))}
+                    className="mt-0.5 h-5 w-5 rounded border-gray-300"
+                  />
+                  <span>
+                    <span className="block text-sm font-semibold text-text">Fijar botón cerca del borde inferior</span>
+                    <span className="mt-1 block text-xs text-text-muted">Si está desactivado, el botón queda debajo de la descripción.</span>
+                  </span>
+                </label>
+                {heroForm.cta_bottom_offset !== null && (
+                  <label className="mt-4 block text-sm font-medium text-text-muted">
+                    <span className="flex items-center justify-between gap-2"><span>Distancia desde abajo</span><strong className="text-text">{heroForm.cta_bottom_offset} px</strong></span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="200"
+                      step="1"
+                      value={heroForm.cta_bottom_offset}
+                      onChange={e => setHeroForm(current => ({ ...current, cta_bottom_offset: Number(e.target.value) }))}
+                      className="mt-2 w-full"
+                    />
+                  </label>
+                )}
               </div>
             </div>
 
