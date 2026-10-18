@@ -7,6 +7,7 @@ import { HeroSlider } from '@/components/hero-slider'
 import { supabase } from '@/lib/supabase'
 import type { Category, Product, Discount } from '@/types/database'
 import { Icon } from '@/components/ui/icon'
+import { CategoryIconImage } from '@/components/category-icon-image'
 import { getCategoryIconName, isCategoryIconImage } from '@/lib/category-icons'
 import Link from 'next/link'
 import { getSiteFontFamily } from '@/lib/site-fonts'
@@ -148,7 +149,7 @@ function LandingBlockRenderer({
               <Link key={category.id} href={`/catalogo?categoria=${encodeURIComponent(category.id)}`} className="category-card group flex min-h-28 flex-col items-center justify-center gap-3 rounded-2xl border border-[#e7d9c8] bg-[#fffdf9] p-4 text-center transition hover:-translate-y-1 hover:border-[#b77a4d] hover:shadow-md">
                 <span className="category-icon-container flex items-center justify-center overflow-hidden rounded-full transition-colors">
                   {isCategoryIconImage(settings.category_icons?.[category.id])
-                    ? <span aria-hidden="true" className="category-custom-icon block" style={{ maskImage: `url("${settings.category_icons[category.id]}")`, WebkitMaskImage: `url("${settings.category_icons[category.id]}")` }} />
+                    ? <CategoryIconImage src={settings.category_icons[category.id]} weight={settings.category_custom_icon_weight || 0} />
                     : <Icon name={getCategoryIconName(category.name, settings.category_icons?.[category.id])} className="category-icon-glyph" />}
                 </span>
                 <span className="text-sm font-semibold text-gray-800">{category.name}</span>

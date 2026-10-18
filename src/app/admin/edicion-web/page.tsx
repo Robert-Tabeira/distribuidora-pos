@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { uploadImageToSupabase } from '@/lib/image-upload-helper'
 import { PopupFrame } from '@/components/popup-frame'
+import { CategoryIconImage } from '@/components/category-icon-image'
 import { Icon, type IconName } from '@/components/ui/icon'
 import { CATEGORY_ICON_OPTIONS, getCategoryIconName, isCategoryIconImage } from '@/lib/category-icons'
 import type { Employee } from '@/types/database'
@@ -4030,7 +4031,7 @@ export default function WebsiteEditionPage() {
                               '--category-custom-icon-expansion': `${(sectionForm.settings.category_custom_icon_weight || 0) / 2}px`,
                             } as React.CSSProperties}
                           >
-                            {customImage ? <span aria-hidden="true" className="category-custom-icon block h-6 w-6" style={{ maskImage: `url("${customImage}")`, WebkitMaskImage: `url("${customImage}")` }} /> : <Icon name={selectedIcon} className="h-5 w-5" />}
+                            {customImage ? <CategoryIconImage src={customImage} weight={sectionForm.settings.category_custom_icon_weight || 0} /> : <Icon name={selectedIcon} className="h-5 w-5" />}
                           </span>
                           <span className="truncate text-sm font-semibold text-text">{category.name}</span>
                         </div>
