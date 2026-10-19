@@ -16,7 +16,7 @@ interface ProductWithDiscount extends Product {
   discount?: Discount
 }
 
-type LandingBlockType = 'content' | 'categories' | 'banner' | 'feature_cards' | 'business_info' | 'location_map' | 'image_carousel' | 'product_grid'
+type LandingBlockType = 'content' | 'categories' | 'banner' | 'feature_cards' | 'instructions' | 'business_info' | 'location_map' | 'image_carousel' | 'product_grid'
 interface LandingSectionSettings {
   button_text?: string
   button_url?: string
@@ -38,6 +38,8 @@ interface LandingSectionSettings {
   category_icon_hover_bg_color?: string
   category_icon_hover_color?: string
   cards?: Array<{ title: string; description: string; image_url: string; mobile_image_url?: string; link_url: string; button_text: string }>
+  instruction_steps?: Array<{ title: string; description: string; image_url: string; mobile_image_url?: string }>
+  instruction_note?: string
   slides?: Array<{ image_url: string; mobile_image_url?: string; link_url: string }>
   mobile_image_url?: string
   desktop_text_alignment?: 'inherit' | 'left' | 'center' | 'right'
@@ -156,6 +158,49 @@ function LandingBlockRenderer({
               </Link>
             ))}
           </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (section.block_type === 'instructions') {
+    const steps = (settings.instruction_steps || []).filter(step => Boolean(step && (step.title || step.description || step.image_url)))
+    return (
+      <section
+        data-heading-font={headingFont}
+        data-body-font={bodyFont}
+        style={{
+          ...fontStyle,
+          backgroundColor: '#24180f',
+          backgroundImage: 'radial-gradient(ellipse at 18% 12%, rgba(153, 103, 55, 0.22), transparent 38%), repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 2px, transparent 42px)',
+          backgroundSize: 'auto, 100% 42px',
+        }}
+        className={`landing-section px-4 py-14 text-[#f8efe2] sm:px-6 sm:py-16 ${responsiveTextClasses(settings)}`}
+      >
+        <div className="mx-auto max-w-7xl">
+          <div className={responsiveTextClasses(settings, 'center')}>
+            <h2 className="text-3xl font-bold leading-tight text-[#fff8ec] sm:text-4xl lg:text-5xl">{heading}</h2>
+            {section.subtitle && <p className="mt-3 text-lg font-semibold text-[#d9b98c] sm:text-xl">{section.subtitle}</p>}
+            {section.description && <p className="mx-auto mt-3 max-w-3xl whitespace-pre-line text-[#eee1cf]">{section.description}</p>}
+          </div>
+          <div className="mt-9 grid gap-5 md:grid-cols-3">
+            {steps.map((step, index) => (
+              <article key={`${section.id}-instruction-${index}`} className="overflow-hidden rounded-2xl border border-[#b58b5d] bg-[#17120f]/80 shadow-[0_12px_35px_rgba(0,0,0,0.32)]">
+                <div className="flex min-h-16 items-center gap-3 border-b border-[#b58b5d]/50 px-5 py-4">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#b58b5d] font-black text-[#21170f]">{index + 1}</span>
+                  <h3 className="text-lg font-bold leading-snug text-[#e6c99e] sm:text-xl">{step.title || `Paso ${index + 1}`}</h3>
+                </div>
+                <div className="flex h-52 items-center justify-center bg-black/20 sm:h-56">
+                  {step.image_url
+                    ? <ResponsiveImage desktopSrc={step.image_url} mobileSrc={step.mobile_image_url} alt={step.title || `Imagen del paso ${index + 1}`} settings={settings} className="h-full w-full object-contain p-3" />
+                    : <div className="flex h-full w-full items-center justify-center text-7xl font-black text-[#b58b5d]/50">{index + 1}</div>}
+                </div>
+                {step.description && <p className="min-h-24 px-5 py-4 text-sm leading-6 text-[#eee1cf] sm:text-base">{step.description}</p>}
+              </article>
+            ))}
+          </div>
+          {settings.instruction_note && <p className="mx-auto mt-7 max-w-4xl rounded-xl border border-[#d6bd98] bg-[#f8efe2] px-5 py-4 text-center text-sm font-medium text-[#3b2a20] shadow-lg sm:text-base">{settings.instruction_note}</p>}
+          {settings.button_text && <div className="mt-7 text-center"><Link href={settings.button_url || '/catalogo'} className="inline-flex rounded-full bg-[#f8efe2] px-7 py-3.5 font-bold text-[#4b2e20] shadow-[0_0_22px_rgba(214,189,152,0.25)] transition hover:-translate-y-0.5 hover:bg-white">{settings.button_text}<span className="ml-2" aria-hidden="true">→</span></Link></div>}
         </div>
       </section>
     )

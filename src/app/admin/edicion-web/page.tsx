@@ -181,7 +181,7 @@ interface LandingSection {
   settings: LandingSectionSettings
 }
 
-type LandingBlockType = 'content' | 'categories' | 'banner' | 'feature_cards' | 'business_info' | 'location_map' | 'image_carousel' | 'product_grid'
+type LandingBlockType = 'content' | 'categories' | 'banner' | 'feature_cards' | 'instructions' | 'business_info' | 'location_map' | 'image_carousel' | 'product_grid'
 
 interface LandingFeatureCard {
   title: string
@@ -196,6 +196,13 @@ interface LandingCarouselSlide {
   image_url: string
   mobile_image_url?: string
   link_url: string
+}
+
+interface LandingInstructionStep {
+  title: string
+  description: string
+  image_url: string
+  mobile_image_url?: string
 }
 
 interface EditableLandingCategory {
@@ -293,6 +300,8 @@ interface LandingSectionSettings {
   category_icon_hover_bg_color?: string
   category_icon_hover_color?: string
   cards?: LandingFeatureCard[]
+  instruction_steps?: LandingInstructionStep[]
+  instruction_note?: string
   slides?: LandingCarouselSlide[]
   mobile_image_url?: string
   desktop_text_alignment?: 'inherit' | 'left' | 'center' | 'right'
@@ -343,6 +352,7 @@ const LANDING_BLOCK_LABELS: Record<LandingBlockType, string> = {
   categories: 'Categorías principales',
   banner: 'Banner con botón',
   feature_cards: 'Tarjetas con imagen',
+  instructions: 'Instrucciones en 3 pasos',
   business_info: 'Información del local',
   location_map: 'Ubicación en mapa',
   image_carousel: 'Carrusel de imágenes',
@@ -372,6 +382,17 @@ function defaultLandingSettings(type: LandingBlockType): LandingSectionSettings 
     { title: '', description: '', image_url: '', link_url: '', button_text: '' },
     { title: '', description: '', image_url: '', link_url: '', button_text: '' }
   ], ...typography }
+  if (type === 'instructions') return {
+    ...typography,
+    instruction_steps: [
+      { title: 'Explorá el catálogo', description: 'Buscá los productos que necesitás y agregalos a tu consulta.', image_url: '', mobile_image_url: '' },
+      { title: 'Armá tu lista', description: 'Reuní todos los productos que querés consultar en una sola lista.', image_url: '', mobile_image_url: '' },
+      { title: 'Enviá por WhatsApp', description: 'Mandanos la consulta y te respondemos con los precios.', image_url: '', mobile_image_url: '' },
+    ],
+    instruction_note: '¿Comprás para tu hogar o comercio? Consultanos, te ayudamos.',
+    button_text: 'Ir al catálogo y consultar',
+    button_url: '/catalogo',
+  }
   if (type === 'business_info') return { ...typography, show_phone: true, show_email: true, show_address: true, show_business_hours: true }
   if (type === 'location_map') return { ...typography, map_address: '67P2+8WC Los Primos, Ruta Interbalnearia Gral. Líber Seregni, 15200 Las Toscas, Departamento de Canelones', map_link_text: 'Abrir en Google Maps' }
   if (type === 'categories') return {
@@ -1418,6 +1439,13 @@ export default function WebsiteEditionPage() {
     setSectionForm(current => {
       const cards = current.settings.cards || []
       return { ...current, settings: { ...current.settings, cards: cards.map((card, cardIndex) => cardIndex === index ? { ...card, ...changes } : card) } }
+    })
+  }
+
+  function updateLandingInstructionStep(index: number, changes: Partial<LandingInstructionStep>) {
+    setSectionForm(current => {
+      const steps = current.settings.instruction_steps || []
+      return { ...current, settings: { ...current.settings, instruction_steps: steps.map((step, stepIndex) => stepIndex === index ? { ...step, ...changes } : step) } }
     })
   }
 
@@ -4179,6 +4207,51 @@ export default function WebsiteEditionPage() {
                     </div>
                   ))}
                   <button type="button" onClick={() => updateLandingSettings({ cards: [...(sectionForm.settings.cards || []), { title: '', description: '', image_url: '', link_url: '', button_text: '' }] })} className="w-full rounded-xl border border-dashed border-primary/40 py-3 text-sm font-semibold text-primary hover:bg-primary/5">+ Agregar tarjeta</button>
+                </div>
+              )}
+
+              {sectionForm.block_type === 'instructions' && (
+                <div className="space-y-4 rounded-xl border border-[#d8c1a3] bg-[#fbf7f0] p-4">
+                  <div>
+                    <h4 className="font-semibold text-[#3b2a20]">Pasos e imágenes</h4>
+                    <p className="mt-1 text-xs text-text-muted">Este bloque muestra tres tarjetas. Editá el texto y subí una imagen para cada paso; la imagen móvil es opcional.</p>
+                  </div>
+                  {(sectionForm.settings.instruction_steps || []).map((step, index) => (
+                    <div key={index} className="space-y-3 rounded-xl border border-[#e7d9c8] bg-white p-4">
+                      <h5 className="font-bold text-[#71391f]">Paso {index + 1}</h5>
+                      <label className="block text-sm font-medium text-text-muted">Título del paso
+                        <input className="input mt-1" value={step.title} onChange={event => updateLandingInstructionStep(index, { title: event.target.value })} placeholder={`Paso ${index + 1}`} />
+                      </label>
+                      <label className="block text-sm font-medium text-text-muted">Instrucción
+                        <textarea className="input mt-1 min-h-20" value={step.description} onChange={event => updateLandingInstructionStep(index, { description: event.target.value })} placeholder="Explicá brevemente qué debe hacer la persona" />
+                      </label>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <label className="block text-sm font-medium text-text-muted">Imagen del paso
+                          {step.image_url && <img src={step.image_url} alt={`Vista previa del paso ${index + 1}`} className="my-2 h-32 w-full rounded-lg bg-[#f6efe5] object-contain" />}
+                          <input className="input mt-1" value={step.image_url} onChange={event => updateLandingInstructionStep(index, { image_url: event.target.value })} placeholder="URL de imagen" />
+                          <span className="mt-2 flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-primary/40 px-3 py-2 text-sm font-semibold text-primary">{uploadingImage ? 'Subiendo…' : 'Subir imagen'}<input type="file" accept="image/*" className="hidden" disabled={uploadingImage} onChange={event => { void uploadLandingAsset(event.target.files?.[0], url => updateLandingInstructionStep(index, { image_url: url })); event.currentTarget.value = '' }} /></span>
+                        </label>
+                        <label className="block text-sm font-medium text-text-muted">Imagen para móvil (opcional)
+                          {step.mobile_image_url && <img src={step.mobile_image_url} alt={`Vista previa móvil del paso ${index + 1}`} className="my-2 h-32 w-full rounded-lg bg-[#f6efe5] object-contain" />}
+                          <input className="input mt-1" value={step.mobile_image_url || ''} onChange={event => updateLandingInstructionStep(index, { mobile_image_url: event.target.value })} placeholder="URL de imagen móvil" />
+                          <span className="mt-2 flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-primary/40 px-3 py-2 text-sm font-semibold text-primary">{uploadingImage ? 'Subiendo…' : 'Subir imagen móvil'}<input type="file" accept="image/*" className="hidden" disabled={uploadingImage} onChange={event => { void uploadLandingAsset(event.target.files?.[0], url => updateLandingInstructionStep(index, { mobile_image_url: url })); event.currentTarget.value = '' }} /></span>
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+                  <label className="block text-sm font-medium text-text-muted">Nota al pie (opcional)
+                    <textarea className="input mt-1 min-h-16" value={sectionForm.settings.instruction_note || ''} onChange={event => updateLandingSettings({ instruction_note: event.target.value })} placeholder="Una aclaración o mensaje de confianza" />
+                  </label>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="block text-sm font-medium text-text-muted">Texto del botón
+                      <input className="input mt-1" value={sectionForm.settings.button_text || ''} onChange={event => updateLandingSettings({ button_text: event.target.value })} placeholder="Ir al catálogo y consultar" />
+                    </label>
+                    <label className="block text-sm font-medium text-text-muted">Enlace del botón
+                      <input className="input mt-1" value={sectionForm.settings.button_url || ''} onChange={event => updateLandingSettings({ button_url: event.target.value })} placeholder="/catalogo" />
+                      <CategoryDestinationSelect categories={landingCategories} value={sectionForm.settings.button_url || ''} onChange={url => updateLandingSettings({ button_url: url })} />
+                      <ProductDestinationSelect products={landingProducts} value={sectionForm.settings.button_url || ''} onChange={url => updateLandingSettings({ button_url: url })} />
+                    </label>
+                  </div>
                 </div>
               )}
 
