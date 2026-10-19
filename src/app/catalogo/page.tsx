@@ -50,6 +50,8 @@ export default function CatalogPage() {
   const [showOnlyRecentlyAdded, setShowOnlyRecentlyAdded] = useState(false)
   const [cartItems, setCartItems] = useState<{ itemId: string; productId: string; quantity: number; unit: string; notes: string }[]>([])
   const [showCart, setShowCart] = useState(false)
+  const [priceInquiryProductIds, setPriceInquiryProductIds] = useState<string[]>([])
+  const [showPriceInquiry, setShowPriceInquiry] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<ProductWithDiscount | null>(null)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -65,6 +67,7 @@ export default function CatalogPage() {
   useEffect(() => {
     loadData()
     loadCart()
+    loadPriceInquiry()
     const params = new URLSearchParams(window.location.search)
     const categoryIds = params.getAll('categoria')
     const legacyCategoryId = params.get('category')
@@ -163,6 +166,52 @@ export default function CatalogPage() {
         })))
       } catch { localStorage.removeItem('los_primos_cart') }
     }
+  }
+
+  function loadPriceInquiry() {
+    const saved = localStorage.getItem('los_primos_price_inquiry')
+    if (!saved) return
+    try {
+      const parsed: unknown = JSON.parse(saved)
+      if (Array.isArray(parsed)) setPriceInquiryProductIds(parsed.filter((id): id is string => typeof id === 'string'))
+    } catch {
+      localStorage.removeItem('los_primos_price_inquiry')
+    }
+  }
+
+  function savePriceInquiry(productIds: string[]) {
+    const uniqueIds = [...new Set(productIds)]
+    localStorage.setItem('los_primos_price_inquiry', JSON.stringify(uniqueIds))
+    setPriceInquiryProductIds(uniqueIds)
+  }
+
+  function addToPriceInquiry(productId: string) {
+    savePriceInquiry([...priceInquiryProductIds, productId])
+    closeProductDetail()
+    setShowPriceInquiry(true)
+  }
+
+  function removeFromPriceInquiry(productId: string) {
+    savePriceInquiry(priceInquiryProductIds.filter(id => id !== productId))
+  }
+
+  const priceInquiryProducts = priceInquiryProductIds.flatMap(productId => {
+    const product = products.find(item => item.id === productId)
+    return product ? [product] : []
+  })
+
+  function sendPriceInquiryToWhatsApp() {
+    if (!priceInquiryProducts.length) return
+    if (!businessPhone) {
+      alert('Todavía no hay un teléfono de WhatsApp configurado para el negocio.')
+      return
+    }
+    const popup = window.open('about:blank', '_blank')
+    const lines = priceInquiryProducts.map(product => `• ${product.name}`)
+    const message = `Hola, quisiera consultar el precio de estos productos:\n\n${lines.join('\n')}`
+    const url = `https://wa.me/${businessPhone}?text=${encodeURIComponent(message)}`
+    if (popup) popup.location.href = url
+    else window.location.href = url
   }
 
   function saveCart(items: typeof cartItems) {
@@ -597,7 +646,10 @@ export default function CatalogPage() {
                   {filteredProducts.length} producto{filteredProducts.length !== 1 ? 's' : ''} disponible{filteredProducts.length !== 1 ? 's' : ''}
                 </p>
                   </div>
-                  {customerOrderingEnabled && <button onClick={() => setShowCart(true)} className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-900 text-white font-bold shadow-sm hover:bg-blue-800"><Icon name="cart" className="h-4 w-4" />Lista ({cartTotal})</button>}
+                  <div className="flex shrink-0 gap-2">
+                    <button onClick={() => setShowPriceInquiry(true)} className="inline-flex items-center gap-2 rounded-xl border border-[#8b4a2f] bg-[#fffaf5] px-3 py-2.5 text-sm font-bold text-[#71391f] shadow-sm hover:bg-[#f6e9dc] sm:px-4"><span className="sm:hidden">Precios ({priceInquiryProductIds.length})</span><span className="hidden sm:inline">Consultar precios ({priceInquiryProductIds.length})</span></button>
+                    {customerOrderingEnabled && <button onClick={() => setShowCart(true)} className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-3 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-blue-800 sm:px-4"><Icon name="cart" className="h-4 w-4" />Lista ({cartTotal})</button>}
+                  </div>
                 </div>
               </div>
 
@@ -840,8 +892,11 @@ export default function CatalogPage() {
               {customerOrderingEnabled && <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="catalog-product-notes">Anotación para este producto <span className="font-normal text-gray-400">(opcional)</span></label>}
               {customerOrderingEnabled && <textarea id="catalog-product-notes" value={productNotes} onChange={event => setProductNotes(event.target.value)} maxLength={300} rows={3} placeholder="Ej.: sabor, presentación o alguna indicación" className="w-full px-3 py-2 border border-gray-300 rounded-xl resize-y focus:outline-none focus:ring-2 focus:ring-blue-900" />}
 
-              {customerOrderingEnabled && <button onClick={handleAddToCart} className="w-full mt-4 py-3 rounded-xl bg-blue-900 text-white font-bold hover:bg-blue-800">
-                Agregar a la lista
+              <button onClick={() => addToPriceInquiry(selectedProduct.id)} className="mt-4 w-full rounded-xl bg-[#8b4a2f] py-3 font-bold text-white hover:bg-[#71391f]">
+                Agregar a consulta de precios
+              </button>
+              {customerOrderingEnabled && <button onClick={handleAddToCart} className="mt-2 w-full rounded-xl border border-blue-900 py-3 font-bold text-blue-900 hover:bg-blue-50">
+                Agregar a la lista de compras
               </button>}
             </div>
           </div>
@@ -859,6 +914,28 @@ export default function CatalogPage() {
             <div className="p-5 border-t space-y-2">
               <button onClick={saveShoppingList} disabled={!cartProducts.length || savingList} className="w-full py-3 rounded-xl border border-blue-900 text-blue-900 font-bold disabled:opacity-50">{savingList ? 'Guardando…' : 'Guardar lista en mi cuenta'}</button>
               <button onClick={sendCartToWhatsApp} disabled={!cartProducts.length} className="w-full py-3 rounded-xl bg-green-600 text-white font-bold disabled:opacity-50">Enviar por WhatsApp</button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {showPriceInquiry && (
+        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/60 sm:items-center sm:p-4" onClick={() => setShowPriceInquiry(false)}>
+          <section className="flex max-h-[90vh] w-full flex-col rounded-t-3xl bg-white shadow-2xl sm:max-w-xl sm:rounded-3xl" onClick={event => event.stopPropagation()}>
+            <div className="flex items-center justify-between border-b p-5">
+              <div><h2 className="text-xl font-black">Consulta de precios</h2><p className="text-sm text-gray-500">{priceInquiryProducts.length} producto{priceInquiryProducts.length !== 1 ? 's' : ''} para consultar</p></div>
+              <button onClick={() => setShowPriceInquiry(false)} className="text-2xl text-gray-500" aria-label="Cerrar">×</button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-5">
+              {priceInquiryProducts.length === 0 ? <p className="py-10 text-center text-gray-500">Todavía no agregaste productos. Abrí un producto del catálogo y tocá “Agregar a consulta de precios”.</p> : (
+                <ul className="divide-y">
+                  {priceInquiryProducts.map(product => <li key={product.id} className="flex items-center gap-3 py-3"><span className="min-w-0 flex-1 font-semibold">{product.name}</span><button onClick={() => removeFromPriceInquiry(product.id)} className="text-sm font-semibold text-red-600">Quitar</button></li>)}
+                </ul>
+              )}
+            </div>
+            <div className="space-y-2 border-t p-5">
+              <button onClick={sendPriceInquiryToWhatsApp} disabled={!priceInquiryProducts.length} className="w-full rounded-xl bg-green-600 py-3 font-bold text-white disabled:opacity-50">Preguntar precios por WhatsApp</button>
+              {priceInquiryProducts.length > 0 && <button onClick={() => savePriceInquiry([])} className="w-full py-2 text-sm font-semibold text-gray-500 hover:text-red-600">Vaciar consulta</button>}
             </div>
           </section>
         </div>
