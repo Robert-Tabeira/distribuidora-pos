@@ -94,15 +94,16 @@ export function HeroSlider() {
   const [loading, setLoading] = useState(true)
   const [autoPlaySeconds, setAutoPlaySeconds] = useState(5)
   const touchStartX = useRef<number | null>(null)
+  const slideRequestId = useRef(0)
 
   useEffect(() => {
     loadSlides()
     loadAutoPlaySettings()
     
-    // Recargar cada 5 segundos para ver cambios en tiempo real
+    // Refrescar periódicamente para mostrar cambios del editor sin sobrecargar Supabase.
     const interval = setInterval(() => {
       loadSlides()
-    }, 5000)
+    }, 30000)
 
     return () => clearInterval(interval)
   }, [])
@@ -123,6 +124,7 @@ export function HeroSlider() {
   }
 
   async function loadSlides() {
+    const requestId = ++slideRequestId.current
     try {
       const { data, error } = await supabase
         .from('hero_slides')
@@ -130,26 +132,27 @@ export function HeroSlider() {
         .eq('is_active', true)
         .order('order_position')
 
+      if (requestId !== slideRequestId.current) return
       if (error) {
         console.error('Error loading slides:', error)
-        setSlides(DEFAULT_SLIDES)
       } else if (data && data.length > 0) {
-        console.log('Slides cargados:', data)
-        setSlides(data as HeroSlide[])
+        const validSlides = data.filter((slide): slide is HeroSlide => Boolean(slide && typeof slide.image_url === 'string' && slide.image_url.trim()))
+        const nextSlides = validSlides.length ? validSlides : DEFAULT_SLIDES
+        setSlides(nextSlides)
+        setCurrentSlide(index => Math.min(Math.max(index, 0), nextSlides.length - 1))
       } else {
-        console.log('No slides found, usando defaults')
         setSlides(DEFAULT_SLIDES)
+        setCurrentSlide(0)
       }
     } catch (error) {
-      console.error('Error loading hero slides:', error)
-      setSlides(DEFAULT_SLIDES)
+      if (requestId === slideRequestId.current) console.error('Error loading hero slides:', error)
     } finally {
-      setLoading(false)
+      if (requestId === slideRequestId.current) setLoading(false)
     }
   }
 
   useEffect(() => {
-    if (!isAutoPlay || slides.length === 0) return
+    if (!isAutoPlay || slides.length <= 1) return
 
     const interval = setInterval(() => {
       setCurrentSlide(prev => (prev + 1) % slides.length)
@@ -159,15 +162,15 @@ export function HeroSlider() {
   }, [isAutoPlay, slides.length, autoPlaySeconds])
 
   const goToSlide = (index: number) => {
-    setCurrentSlide(index)
+    setCurrentSlide(Math.max(0, Math.min(index, slides.length - 1)))
   }
 
   const nextSlide = () => {
-    setCurrentSlide(prev => (prev + 1) % slides.length)
+    setCurrentSlide(prev => slides.length > 1 ? (prev + 1) % slides.length : 0)
   }
 
   const prevSlide = () => {
-    setCurrentSlide(prev => (prev - 1 + slides.length) % slides.length)
+    setCurrentSlide(prev => slides.length > 1 ? (prev - 1 + slides.length) % slides.length : 0)
   }
 
   if (loading || slides.length === 0) {
@@ -178,7 +181,7 @@ export function HeroSlider() {
     )
   }
 
-  const currentSlideData = slides[currentSlide]
+  const currentSlideData = slides[currentSlide] || slides[0] || DEFAULT_SLIDES[0]
 
   return (
     <div
