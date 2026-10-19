@@ -44,6 +44,8 @@ export default function CatalogPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [landingCategoryTarget, setLandingCategoryTarget] = useState('')
+  const [urlStateReady, setUrlStateReady] = useState(false)
+  const [pendingProductId, setPendingProductId] = useState('')
   const [showOnlyDiscounts, setShowOnlyDiscounts] = useState(false)
   const [showOnlyRecentlyAdded, setShowOnlyRecentlyAdded] = useState(false)
   const [cartItems, setCartItems] = useState<{ itemId: string; productId: string; quantity: number; unit: string; notes: string }[]>([])
@@ -64,17 +66,53 @@ export default function CatalogPage() {
     loadData()
     loadCart()
     const params = new URLSearchParams(window.location.search)
-    const categoryId = params.get('categoria') || params.get('category')
-    if (categoryId) {
-      setLandingCategoryTarget(categoryId)
-      setSelectedCategories([categoryId])
+    const categoryIds = params.getAll('categoria')
+    const legacyCategoryId = params.get('category')
+    const requestedCategories = categoryIds.length ? categoryIds : legacyCategoryId ? [legacyCategoryId] : []
+    if (requestedCategories.length) {
+      setLandingCategoryTarget(requestedCategories[0])
+      setSelectedCategories(requestedCategories)
     }
+    setPendingProductId(params.get('producto') || '')
+    setUrlStateReady(true)
     supabase.from('website_settings').select('phone_number, customer_orders_enabled, show_recent_product_badge').single().then(({ data }) => {
       if (data?.phone_number) setBusinessPhone(data.phone_number.replace(/\D/g, ''))
       setCustomerOrderingEnabled(data?.customer_orders_enabled === true)
       setShowRecentProductBadge(data?.show_recent_product_badge !== false)
     })
   }, [])
+
+  useEffect(() => {
+    if (!urlStateReady) return
+    const url = new URL(window.location.href)
+    url.searchParams.delete('categoria')
+    url.searchParams.delete('category')
+    selectedCategories.forEach(categoryId => url.searchParams.append('categoria', categoryId))
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`)
+  }, [selectedCategories, urlStateReady])
+
+  useEffect(() => {
+    function syncFromBrowserUrl() {
+      const params = new URLSearchParams(window.location.search)
+      setSelectedCategories(params.getAll('categoria'))
+      setPendingProductId(params.get('producto') || '')
+      if (!params.has('producto')) setSelectedProduct(null)
+    }
+    window.addEventListener('popstate', syncFromBrowserUrl)
+    return () => window.removeEventListener('popstate', syncFromBrowserUrl)
+  }, [])
+
+  useEffect(() => {
+    if (!pendingProductId || products.length === 0) return
+    const product = products.find(item => item.id === pendingProductId)
+    if (product) {
+      setSelectedProduct(product)
+      setActiveImageIndex(0)
+      const units = Array.isArray(product.unit) ? product.unit : [product.unit]
+      setSelectedProductUnit(units.includes('unidad') ? 'unidad' : units[0] || 'unidad')
+      setPendingProductId('')
+    }
+  }, [pendingProductId, products])
 
   async function loadData() {
     try {
@@ -165,13 +203,13 @@ export default function CatalogPage() {
   async function handleAddToCart() {
     const access = await getOrderAccess()
     if (access.status !== 'approved') {
-      setSelectedProduct(null)
+      closeProductDetail()
       showAccessMessage(access.status)
       return
     }
     if (selectedProduct) addToCart(selectedProduct.id, selectedProductUnit, productNotes.trim())
     setCartMessage('Agregado a tu lista de compras')
-    setSelectedProduct(null)
+    closeProductDetail()
     setShowCart(true)
   }
 
@@ -366,6 +404,24 @@ export default function CatalogPage() {
     )
   }
 
+  function closeProductDetail() {
+    setSelectedProduct(null)
+    const url = new URL(window.location.href)
+    url.searchParams.delete('producto')
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`)
+  }
+
+  function openProductDetail(product: ProductWithDiscount) {
+    setSelectedProduct(product)
+    setActiveImageIndex(0)
+    const units = Array.isArray(product.unit) ? product.unit : [product.unit]
+    setSelectedProductUnit(units.includes('unidad') ? 'unidad' : units[0] || 'unidad')
+    setProductNotes('')
+    const url = new URL(window.location.href)
+    url.searchParams.set('producto', product.id)
+    window.history.pushState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`)
+  }
+
   // Card de producto, reutilizada en cada sección/subsección del catálogo
   function renderProductCard(product: ProductWithDiscount) {
     const isRecentlyAdded = showRecentProductBadge && isRecentlyAddedProduct(product)
@@ -374,13 +430,7 @@ export default function CatalogPage() {
       <div
         key={product.id}
         className="relative bg-white rounded-xl sm:rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col h-full cursor-pointer group"
-        onClick={() => {
-          setSelectedProduct(product)
-          setActiveImageIndex(0)
-          const units = Array.isArray(product.unit) ? product.unit : [product.unit]
-          setSelectedProductUnit(units.includes('unidad') ? 'unidad' : units[0] || 'unidad')
-          setProductNotes('')
-        }}
+        onClick={() => openProductDetail(product)}
       >
         {/* Imagen */}
         <div className="relative h-28 sm:h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
@@ -690,7 +740,7 @@ export default function CatalogPage() {
       {selectedProduct && (
         <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-          onClick={() => setSelectedProduct(null)}
+          onClick={closeProductDetail}
         >
           <div
             className="bg-white w-full sm:max-w-lg sm:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col animate-slide-up"
@@ -715,7 +765,7 @@ export default function CatalogPage() {
               )}
 
               <button
-                onClick={() => setSelectedProduct(null)}
+                onClick={closeProductDetail}
                 className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-lg transition-all"
               >
                 <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">

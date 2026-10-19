@@ -205,6 +205,73 @@ interface EditableLandingCategory {
   show_in_catalog: boolean
 }
 
+interface EditableLandingProduct {
+  id: string
+  name: string
+}
+
+function CategoryDestinationSelect({
+  categories,
+  value,
+  onChange,
+}: {
+  categories: EditableLandingCategory[]
+  value: string
+  onChange: (url: string) => void
+}) {
+  const visibleCategories = categories
+    .filter(category => category.show_in_catalog !== false)
+    .sort((a, b) => {
+      const aParent = a.parent_id ? categories.find(category => category.id === a.parent_id)?.name || '' : ''
+      const bParent = b.parent_id ? categories.find(category => category.id === b.parent_id)?.name || '' : ''
+      return aParent.localeCompare(bParent, 'es') || a.name.localeCompare(b.name, 'es')
+    })
+  const selectedCategoryId = visibleCategories.find(category => value === `/catalogo?categoria=${encodeURIComponent(category.id)}`)?.id || ''
+
+  return (
+    <label className="block text-xs text-text-muted">
+      Ir directamente a una categoría
+      <select
+        className="input mt-1"
+        value={selectedCategoryId}
+        onChange={event => onChange(event.target.value ? `/catalogo?categoria=${encodeURIComponent(event.target.value)}` : '')}
+      >
+        <option value="">Elegir categoría (opcional)</option>
+        {visibleCategories.map(category => (
+          <option key={category.id} value={category.id}>
+            {category.parent_id ? `— ${category.name}` : category.name}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
+function ProductDestinationSelect({
+  products,
+  value,
+  onChange,
+}: {
+  products: EditableLandingProduct[]
+  value: string
+  onChange: (url: string) => void
+}) {
+  const selectedProductId = products.find(product => value === `/catalogo?producto=${encodeURIComponent(product.id)}`)?.id || ''
+  return (
+    <label className="mt-2 block text-xs text-text-muted">
+      O abrir un producto específico
+      <select
+        className="input mt-1"
+        value={selectedProductId}
+        onChange={event => onChange(event.target.value ? `/catalogo?producto=${encodeURIComponent(event.target.value)}` : '')}
+      >
+        <option value="">Elegir producto (opcional)</option>
+        {products.map(product => <option key={product.id} value={product.id}>{product.name}</option>)}
+      </select>
+    </label>
+  )
+}
+
 interface LandingSectionSettings {
   button_text?: string
   button_url?: string
@@ -672,6 +739,7 @@ export default function WebsiteEditionPage() {
   // Landing Sections
   const [sections, setSections] = useState<LandingSection[]>([])
   const [landingCategories, setLandingCategories] = useState<EditableLandingCategory[]>([])
+  const [landingProducts, setLandingProducts] = useState<EditableLandingProduct[]>([])
   const [editingSection, setEditingSection] = useState<LandingSection | null>(null)
   const [sectionForm, setSectionForm] = useState({ section_name: '', title: '', subtitle: '', description: '', image_url: '', is_visible: true, block_type: 'content' as LandingBlockType, settings: {} as LandingSectionSettings })
   const [savingSection, setSavingSection] = useState(false)
@@ -798,7 +866,7 @@ export default function WebsiteEditionPage() {
 
   async function loadData() {
     try {
-      const [settingsRes, heroRes, sectionsRes, announcementsRes, barSettingsRes, menuLinksRes, headerSettingsRes, popupsRes, categoriesRes] = await Promise.all([
+      const [settingsRes, heroRes, sectionsRes, announcementsRes, barSettingsRes, menuLinksRes, headerSettingsRes, popupsRes, categoriesRes, productsRes] = await Promise.all([
         supabase.from('website_settings').select('*').single(),
         supabase.from('hero_slides').select('*').order('order_position'),
         supabase.from('landing_sections').select('*').order('order_position').order('section_name'),
@@ -807,7 +875,8 @@ export default function WebsiteEditionPage() {
         supabase.from('menu_links').select('*').order('order_position'),
         supabase.from('header_settings').select('*').single(),
         supabase.from('popups').select('*').order('order_position'),
-        supabase.from('categories').select('*').order('order_position')
+        supabase.from('categories').select('*').order('order_position'),
+        supabase.from('products').select('id,name').eq('status', 'complete').eq('visible_in_catalog', true).order('name')
       ])
 
       if (settingsRes.data) {
@@ -846,6 +915,7 @@ export default function WebsiteEditionPage() {
       if (heroRes.data) setHeroSlides(heroRes.data as HeroSlide[])
       if (sectionsRes.data) setSections(sectionsRes.data as LandingSection[])
       if (categoriesRes.data) setLandingCategories(categoriesRes.data as EditableLandingCategory[])
+      if (productsRes.data) setLandingProducts(productsRes.data as EditableLandingProduct[])
       if (announcementsRes.data) setAnnouncements(announcementsRes.data as AnnouncementMessage[])
       if (menuLinksRes.data) setMenuLinks(menuLinksRes.data as MenuLink[])
       if (headerSettingsRes.data) {
@@ -3198,6 +3268,8 @@ export default function WebsiteEditionPage() {
                       placeholder="/catalogo"
                       className="input"
                     />
+                    <CategoryDestinationSelect categories={landingCategories} value={popupForm.clickable_image_link} onChange={url => setPopupForm(current => ({ ...current, clickable_image_link: url }))} />
+                    <ProductDestinationSelect products={landingProducts} value={popupForm.clickable_image_link} onChange={url => setPopupForm(current => ({ ...current, clickable_image_link: url }))} />
                   </div>
                 </div>
               </CollapsibleCard>
@@ -3257,6 +3329,8 @@ export default function WebsiteEditionPage() {
                         placeholder="/catalogo"
                         className="input"
                       />
+                      <CategoryDestinationSelect categories={landingCategories} value={popupForm.cta_url} onChange={url => setPopupForm(current => ({ ...current, cta_url: url }))} />
+                      <ProductDestinationSelect products={landingProducts} value={popupForm.cta_url} onChange={url => setPopupForm(current => ({ ...current, cta_url: url }))} />
                     </div>
                   </div>
                 </div>
@@ -3817,6 +3891,12 @@ export default function WebsiteEditionPage() {
                   placeholder="/catalogo"
                   className="input"
                 />
+                <CategoryDestinationSelect
+                  categories={landingCategories}
+                  value={heroForm.cta_url}
+                  onChange={url => setHeroForm(current => ({ ...current, cta_url: url }))}
+                />
+                <ProductDestinationSelect products={landingProducts} value={heroForm.cta_url} onChange={url => setHeroForm(current => ({ ...current, cta_url: url }))} />
               </div>
 
               <div className="rounded-xl border border-border p-4">
@@ -4079,7 +4159,7 @@ export default function WebsiteEditionPage() {
                   <h4 className="font-semibold text-text">Botón y estilo del banner</h4>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div><label className="mb-1 block text-xs font-medium text-text-muted">Texto del botón</label><input className="input" value={sectionForm.settings.button_text || ''} onChange={e => updateLandingSettings({ button_text: e.target.value })} placeholder="Ver catálogo" /></div>
-                    <div><label className="mb-1 block text-xs font-medium text-text-muted">Enlace del botón</label><input className="input" value={sectionForm.settings.button_url || ''} onChange={e => updateLandingSettings({ button_url: e.target.value })} placeholder="/catalogo" /></div>
+                    <div><label className="mb-1 block text-xs font-medium text-text-muted">Enlace del botón</label><input className="input" value={sectionForm.settings.button_url || ''} onChange={e => updateLandingSettings({ button_url: e.target.value })} placeholder="/catalogo" /><CategoryDestinationSelect categories={landingCategories} value={sectionForm.settings.button_url || ''} onChange={url => updateLandingSettings({ button_url: url })} /><ProductDestinationSelect products={landingProducts} value={sectionForm.settings.button_url || ''} onChange={url => updateLandingSettings({ button_url: url })} /></div>
                   </div>
                   <div><label className="mb-1 block text-xs font-medium text-text-muted">Color de fondo</label><input type="color" className="h-11 w-full cursor-pointer rounded-lg border border-border p-1" value={sectionForm.settings.background_color || '#fff7ed'} onChange={e => updateLandingSettings({ background_color: e.target.value })} /></div>
                 </div>
@@ -4095,7 +4175,7 @@ export default function WebsiteEditionPage() {
                       <textarea className="input min-h-20" value={card.description} onChange={e => updateLandingCard(index, { description: e.target.value })} placeholder="Descripción" />
                       <div className="grid gap-2 sm:grid-cols-2"><input className="input" value={card.image_url} onChange={e => updateLandingCard(index, { image_url: e.target.value })} placeholder="URL de la imagen" /><label className="flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-primary/40 px-3 py-2 text-sm font-semibold text-primary">{uploadingImage ? 'Subiendo…' : 'Subir imagen'}<input type="file" accept="image/*" className="hidden" disabled={uploadingImage} onChange={e => { void uploadLandingAsset(e.target.files?.[0], url => updateLandingCard(index, { image_url: url })); e.currentTarget.value = '' }} /></label></div>
                       <div className="grid gap-2 sm:grid-cols-2"><input className="input" value={card.mobile_image_url || ''} onChange={e => updateLandingCard(index, { mobile_image_url: e.target.value })} placeholder="URL de imagen para móvil (opcional)" /><label className="flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-primary/40 px-3 py-2 text-sm font-semibold text-primary">{uploadingImage ? 'Subiendo…' : 'Subir imagen móvil'}<input type="file" accept="image/*" className="hidden" disabled={uploadingImage} onChange={e => { void uploadLandingAsset(e.target.files?.[0], url => updateLandingCard(index, { mobile_image_url: url })); e.currentTarget.value = '' }} /></label></div>
-                      <div className="grid gap-2 sm:grid-cols-2"><input className="input" value={card.link_url} onChange={e => updateLandingCard(index, { link_url: e.target.value })} placeholder="Enlace (ej. /catalogo)" /><input className="input" value={card.button_text} onChange={e => updateLandingCard(index, { button_text: e.target.value })} placeholder="Texto del botón" /></div>
+                      <div className="grid gap-2 sm:grid-cols-2"><div><input className="input" value={card.link_url} onChange={e => updateLandingCard(index, { link_url: e.target.value })} placeholder="Enlace (ej. /catalogo)" /><CategoryDestinationSelect categories={landingCategories} value={card.link_url} onChange={url => updateLandingCard(index, { link_url: url })} /><ProductDestinationSelect products={landingProducts} value={card.link_url} onChange={url => updateLandingCard(index, { link_url: url })} /></div><input className="input" value={card.button_text} onChange={e => updateLandingCard(index, { button_text: e.target.value })} placeholder="Texto del botón" /></div>
                     </div>
                   ))}
                   <button type="button" onClick={() => updateLandingSettings({ cards: [...(sectionForm.settings.cards || []), { title: '', description: '', image_url: '', link_url: '', button_text: '' }] })} className="w-full rounded-xl border border-dashed border-primary/40 py-3 text-sm font-semibold text-primary hover:bg-primary/5">+ Agregar tarjeta</button>
@@ -4137,6 +4217,8 @@ export default function WebsiteEditionPage() {
                       <div className="space-y-2"><input className="input" value={slide.image_url} onChange={e => updateLandingSlide(index, { image_url: e.target.value })} placeholder="URL de imagen para escritorio" /><label className="flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-primary/40 px-3 py-2 text-sm font-semibold text-primary">{uploadingImage ? 'Subiendo…' : 'Subir imagen escritorio'}<input type="file" accept="image/*" className="hidden" disabled={uploadingImage} onChange={e => { void uploadLandingAsset(e.target.files?.[0], url => updateLandingSlide(index, { image_url: url })); e.currentTarget.value = '' }} /></label></div>
                       <div className="space-y-2"><input className="input" value={slide.mobile_image_url || ''} onChange={e => updateLandingSlide(index, { mobile_image_url: e.target.value })} placeholder="URL móvil (opcional)" /><label className="flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-primary/40 px-3 py-2 text-sm font-semibold text-primary">{uploadingImage ? 'Subiendo…' : 'Subir imagen móvil'}<input type="file" accept="image/*" className="hidden" disabled={uploadingImage} onChange={e => { void uploadLandingAsset(e.target.files?.[0], url => updateLandingSlide(index, { mobile_image_url: url })); e.currentTarget.value = '' }} /></label></div>
                       <input className="input" value={slide.link_url} onChange={e => updateLandingSlide(index, { link_url: e.target.value })} placeholder="Enlace opcional" />
+                      <CategoryDestinationSelect categories={landingCategories} value={slide.link_url} onChange={url => updateLandingSlide(index, { link_url: url })} />
+                      <ProductDestinationSelect products={landingProducts} value={slide.link_url} onChange={url => updateLandingSlide(index, { link_url: url })} />
                       <button type="button" onClick={() => updateLandingSettings({ slides: (sectionForm.settings.slides || []).filter((_, i) => i !== index) })} className="rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-600">Quitar</button>
                     </div>
                   ))}
@@ -4149,7 +4231,7 @@ export default function WebsiteEditionPage() {
                   <div><label className="mb-1 block text-sm font-semibold text-text-muted">Contenido</label><select className="input" value={sectionForm.settings.mode || 'popular'} onChange={e => updateLandingSettings({ mode: e.target.value as 'popular' | 'discounts' })}><option value="popular">Productos destacados</option><option value="discounts">Productos con descuento</option></select></div>
                   <div><label className="mb-1 block text-sm font-semibold text-text-muted">Cantidad de productos</label><input type="number" min={1} max={12} className="input" value={sectionForm.settings.limit || 5} onChange={e => updateLandingSettings({ limit: Math.max(1, Math.min(12, Number(e.target.value) || 1)) })} /></div>
                   <div><label className="mb-1 block text-sm font-semibold text-text-muted">Texto del botón</label><input className="input" value={sectionForm.settings.button_text || ''} onChange={e => updateLandingSettings({ button_text: e.target.value })} /></div>
-                  <div><label className="mb-1 block text-sm font-semibold text-text-muted">Enlace del botón</label><input className="input" value={sectionForm.settings.button_url || '/catalogo'} onChange={e => updateLandingSettings({ button_url: e.target.value })} /></div>
+                  <div><label className="mb-1 block text-sm font-semibold text-text-muted">Enlace del botón</label><input className="input" value={sectionForm.settings.button_url || '/catalogo'} onChange={e => updateLandingSettings({ button_url: e.target.value })} /><CategoryDestinationSelect categories={landingCategories} value={sectionForm.settings.button_url || '/catalogo'} onChange={url => updateLandingSettings({ button_url: url })} /><ProductDestinationSelect products={landingProducts} value={sectionForm.settings.button_url || '/catalogo'} onChange={url => updateLandingSettings({ button_url: url })} /></div>
                 </div>
               )}
 
@@ -4238,6 +4320,8 @@ export default function WebsiteEditionPage() {
                   placeholder="/descuentos"
                   className="input"
                 />
+                <CategoryDestinationSelect categories={landingCategories} value={menuLinkForm.url} onChange={url => setMenuLinkForm(current => ({ ...current, url }))} />
+                <ProductDestinationSelect products={landingProducts} value={menuLinkForm.url} onChange={url => setMenuLinkForm(current => ({ ...current, url }))} />
               </div>
 
               <label className="flex items-center gap-3 cursor-pointer">
@@ -4314,6 +4398,8 @@ export default function WebsiteEditionPage() {
                   placeholder="/catalogo"
                   className="input"
                 />
+                <CategoryDestinationSelect categories={landingCategories} value={announcementForm.link_url} onChange={url => setAnnouncementForm(current => ({ ...current, link_url: url }))} />
+                <ProductDestinationSelect products={landingProducts} value={announcementForm.link_url} onChange={url => setAnnouncementForm(current => ({ ...current, link_url: url }))} />
               </div>
 
               <label className="flex items-center gap-3 cursor-pointer">
