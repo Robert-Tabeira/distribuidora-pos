@@ -920,22 +920,39 @@ export default function CatalogPage() {
       )}
 
       {showPriceInquiry && (
-        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/60 sm:items-center sm:p-4" onClick={() => setShowPriceInquiry(false)}>
-          <section className="flex max-h-[90vh] w-full flex-col rounded-t-3xl bg-white shadow-2xl sm:max-w-xl sm:rounded-3xl" onClick={event => event.stopPropagation()}>
-            <div className="flex items-center justify-between border-b p-5">
-              <div><h2 className="text-xl font-black">Consulta de precios</h2><p className="text-sm text-gray-500">{priceInquiryProducts.length} producto{priceInquiryProducts.length !== 1 ? 's' : ''} para consultar</p></div>
-              <button onClick={() => setShowPriceInquiry(false)} className="text-2xl text-gray-500" aria-label="Cerrar">×</button>
+        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-[#1a120d]/65 backdrop-blur-sm sm:items-center sm:p-4" onClick={() => setShowPriceInquiry(false)}>
+          <section className="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl border border-[#e7d9c8] bg-[#fbf7f0] shadow-[0_24px_70px_rgba(20,12,6,0.38)] sm:max-w-xl sm:rounded-3xl" onClick={event => event.stopPropagation()}>
+            <div className="flex items-center justify-between bg-[#38251a] px-5 py-5 text-[#fff8ec] sm:px-6">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d9b98c]">Los Primos · Catálogo</p>
+                <h2 className="mt-1 text-xl font-black">Consulta de precios</h2>
+                <p className="mt-1 text-sm text-[#e9ddcf]">{priceInquiryProducts.length} producto{priceInquiryProducts.length !== 1 ? 's' : ''} en tu lista</p>
+              </div>
+              <button onClick={() => setShowPriceInquiry(false)} className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition hover:bg-white/20" aria-label="Cerrar">×</button>
             </div>
-            <div className="flex-1 overflow-y-auto p-5">
-              {priceInquiryProducts.length === 0 ? <p className="py-10 text-center text-gray-500">Todavía no agregaste productos. Abrí un producto del catálogo y tocá “Agregar a consulta de precios”.</p> : (
-                <ul className="divide-y">
-                  {priceInquiryProducts.map(product => <li key={product.id} className="flex items-center gap-3 py-3"><span className="min-w-0 flex-1 font-semibold">{product.name}</span><button onClick={() => removeFromPriceInquiry(product.id)} className="text-sm font-semibold text-red-600">Quitar</button></li>)}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+              {priceInquiryProducts.length === 0 ? <div className="rounded-2xl border border-dashed border-[#d8c1a3] bg-white/70 px-6 py-12 text-center">
+                <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#f2e9e3] text-[#8b4a2f]"><Icon name="tag" className="h-7 w-7" /></span>
+                <p className="mt-4 font-bold text-[#3b2a20]">Tu consulta está vacía</p>
+                <p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-gray-600">Abrí un producto del catálogo y elegí “Agregar a consulta de precios” para pedir su cotización.</p>
+              </div> : (
+                <ul className="space-y-3">
+                  {priceInquiryProducts.map(product => <li key={product.id} className="flex items-center gap-3 rounded-2xl border border-[#e7d9c8] bg-white p-3 shadow-sm sm:gap-4 sm:p-4">
+                    <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#eee3d6] bg-[#f8f3ec] sm:h-[72px] sm:w-[72px]">
+                      {product.gallery?.[0] ? <img src={product.gallery[0]} alt={product.name} className="h-full w-full object-contain p-1" /> : <Icon name="box" className="h-8 w-8 text-[#b58b5d]" />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-2 font-bold leading-snug text-[#3b2a20]">{product.name}</p>
+                      <p className="mt-1 text-xs font-medium text-gray-500">Precio a consultar</p>
+                    </div>
+                    <button onClick={() => removeFromPriceInquiry(product.id)} className="shrink-0 rounded-lg px-2 py-2 text-xs font-bold text-[#8b4a2f] transition hover:bg-[#f6efe5] hover:text-red-700 sm:px-3 sm:text-sm">Quitar</button>
+                  </li>)}
                 </ul>
               )}
             </div>
-            <div className="space-y-2 border-t p-5">
-              <button onClick={sendPriceInquiryToWhatsApp} disabled={!priceInquiryProducts.length} className="w-full rounded-xl bg-green-600 py-3 font-bold text-white disabled:opacity-50">Preguntar precios por WhatsApp</button>
-              {priceInquiryProducts.length > 0 && <button onClick={() => savePriceInquiry([])} className="w-full py-2 text-sm font-semibold text-gray-500 hover:text-red-600">Vaciar consulta</button>}
+            <div className="space-y-3 border-t border-[#e7d9c8] bg-white px-4 py-4 sm:px-6 sm:py-5">
+              <button onClick={sendPriceInquiryToWhatsApp} disabled={!priceInquiryProducts.length} className="w-full rounded-xl bg-[#16834d] py-3.5 font-bold text-white shadow-sm transition hover:bg-[#126c40] disabled:cursor-not-allowed disabled:opacity-50">Preguntar precios por WhatsApp</button>
+              {priceInquiryProducts.length > 0 && <button onClick={() => savePriceInquiry([])} className="w-full py-1 text-sm font-semibold text-gray-500 transition hover:text-red-600">Vaciar consulta</button>}
             </div>
           </section>
         </div>
