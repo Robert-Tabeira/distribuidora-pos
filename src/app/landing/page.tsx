@@ -190,10 +190,13 @@ function LandingBlockRenderer({
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#b58b5d] font-black text-[#21170f]">{index + 1}</span>
                   <h3 className="text-lg font-bold leading-snug text-[#e6c99e] sm:text-xl">{step.title || `Paso ${index + 1}`}</h3>
                 </div>
-                <div className="flex h-52 items-center justify-center bg-black/20 sm:h-56">
+                <div className="flex w-full items-center justify-center bg-black/20">
                   {step.image_url
-                    ? <ResponsiveImage desktopSrc={step.image_url} mobileSrc={step.mobile_image_url} alt={step.title || `Imagen del paso ${index + 1}`} settings={settings} className="h-full w-full object-contain p-3" />
-                    : <div className="flex h-full w-full items-center justify-center text-7xl font-black text-[#b58b5d]/50">{index + 1}</div>}
+                    ? <picture className="block w-full p-3">
+                        {step.mobile_image_url && <source media="(max-width: 767px)" srcSet={step.mobile_image_url} />}
+                        <img src={step.image_url} alt={step.title || `Imagen del paso ${index + 1}`} className="mx-auto block h-auto max-h-[380px] w-full object-contain" />
+                      </picture>
+                    : <div className="flex min-h-52 w-full items-center justify-center text-7xl font-black text-[#b58b5d]/50">{index + 1}</div>}
                 </div>
                 {step.description && <p className="min-h-24 px-5 py-4 text-sm leading-6 text-[#eee1cf] sm:text-base">{step.description}</p>}
               </article>
