@@ -4226,16 +4226,24 @@ export default function WebsiteEditionPage() {
                         <textarea className="input mt-1 min-h-20" value={step.description} onChange={event => updateLandingInstructionStep(index, { description: event.target.value })} placeholder="Explicá brevemente qué debe hacer la persona" />
                       </label>
                       <div className="grid gap-3 sm:grid-cols-2">
-                        <label className="block text-sm font-medium text-text-muted">Imagen del paso
+                        <div>
+                          <p className="block text-sm font-medium text-text-muted">Imagen del paso</p>
                           {step.image_url && <img src={step.image_url} alt={`Vista previa del paso ${index + 1}`} className="my-2 h-32 w-full rounded-lg bg-[#f6efe5] object-contain" />}
                           <input className="input mt-1" value={step.image_url} onChange={event => updateLandingInstructionStep(index, { image_url: event.target.value })} placeholder="URL de imagen" />
-                          <span className="mt-2 flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-primary/40 px-3 py-2 text-sm font-semibold text-primary">{uploadingImage ? 'Subiendo…' : 'Subir imagen'}<input type="file" accept="image/*" className="hidden" disabled={uploadingImage} onChange={event => { void uploadLandingAsset(event.target.files?.[0], url => updateLandingInstructionStep(index, { image_url: url })); event.currentTarget.value = '' }} /></span>
-                        </label>
-                        <label className="block text-sm font-medium text-text-muted">Imagen para móvil (opcional)
+                          <label className={`mt-2 flex items-center justify-center rounded-xl border border-dashed px-3 py-2 text-sm font-semibold ${uploadingImage ? 'cursor-wait border-gray-300 text-gray-400' : 'cursor-pointer border-primary/40 text-primary hover:bg-primary/5'}`}>
+                            {uploadingImage ? 'Subiendo…' : 'Elegir imagen desde la computadora'}
+                            <input type="file" accept="image/*" className="sr-only" disabled={uploadingImage} onChange={event => { const file = event.currentTarget.files?.[0]; event.currentTarget.value = ''; void uploadLandingAsset(file, url => updateLandingInstructionStep(index, { image_url: url })) }} />
+                          </label>
+                        </div>
+                        <div>
+                          <p className="block text-sm font-medium text-text-muted">Imagen para móvil (opcional)</p>
                           {step.mobile_image_url && <img src={step.mobile_image_url} alt={`Vista previa móvil del paso ${index + 1}`} className="my-2 h-32 w-full rounded-lg bg-[#f6efe5] object-contain" />}
                           <input className="input mt-1" value={step.mobile_image_url || ''} onChange={event => updateLandingInstructionStep(index, { mobile_image_url: event.target.value })} placeholder="URL de imagen móvil" />
-                          <span className="mt-2 flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-primary/40 px-3 py-2 text-sm font-semibold text-primary">{uploadingImage ? 'Subiendo…' : 'Subir imagen móvil'}<input type="file" accept="image/*" className="hidden" disabled={uploadingImage} onChange={event => { void uploadLandingAsset(event.target.files?.[0], url => updateLandingInstructionStep(index, { mobile_image_url: url })); event.currentTarget.value = '' }} /></span>
-                        </label>
+                          <label className={`mt-2 flex items-center justify-center rounded-xl border border-dashed px-3 py-2 text-sm font-semibold ${uploadingImage ? 'cursor-wait border-gray-300 text-gray-400' : 'cursor-pointer border-primary/40 text-primary hover:bg-primary/5'}`}>
+                            {uploadingImage ? 'Subiendo…' : 'Elegir imagen móvil'}
+                            <input type="file" accept="image/*" className="sr-only" disabled={uploadingImage} onChange={event => { const file = event.currentTarget.files?.[0]; event.currentTarget.value = ''; void uploadLandingAsset(file, url => updateLandingInstructionStep(index, { mobile_image_url: url })) }} />
+                          </label>
+                        </div>
                       </div>
                     </div>
                   ))}
