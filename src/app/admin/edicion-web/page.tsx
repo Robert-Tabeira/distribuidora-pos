@@ -301,6 +301,7 @@ interface LandingSectionSettings {
   category_icon_hover_color?: string
   cards?: LandingFeatureCard[]
   instruction_steps?: LandingInstructionStep[]
+  instruction_note_title?: string
   instruction_note?: string
   slides?: LandingCarouselSlide[]
   mobile_image_url?: string
@@ -389,7 +390,8 @@ function defaultLandingSettings(type: LandingBlockType): LandingSectionSettings 
       { title: 'Armá tu lista', description: 'Reuní todos los productos que querés consultar en una sola lista.', image_url: '', mobile_image_url: '' },
       { title: 'Enviá por WhatsApp', description: 'Mandanos la consulta y te respondemos con los precios.', image_url: '', mobile_image_url: '' },
     ],
-    instruction_note: '¿Comprás para tu hogar o comercio? Consultanos, te ayudamos.',
+    instruction_note_title: '¿Sos comerciante o comprás para tu hogar?',
+    instruction_note: 'No hay mínimos complicados. Consultanos por unidad o por bulto cerrado y te asesoramos al instante.',
     button_text: 'Ir al catálogo y consultar',
     button_url: '/catalogo',
   }
@@ -4247,7 +4249,10 @@ export default function WebsiteEditionPage() {
                       </div>
                     </div>
                   ))}
-                  <label className="block text-sm font-medium text-text-muted">Nota al pie (opcional)
+                  <label className="block text-sm font-medium text-text-muted">Título de la franja inferior (opcional)
+                    <input className="input mt-1" value={sectionForm.settings.instruction_note_title || ''} onChange={event => updateLandingSettings({ instruction_note_title: event.target.value })} placeholder="¿Sos comerciante o comprás para tu hogar?" />
+                  </label>
+                  <label className="block text-sm font-medium text-text-muted">Mensaje inferior (opcional)
                     <textarea className="input mt-1 min-h-16" value={sectionForm.settings.instruction_note || ''} onChange={event => updateLandingSettings({ instruction_note: event.target.value })} placeholder="Una aclaración o mensaje de confianza" />
                   </label>
                   <div className="grid gap-3 sm:grid-cols-2">
