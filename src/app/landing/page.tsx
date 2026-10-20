@@ -41,6 +41,27 @@ interface LandingSectionSettings {
   instruction_steps?: Array<{ title: string; description: string; image_url: string; mobile_image_url?: string }>
   instruction_note_title?: string
   instruction_note?: string
+  instruction_section_bg?: string
+  instruction_eyebrow_color?: string
+  instruction_heading_color?: string
+  instruction_subtitle_color?: string
+  instruction_description_color?: string
+  instruction_accent_color?: string
+  instruction_card_bg?: string
+  instruction_card_border?: string
+  instruction_number_bg?: string
+  instruction_number_color?: string
+  instruction_step_title_color?: string
+  instruction_step_text_color?: string
+  instruction_image_bg?: string
+  instruction_placeholder_color?: string
+  instruction_note_bg?: string
+  instruction_note_border?: string
+  instruction_note_title_color?: string
+  instruction_note_text_color?: string
+  instruction_note_icon_color?: string
+  instruction_button_bg?: string
+  instruction_button_color?: string
   slides?: Array<{ image_url: string; mobile_image_url?: string; link_url: string }>
   mobile_image_url?: string
   desktop_text_alignment?: 'inherit' | 'left' | 'center' | 'right'
@@ -172,50 +193,50 @@ function LandingBlockRenderer({
         data-body-font={bodyFont}
         style={{
           ...fontStyle,
-          backgroundColor: '#f3ecde',
+          backgroundColor: settings.instruction_section_bg || '#f3ecde',
           backgroundImage: 'radial-gradient(ellipse at 96% 4%, rgba(160, 125, 76, 0.13), transparent 32%), radial-gradient(ellipse at 2% 96%, rgba(160, 125, 76, 0.10), transparent 30%), repeating-linear-gradient(135deg, rgba(74, 59, 35, 0.018) 0px, rgba(74, 59, 35, 0.018) 1px, transparent 2px, transparent 9px)',
         }}
         className={`landing-section px-4 py-14 text-[#21170f] sm:px-6 sm:py-16 ${responsiveTextClasses(settings, 'left')}`}
       >
         <div className="mx-auto max-w-7xl">
           <div className={responsiveTextClasses(settings, 'left')}>
-            <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.28em] text-[#706b45]">Rápido <span className="mx-2 text-[#b58b5d]">/</span> Simple <span className="mx-2 text-[#b58b5d]">/</span> Sin complicaciones</p>
-            <h2 className="max-w-4xl text-4xl font-bold leading-[1.05] text-[#241a12] sm:text-5xl lg:text-6xl">{heading}</h2>
-            {section.subtitle && <p className="mt-4 max-w-3xl text-lg font-semibold text-[#5d573b] sm:text-xl">{section.subtitle}</p>}
-            {section.description && <p className="mt-2 max-w-3xl whitespace-pre-line text-base leading-7 text-[#39332c] sm:text-lg">{section.description}</p>}
-            <div className="mt-4 h-[2px] w-14 rounded-full bg-[#68663e]" />
+            <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.28em]" style={{ color: settings.instruction_eyebrow_color || '#706b45' }}>Rápido <span className="mx-2" style={{ color: settings.instruction_accent_color || '#b58b5d' }}>/</span> Simple <span className="mx-2" style={{ color: settings.instruction_accent_color || '#b58b5d' }}>/</span> Sin complicaciones</p>
+            <h2 className="max-w-4xl text-4xl font-bold leading-[1.05] sm:text-5xl lg:text-6xl" style={{ color: settings.instruction_heading_color || '#241a12' }}>{heading}</h2>
+            {section.subtitle && <p className="mt-4 max-w-3xl text-lg font-semibold sm:text-xl" style={{ color: settings.instruction_subtitle_color || '#5d573b' }}>{section.subtitle}</p>}
+            {section.description && <p className="mt-2 max-w-3xl whitespace-pre-line text-base leading-7 sm:text-lg" style={{ color: settings.instruction_description_color || '#39332c' }}>{section.description}</p>}
+            <div className="mt-4 h-[2px] w-14 rounded-full" style={{ backgroundColor: settings.instruction_accent_color || '#68663e' }} />
           </div>
           <div className="mt-7 grid gap-5 md:grid-cols-3 md:gap-8">
             {steps.map((step, index) => (
               <div key={`${section.id}-instruction-${index}`} className="relative">
-                <article className="flex h-full flex-col overflow-hidden rounded-[1.6rem] border border-[#e4dac7] bg-[#fffdf8]/85 shadow-[0_8px_24px_rgba(72,54,31,0.08)]">
+                <article className="flex h-full flex-col overflow-hidden rounded-[1.6rem] border shadow-[0_8px_24px_rgba(72,54,31,0.08)]" style={{ backgroundColor: settings.instruction_card_bg || '#fffdf8', borderColor: settings.instruction_card_border || '#e4dac7' }}>
                   <div className="flex items-start gap-4 px-5 pt-5 sm:px-6 sm:pt-6">
-                    <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#62613b] font-serif text-3xl text-[#fffdf8] shadow-inner sm:h-16 sm:w-16 sm:text-4xl">{index + 1}</span>
+                    <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full font-serif text-3xl shadow-inner sm:h-16 sm:w-16 sm:text-4xl" style={{ backgroundColor: settings.instruction_number_bg || '#62613b', color: settings.instruction_number_color || '#fffdf8' }}>{index + 1}</span>
                     <div className="pt-0.5">
-                      <h3 className="text-xl font-bold leading-tight text-[#21170f] sm:text-2xl">{step.title || `Paso ${index + 1}`}</h3>
-                      {step.description && <p className="mt-3 text-sm leading-6 text-[#49433b] sm:text-base">{step.description}</p>}
+                      <h3 className="text-xl font-bold leading-tight sm:text-2xl" style={{ color: settings.instruction_step_title_color || '#21170f' }}>{step.title || `Paso ${index + 1}`}</h3>
+                      {step.description && <p className="mt-3 text-sm leading-6 sm:text-base" style={{ color: settings.instruction_step_text_color || '#49433b' }}>{step.description}</p>}
                     </div>
                   </div>
                   <div className="mt-4 flex flex-1 items-center justify-center px-4 pb-4 sm:px-5 sm:pb-5">
                     {step.image_url
-                      ? <picture className="block w-full overflow-hidden rounded-2xl bg-[#f5f0e6]">
+                      ? <picture className="block w-full overflow-hidden rounded-2xl" style={{ backgroundColor: settings.instruction_image_bg || '#f5f0e6' }}>
                           {step.mobile_image_url && <source media="(max-width: 767px)" srcSet={step.mobile_image_url} />}
                           <img src={step.image_url} alt={step.title || `Imagen del paso ${index + 1}`} className="mx-auto block h-auto max-h-[340px] w-full object-contain" />
                         </picture>
-                      : <div className="flex min-h-40 w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-[#d9ceb9] bg-[#f8f4eb] text-[#a99a7c] sm:min-h-48"><Icon name="image" className="h-8 w-8" /><span className="text-xs font-medium">Imagen del paso {index + 1}</span></div>}
+                      : <div className="flex min-h-40 w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-[#d9ceb9] bg-[#f8f4eb] sm:min-h-48" style={{ color: settings.instruction_placeholder_color || '#a99a7c' }}><Icon name="image" className="h-8 w-8" /><span className="text-xs font-medium">Imagen del paso {index + 1}</span></div>}
                   </div>
                 </article>
-                {index < steps.length - 1 && <span aria-hidden="true" className="absolute -right-[1.65rem] top-1/2 z-10 hidden -translate-y-1/2 text-3xl text-[#353321] md:block">→</span>}
+                {index < steps.length - 1 && <span aria-hidden="true" className="absolute -right-[1.65rem] top-1/2 z-10 hidden -translate-y-1/2 text-3xl md:block" style={{ color: settings.instruction_accent_color || '#353321' }}>→</span>}
               </div>
             ))}
           </div>
-          {(settings.instruction_note_title || settings.instruction_note || settings.button_text) && <div className="mt-7 flex flex-col gap-5 rounded-[1.8rem] border border-[#e3d8c4] bg-[#fffdf8]/80 p-5 shadow-[0_8px_24px_rgba(72,54,31,0.07)] sm:p-6 lg:flex-row lg:items-center lg:gap-7">
+          {(settings.instruction_note_title || settings.instruction_note || settings.button_text) && <div className="mt-7 flex flex-col gap-5 rounded-[1.8rem] border p-5 shadow-[0_8px_24px_rgba(72,54,31,0.07)] sm:p-6 lg:flex-row lg:items-center lg:gap-7" style={{ backgroundColor: settings.instruction_note_bg || '#fffdf8', borderColor: settings.instruction_note_border || '#e3d8c4' }}>
             {(settings.instruction_note_title || settings.instruction_note) && <div className="flex min-w-0 flex-1 items-center gap-4 sm:gap-6">
-              <Icon name="sparkles" className="h-9 w-9 shrink-0 text-[#4f4e30] sm:h-10 sm:w-10" />
+              <Icon name="sparkles" className="h-9 w-9 shrink-0 sm:h-10 sm:w-10" style={{ color: settings.instruction_note_icon_color || '#4f4e30' }} />
               <span aria-hidden="true" className="hidden h-12 w-px bg-[#b9aa8e] sm:block" />
-              <div>{settings.instruction_note_title && <h3 className="font-serif text-xl font-bold leading-tight text-[#21170f] sm:text-2xl">{settings.instruction_note_title}</h3>}{settings.instruction_note && <p className="mt-1 text-sm leading-6 text-[#49433b] sm:text-base">{settings.instruction_note}</p>}</div>
+              <div>{settings.instruction_note_title && <h3 className="font-serif text-xl font-bold leading-tight sm:text-2xl" style={{ color: settings.instruction_note_title_color || '#21170f' }}>{settings.instruction_note_title}</h3>}{settings.instruction_note && <p className="mt-1 text-sm leading-6 sm:text-base" style={{ color: settings.instruction_note_text_color || '#49433b' }}>{settings.instruction_note}</p>}</div>
             </div>}
-            {settings.button_text && <Link href={settings.button_url || '/catalogo'} className="inline-flex shrink-0 items-center justify-center gap-3 rounded-full bg-[#525333] px-6 py-3.5 font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#414229] sm:px-7">{settings.button_text}<span aria-hidden="true" className="text-xl">→</span></Link>}
+            {settings.button_text && <Link href={settings.button_url || '/catalogo'} className="inline-flex shrink-0 items-center justify-center gap-3 rounded-full px-6 py-3.5 font-bold shadow-sm transition hover:-translate-y-0.5 hover:brightness-90 sm:px-7" style={{ backgroundColor: settings.instruction_button_bg || '#525333', color: settings.instruction_button_color || '#ffffff' }}>{settings.button_text}<span aria-hidden="true" className="text-xl">→</span></Link>}
           </div>}
         </div>
       </section>

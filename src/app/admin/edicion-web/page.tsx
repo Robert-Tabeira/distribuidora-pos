@@ -303,6 +303,27 @@ interface LandingSectionSettings {
   instruction_steps?: LandingInstructionStep[]
   instruction_note_title?: string
   instruction_note?: string
+  instruction_section_bg?: string
+  instruction_eyebrow_color?: string
+  instruction_heading_color?: string
+  instruction_subtitle_color?: string
+  instruction_description_color?: string
+  instruction_accent_color?: string
+  instruction_card_bg?: string
+  instruction_card_border?: string
+  instruction_number_bg?: string
+  instruction_number_color?: string
+  instruction_step_title_color?: string
+  instruction_step_text_color?: string
+  instruction_image_bg?: string
+  instruction_placeholder_color?: string
+  instruction_note_bg?: string
+  instruction_note_border?: string
+  instruction_note_title_color?: string
+  instruction_note_text_color?: string
+  instruction_note_icon_color?: string
+  instruction_button_bg?: string
+  instruction_button_color?: string
   slides?: LandingCarouselSlide[]
   mobile_image_url?: string
   desktop_text_alignment?: 'inherit' | 'left' | 'center' | 'right'
@@ -4255,6 +4276,26 @@ export default function WebsiteEditionPage() {
                   <label className="block text-sm font-medium text-text-muted">Mensaje inferior (opcional)
                     <textarea className="input mt-1 min-h-16" value={sectionForm.settings.instruction_note || ''} onChange={event => updateLandingSettings({ instruction_note: event.target.value })} placeholder="Una aclaración o mensaje de confianza" />
                   </label>
+                  <div className="space-y-4 rounded-xl border border-[#e7d9c8] bg-white p-4">
+                    <div>
+                      <h5 className="font-semibold text-text">Colores del bloque</h5>
+                      <p className="mt-1 text-xs text-text-muted">Personalizá fondos, textos, números, imágenes y botón. Los cambios se guardan junto con la sección.</p>
+                    </div>
+                    {([
+                      { title: 'Fondo y encabezado', colors: [['Fondo del bloque', 'instruction_section_bg', '#f3ecde'], ['Texto pequeño superior', 'instruction_eyebrow_color', '#706b45'], ['Título principal', 'instruction_heading_color', '#241a12'], ['Subtítulo', 'instruction_subtitle_color', '#5d573b'], ['Descripción', 'instruction_description_color', '#39332c'], ['Línea decorativa y flechas', 'instruction_accent_color', '#68663e']] },
+                      { title: 'Tarjetas y pasos', colors: [['Fondo de tarjetas', 'instruction_card_bg', '#fffdf8'], ['Borde de tarjetas', 'instruction_card_border', '#e4dac7'], ['Fondo de los números', 'instruction_number_bg', '#62613b'], ['Número', 'instruction_number_color', '#fffdf8'], ['Título de cada paso', 'instruction_step_title_color', '#21170f'], ['Texto de cada paso', 'instruction_step_text_color', '#49433b'], ['Fondo de las imágenes', 'instruction_image_bg', '#f5f0e6'], ['Texto del espacio sin imagen', 'instruction_placeholder_color', '#a99a7c']] },
+                      { title: 'Franja inferior y botón', colors: [['Fondo de la franja', 'instruction_note_bg', '#fffdf8'], ['Borde de la franja', 'instruction_note_border', '#e3d8c4'], ['Título de la franja', 'instruction_note_title_color', '#21170f'], ['Mensaje de la franja', 'instruction_note_text_color', '#49433b'], ['Ícono de la franja', 'instruction_note_icon_color', '#4f4e30'], ['Fondo del botón', 'instruction_button_bg', '#525333'], ['Texto del botón', 'instruction_button_color', '#ffffff']] },
+                    ] as const).map(group => (
+                      <div key={group.title}>
+                        <h6 className="mb-2 text-sm font-medium text-text-muted">{group.title}</h6>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {group.colors.map(([label, key, fallback]) => (
+                            <ColorPicker key={key} label={label} value={sectionForm.settings[key as keyof LandingSectionSettings] as string || fallback} onChange={color => updateLandingSettings({ [key]: color } as Partial<LandingSectionSettings>)} palette={palette} />
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <label className="block text-sm font-medium text-text-muted">Texto del botón
                       <input className="input mt-1" value={sectionForm.settings.button_text || ''} onChange={event => updateLandingSettings({ button_text: event.target.value })} placeholder="Ir al catálogo y consultar" />
