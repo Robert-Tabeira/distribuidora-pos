@@ -30,6 +30,7 @@ interface LandingSectionSettings {
   map_address?: string
   map_link_text?: string
   category_icons?: Record<string, string>
+  category_order?: string[]
   category_icon_size_desktop?: number
   category_icon_size_mobile?: number
   category_custom_icon_weight?: number
@@ -161,15 +162,20 @@ function LandingBlockRenderer({
   } as CSSProperties
 
   if (section.block_type === 'categories') {
-    const mainCategories = categories.filter(category => !category.parent_id && category.show_in_catalog !== false)
-    if (mainCategories.length === 0) return null
+    const visibleCategories = categories.filter(category => category.show_in_catalog !== false)
+    const defaultOrder = visibleCategories.filter(category => !category.parent_id).map(category => category.id)
+    const categoryOrder = settings.category_order ?? defaultOrder
+    const displayedCategories = categoryOrder
+      .map(id => visibleCategories.find(category => category.id === id))
+      .filter((category): category is CategoryForLanding => Boolean(category))
+    if (displayedCategories.length === 0) return null
     return (
       <section data-heading-font={headingFont} data-body-font={bodyFont} style={{ ...fontStyle, ...categoryIconStyle }} className={`landing-section bg-[#fbf7f0] px-4 py-14 ${responsiveTextClasses(settings)}`}>
         <div className="mx-auto max-w-7xl">
           <h2 className={`font-serif text-3xl font-bold text-[#3b2a20] sm:text-4xl ${responsiveTextClasses(settings, 'center')}`}>{heading}</h2>
           {section.subtitle && <p className={`mt-2 text-gray-600 ${responsiveTextClasses(settings, 'center')}`}>{section.subtitle}</p>}
           <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {mainCategories.map(category => (
+            {displayedCategories.map(category => (
               <Link key={category.id} href={`/catalogo?categoria=${encodeURIComponent(category.id)}`} className="category-card group flex min-h-28 flex-col items-center justify-center gap-3 rounded-2xl border border-[#e7d9c8] bg-[#fffdf9] p-4 text-center transition hover:-translate-y-1 hover:border-[#b77a4d] hover:shadow-md">
                 <span className="category-icon-container flex items-center justify-center overflow-hidden rounded-full transition-colors">
                   {isCategoryIconImage(settings.category_icons?.[category.id])
