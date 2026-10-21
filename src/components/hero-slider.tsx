@@ -202,6 +202,8 @@ export function HeroSlider() {
           src={currentSlideData.image_url}
           alt=""
           aria-hidden="true"
+          fetchPriority="high"
+          decoding="async"
           className={`h-full w-full ${IMAGE_FIT[currentSlideData.mobile_image_fit || 'contain']} ${DESKTOP_IMAGE_FIT[currentSlideData.desktop_image_fit || 'contain']} ${IMAGE_POSITION[currentSlideData.mobile_image_position || 'center']} ${DESKTOP_IMAGE_POSITION[currentSlideData.desktop_image_position || 'center']}`}
         />
       </picture>

@@ -12,7 +12,7 @@ import { getCategoryIconName, isCategoryIconImage } from '@/lib/category-icons'
 import Link from 'next/link'
 import { getSiteFontFamily } from '@/lib/site-fonts'
 
-interface ProductWithDiscount extends Product {
+interface ProductWithDiscount extends Pick<Product, 'id' | 'name' | 'gallery'> {
   discount?: Discount
 }
 
@@ -122,7 +122,7 @@ function ResponsiveImage({ desktopSrc, mobileSrc, alt, className, settings }: { 
   const desktopPosition = DESKTOP_OBJECT_POSITION_CLASS[settings.desktop_image_position || 'center']
   return <picture className="block">
     {mobileSrc && <source media="(max-width: 767px)" srcSet={mobileSrc} />}
-    <img src={desktopSrc} alt={alt} className={`${className} ${mobilePosition} ${desktopPosition}`} />
+    <img src={desktopSrc} alt={alt} loading="lazy" decoding="async" className={`${className} ${mobilePosition} ${desktopPosition}`} />
   </picture>
 }
 
@@ -416,9 +416,7 @@ export default function LandingPage() {
 
   async function loadData() {
     try {
-      const [productsRes, discountsRes, sectionsRes, categoriesRes, settingsRes] = await Promise.all([
-        supabase.from('products').select('*').eq('status', 'complete'),
-        supabase.from('discounts').select('*').eq('is_active', true),
+      const [sectionsRes, categoriesRes, settingsRes] = await Promise.all([
         supabase.from('landing_sections').select('*').order('order_position').order('section_name'),
         supabase.from('categories').select('*').order('order_position'),
         supabase.from('website_settings').select('phone_number,email,address,business_hours').single()
@@ -428,23 +426,39 @@ export default function LandingPage() {
       if (categoriesRes.data) setCategories(categoriesRes.data as CategoryForLanding[])
       if (settingsRes.data) setBusinessSettings(settingsRes.data as BusinessSettings)
 
-      if (productsRes.data && discountsRes.data) {
-        const productsWithDiscounts = await Promise.all(
-          productsRes.data.map(async (product) => {
-            const { data: productDiscount } = await supabase
-              .from('product_discounts')
-              .select('discount_id')
-              .eq('product_id', product.id)
-              .single()
+      const visibleSections = ((sectionsRes.data || []) as LandingSection[]).filter(section => section.is_visible)
+      const productSections = visibleSections.filter(section => section.block_type === 'product_grid')
+      if (productSections.length === 0) return
 
-            if (productDiscount?.discount_id) {
-              const discount = discountsRes.data.find(d => d.id === productDiscount.discount_id)
-              return { ...product, discount }
-            }
-            return product
-          })
-        )
-        setProducts(productsWithDiscounts)
+      setLandingSections(visibleSections)
+      const productLimit = Math.min(24, Math.max(1, ...productSections.map(section => section.settings?.limit || 5)))
+      const hasDiscountSection = productSections.some(section => section.settings?.mode === 'discounts')
+
+      if (hasDiscountSection) {
+        const [discountsRes, productDiscountsRes] = await Promise.all([
+          supabase.from('discounts').select('*').eq('is_active', true),
+          supabase.from('product_discounts').select('product_id,discount_id')
+        ])
+        const activeDiscounts = discountsRes.data || []
+        const activeDiscountIds = new Set(activeDiscounts.map(discount => discount.id))
+        const productDiscounts = productDiscountsRes.data || []
+        const discountedProductIds = [...new Set(productDiscounts.filter(item => activeDiscountIds.has(item.discount_id)).map(item => item.product_id))]
+        const normalSection = productSections.some(section => section.settings?.mode !== 'discounts')
+        const [normalProductsRes, discountedProductsRes] = await Promise.all([
+          normalSection
+            ? supabase.from('products').select('id,name,gallery').eq('status', 'complete').limit(productLimit)
+            : Promise.resolve({ data: [] }),
+          discountedProductIds.length
+            ? supabase.from('products').select('id,name,gallery').eq('status', 'complete').in('id', discountedProductIds).limit(productLimit)
+            : Promise.resolve({ data: [] })
+        ])
+        const productsById = new Map([...(normalProductsRes.data || []), ...(discountedProductsRes.data || [])].map(product => [product.id, product]))
+        const discountById = new Map(activeDiscounts.map(discount => [discount.id, discount]))
+        const discountByProductId = new Map(productDiscounts.map(item => [item.product_id, discountById.get(item.discount_id)]))
+        setProducts([...productsById.values()].map(product => ({ ...product, discount: discountByProductId.get(product.id) })) as ProductWithDiscount[])
+      } else {
+        const { data } = await supabase.from('products').select('id,name,gallery').eq('status', 'complete').limit(productLimit)
+        setProducts((data || []) as ProductWithDiscount[])
       }
     } catch (error) {
       console.error('Error loading data:', error)

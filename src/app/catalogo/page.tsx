@@ -8,8 +8,9 @@ import type { Product, Category, Discount } from '@/types/database'
 import { getCustomerSession } from '@/lib/customer-auth'
 import { Icon } from '@/components/ui/icon'
 
-interface ProductWithDiscount extends Product {
+interface ProductWithDiscount extends Pick<Product, 'id' | 'name' | 'unit' | 'category_id' | 'created_at' | 'gallery' | 'description' | 'product_code'> {
   discount?: Discount
+  subcategory_id?: string | null
 }
 
 // La tabla "categories" ya tiene estas columnas (parent_id, color,
@@ -31,7 +32,7 @@ function normalizeText(text: string) {
     .toLowerCase()
 }
 
-function isRecentlyAddedProduct(product: Product) {
+function isRecentlyAddedProduct(product: Pick<Product, 'created_at'>) {
   const createdAt = new Date(product.created_at).getTime()
   const age = Date.now() - createdAt
   return Number.isFinite(createdAt) && age >= 0 && age < 48 * 60 * 60 * 1000
@@ -120,28 +121,19 @@ export default function CatalogPage() {
   async function loadData() {
     try {
       const [productsRes, categoriesRes, discountsRes] = await Promise.all([
-        supabase.from('products').select('*').eq('status', 'complete').eq('visible_in_catalog', true),
+        supabase.from('products').select('id,name,unit,category_id,subcategory_id,status,created_at,product_code,gallery,description').eq('status', 'complete').eq('visible_in_catalog', true),
         supabase.from('categories').select('*').order('order_position'),
         supabase.from('discounts').select('*').eq('is_active', true)
       ])
 
-      if (productsRes.data && discountsRes.data) {
-        const productsWithDiscounts = await Promise.all(
-          productsRes.data.map(async (product) => {
-            const { data: productDiscount } = await supabase
-              .from('product_discounts')
-              .select('discount_id')
-              .eq('product_id', product.id)
-              .single()
-
-            if (productDiscount?.discount_id) {
-              const discount = discountsRes.data.find(d => d.id === productDiscount.discount_id)
-              return { ...product, discount }
-            }
-            return product
-          })
-        )
-        setProducts(productsWithDiscounts)
+      if (productsRes.data) {
+        const productIds = productsRes.data.map(product => product.id)
+        const { data: productDiscounts } = productIds.length
+          ? await supabase.from('product_discounts').select('product_id,discount_id').in('product_id', productIds)
+          : { data: [] }
+        const discountById = new Map((discountsRes.data || []).map(discount => [discount.id, discount]))
+        const discountByProductId = new Map((productDiscounts || []).map(item => [item.product_id, discountById.get(item.discount_id)]))
+        setProducts(productsRes.data.map(product => ({ ...product, discount: discountByProductId.get(product.id) })))
       }
 
       if (categoriesRes.data) setCategories(categoriesRes.data)
@@ -379,7 +371,7 @@ export default function CatalogPage() {
     // "traducimos" al vuelo, sin tener que re-editar esos productos.
     function resolveProductCategory(p: ProductWithDiscount) {
       let categoryId = p.category_id
-      let subcategoryId = (p as any).subcategory_id || null
+      let subcategoryId = p.subcategory_id || null
 
       if (categoryId) {
         const catRow = catsById.get(categoryId)
@@ -487,6 +479,8 @@ export default function CatalogPage() {
             <img
               src={product.gallery[0]}
               alt={product.name}
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-contain group-hover:opacity-90 transition-opacity"
             />
           ) : (
