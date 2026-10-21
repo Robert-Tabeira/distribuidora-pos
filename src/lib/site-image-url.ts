@@ -26,3 +26,8 @@ export function optimizedImageSource(src: string, width: number) {
   const validWidth = allowedWidths.find(candidate => candidate >= width) || allowedWidths[allowedWidths.length - 1]
   return `/_next/image?url=${encodeURIComponent(src)}&w=${validWidth}&q=75`
 }
+
+export function optimizedImageSourceSet(src: string, widths: number[]) {
+  if (!isOptimizableStorageImage(src)) return src
+  return widths.map(width => `${optimizedImageSource(src, width)} ${width}w`).join(', ')
+}

@@ -4,9 +4,9 @@ import { useState, useEffect, useRef, type CSSProperties } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getSiteFontFamily } from '@/lib/site-fonts'
-import { optimizedImageSource, SiteImage } from '@/components/site-image'
+import { optimizedImageSourceSet, SiteImage } from '@/components/site-image'
 
-interface HeroSlide {
+export interface HeroSlide {
   id: string
   internal_name?: string
   title: string | null
@@ -37,6 +37,11 @@ interface HeroSlide {
   show_title_desktop?: boolean | null
   show_description_mobile?: boolean | null
   show_description_desktop?: boolean | null
+}
+
+export interface HeroSliderInitialData {
+  slides: HeroSlide[]
+  autoPlaySeconds: number
 }
 
 const HORIZONTAL_POSITION = { left: 'justify-start', center: 'justify-center', right: 'justify-end' } as const
@@ -87,19 +92,21 @@ const DEFAULT_SLIDES: HeroSlide[] = [
   }
 ]
 
-export function HeroSlider() {
+export function HeroSlider({ initialData }: { initialData?: HeroSliderInitialData | null }) {
   const router = useRouter()
-  const [slides, setSlides] = useState<HeroSlide[]>(DEFAULT_SLIDES)
+  const [slides, setSlides] = useState<HeroSlide[]>(initialData?.slides || DEFAULT_SLIDES)
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isAutoPlay, setIsAutoPlay] = useState(true)
-  const [loading, setLoading] = useState(true)
-  const [autoPlaySeconds, setAutoPlaySeconds] = useState(5)
+  const [loading, setLoading] = useState(!initialData?.slides.length)
+  const [autoPlaySeconds, setAutoPlaySeconds] = useState(initialData?.autoPlaySeconds || 5)
   const touchStartX = useRef<number | null>(null)
   const slideRequestId = useRef(0)
 
   useEffect(() => {
-    loadSlides()
-    loadAutoPlaySettings()
+    if (!initialData?.slides.length) {
+      loadSlides()
+      loadAutoPlaySettings()
+    }
     
     // Refrescar periódicamente para mostrar cambios del editor sin sobrecargar Supabase.
     const interval = setInterval(() => {
@@ -153,14 +160,14 @@ export function HeroSlider() {
   }
 
   useEffect(() => {
-    if (!isAutoPlay || slides.length <= 1) return
+    if (loading || !isAutoPlay || slides.length <= 1) return
 
     const interval = setInterval(() => {
       setCurrentSlide(prev => (prev + 1) % slides.length)
     }, autoPlaySeconds * 1000)
 
     return () => clearInterval(interval)
-  }, [isAutoPlay, slides.length, autoPlaySeconds])
+  }, [loading, isAutoPlay, slides.length, autoPlaySeconds])
 
   const goToSlide = (index: number) => {
     setCurrentSlide(Math.max(0, Math.min(index, slides.length - 1)))
@@ -198,14 +205,15 @@ export function HeroSlider() {
       }}
     >
       <picture className="absolute inset-0 block">
-        {currentSlideData.mobile_image_url && <source media="(max-width: 767px)" srcSet={optimizedImageSource(currentSlideData.mobile_image_url, 1080)} />}
+        {currentSlideData.mobile_image_url && <source media="(max-width: 767px)" sizes="100vw" data-original-src={currentSlideData.mobile_image_url} srcSet={optimizedImageSourceSet(currentSlideData.mobile_image_url, [384, 640, 750, 828, 1080])} />}
         <SiteImage
           src={currentSlideData.image_url}
           alt=""
           aria-hidden="true"
           fill
           sizes="100vw"
-          priority
+          loading="eager"
+          fetchPriority="high"
           quality={75}
           className={`h-full w-full ${IMAGE_FIT[currentSlideData.mobile_image_fit || 'contain']} ${DESKTOP_IMAGE_FIT[currentSlideData.desktop_image_fit || 'contain']} ${IMAGE_POSITION[currentSlideData.mobile_image_position || 'center']} ${DESKTOP_IMAGE_POSITION[currentSlideData.desktop_image_position || 'center']}`}
         />
@@ -261,6 +269,7 @@ export function HeroSlider() {
       {/* Navigation Arrows */}
       <button
         onClick={prevSlide}
+        aria-label="Imagen anterior del hero"
         onMouseEnter={() => setIsAutoPlay(false)}
         onMouseLeave={() => setIsAutoPlay(true)}
         className="absolute left-4 lg:left-8 top-1/2 -translate-y-1/2 z-20 hidden w-12 h-12 lg:flex lg:w-16 lg:h-16 bg-white/20 hover:bg-white/40 backdrop-blur-sm rounded-full items-center justify-center text-white transition-all opacity-0 group-hover:opacity-100"
@@ -272,6 +281,7 @@ export function HeroSlider() {
 
       <button
         onClick={nextSlide}
+        aria-label="Imagen siguiente del hero"
         onMouseEnter={() => setIsAutoPlay(false)}
         onMouseLeave={() => setIsAutoPlay(true)}
         className="absolute right-4 lg:right-8 top-1/2 -translate-y-1/2 z-20 hidden w-12 h-12 lg:flex lg:w-16 lg:h-16 bg-white/20 hover:bg-white/40 backdrop-blur-sm rounded-full items-center justify-center text-white transition-all opacity-0 group-hover:opacity-100"
@@ -292,7 +302,7 @@ export function HeroSlider() {
                 ? 'w-8 h-3 bg-white'
                 : 'w-3 h-3 bg-white/50 hover:bg-white/75'
             }`}
-            aria-label={`Go to slide ${index + 1}`}
+            aria-label={`Ver imagen ${index + 1} del hero`}
           />
         ))}
       </div>

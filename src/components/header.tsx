@@ -319,6 +319,8 @@ export function Header() {
             {(visibleMenuLinks.length > 0 || hasBusinessInfo) && (
               <button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
+                aria-label={showMobileMenu ? 'Cerrar menú principal' : 'Abrir menú principal'}
+                aria-expanded={showMobileMenu}
                 className="lg:hidden flex items-center justify-center w-9 h-9 rounded-lg transition-all hover:opacity-70"
                 style={{ backgroundColor: showMobileMenu ? `${headerTextColor}0d` : 'transparent' }}
               >

@@ -1,6 +1,6 @@
 import Image, { type ImageProps } from 'next/image'
 import { isOptimizableStorageImage } from '@/lib/site-image-url'
-export { isOptimizableStorageImage, optimizedImageSource } from '@/lib/site-image-url'
+export { isOptimizableStorageImage, optimizedImageSource, optimizedImageSourceSet } from '@/lib/site-image-url'
 
 type SiteImageProps = Omit<ImageProps, 'src'> & { src: string }
 
@@ -18,6 +18,9 @@ export function SiteImage({ src, unoptimized, ...props }: SiteImageProps) {
       if (optimize && image.dataset.originalFallback !== 'true') {
         image.dataset.originalFallback = 'true'
         image.removeAttribute('srcset')
+        image.closest('picture')?.querySelectorAll<HTMLSourceElement>('source[data-original-src]').forEach(source => {
+          source.srcset = source.dataset.originalSrc || ''
+        })
         image.src = src
       }
     }}
