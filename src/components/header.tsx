@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { getSiteFontFamily } from '@/lib/site-fonts'
+import { Icon, type IconName } from '@/components/ui/icon'
 
 interface WebsiteSettings {
   phone_number: string | null
@@ -32,6 +33,7 @@ interface MenuLink {
   url: string
   order_position: number
   is_active: boolean
+  icon?: string | null
 }
 
 interface HeaderSettings {
@@ -46,6 +48,31 @@ interface HeaderSettings {
   nav_font_weight: string
   font_family?: string
   brand_font_weight?: number
+  nav_text_color?: string
+  nav_active_color?: string
+  nav_transparent_text_color?: string
+  nav_transparent_active_color?: string
+  nav_font_family?: string
+  nav_show_icons?: boolean
+  info_button_label?: string
+  info_button_icon?: string
+  info_button_bg?: string
+  info_button_text?: string
+  info_panel_bg?: string
+  info_panel_border?: string
+  info_title?: string
+  info_title_color?: string
+  info_label_color?: string
+  info_value_color?: string
+  info_icon_color?: string
+  info_hover_color?: string
+  info_font_family?: string
+  info_font_weight?: string
+  info_title_font_weight?: string
+  info_phone_icon?: string
+  info_hours_icon?: string
+  info_address_icon?: string
+  info_email_icon?: string
 }
 
 const DEFAULT_HEADER_SETTINGS: HeaderSettings = {
@@ -59,34 +86,38 @@ const DEFAULT_HEADER_SETTINGS: HeaderSettings = {
   nav_letter_spacing: 'wide',
   nav_font_weight: '700',
   font_family: 'dm_sans',
-  brand_font_weight: 900
+  brand_font_weight: 900,
+  nav_text_color: '#374151',
+  nav_active_color: '#2563eb',
+  nav_transparent_text_color: '#ffffff',
+  nav_transparent_active_color: '#ffffff',
+  nav_font_family: 'dm_sans',
+  nav_show_icons: false,
+  info_button_label: 'Info',
+  info_button_icon: 'info',
+  info_button_bg: '#eff6ff',
+  info_button_text: '#1d4ed8',
+  info_panel_bg: '#ffffff',
+  info_panel_border: '#e5e7eb',
+  info_title: 'Datos del Negocio',
+  info_title_color: '#111827',
+  info_label_color: '#6b7280',
+  info_value_color: '#111827',
+  info_icon_color: '#2563eb',
+  info_hover_color: '#1d4ed8',
+  info_font_family: 'dm_sans',
+  info_font_weight: '400',
+  info_title_font_weight: '700',
+  info_phone_icon: 'phone',
+  info_hours_icon: 'clock',
+  info_address_icon: 'location',
+  info_email_icon: 'mail',
 }
 
 const LETTER_SPACING_MAP: Record<string, string> = { normal: 'normal', wide: '0.025em', wider: '0.05em' }
-
-// Ícono según la URL del link (heurística simple para los links típicos;
-// cualquier link "custom" cae en el ícono genérico)
-function LinkIcon({ url, className }: { url: string; className?: string }) {
-  if (url === '/' || url === '/landing') {
-    return (
-      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-      </svg>
-    )
-  }
-  if (url.includes('catalogo')) {
-    return (
-      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-      </svg>
-    )
-  }
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 010 5.656l-4 4a4 4 0 01-5.656-5.656l1.5-1.5M10.172 13.828a4 4 0 010-5.656l4-4a4 4 0 015.656 5.656l-1.5 1.5" />
-    </svg>
-  )
-}
+const HEADER_ICON_NAMES: IconName[] = ['home', 'grid', 'store', 'box', 'tag', 'cart', 'phone', 'clock', 'location', 'mail', 'info', 'link', 'users', 'document', 'chat', 'search', 'sparkles']
+const defaultMenuIcon = (url: string): IconName => url === '/' || url === '/landing' ? 'home' : url.includes('catalogo') ? 'grid' : 'link'
+const safeIconName = (value: string | null | undefined, fallback: IconName): IconName => HEADER_ICON_NAMES.includes(value as IconName) ? value as IconName : fallback
 
 export function Header() {
   const router = useRouter()
@@ -154,7 +185,33 @@ export function Header() {
     ? settings?.logo_sticky_width || 144
     : settings?.logo_width || 180
   const headerTextColor = landingHeaderAtTop ? '#ffffff' : headerSettings.text_color
-  const headerActiveColor = landingHeaderAtTop ? '#ffffff' : headerSettings.active_color
+  const navTextColor = landingHeaderAtTop ? headerSettings.nav_transparent_text_color || '#ffffff' : headerSettings.nav_text_color || headerSettings.text_color
+  const navActiveColor = landingHeaderAtTop ? headerSettings.nav_transparent_active_color || '#ffffff' : headerSettings.nav_active_color || headerSettings.active_color
+  const navFontFamily = getSiteFontFamily(headerSettings.nav_font_family || headerSettings.font_family)
+  const infoFontFamily = getSiteFontFamily(headerSettings.info_font_family || 'dm_sans')
+  const infoRowStyle = { fontFamily: infoFontFamily, fontWeight: headerSettings.info_font_weight || '400' }
+  const infoIconStyle = { color: headerSettings.info_icon_color || '#2563eb' }
+  const infoLabelStyle = { color: headerSettings.info_label_color || '#6b7280' }
+  const infoValueStyle = { color: headerSettings.info_value_color || '#111827' }
+  const infoItems: { key: string; label: string; value: string; icon: IconName; href?: string }[] = []
+  if (settings?.show_phone && settings.phone_number) infoItems.push({ key: 'phone', label: 'Teléfono', value: settings.phone_number, icon: safeIconName(headerSettings.info_phone_icon, 'phone'), href: `https://wa.me/${settings.phone_number.replace(/\D/g, '')}` })
+  if (settings?.show_business_hours && settings.business_hours) infoItems.push({ key: 'hours', label: 'Horarios', value: settings.business_hours, icon: safeIconName(headerSettings.info_hours_icon, 'clock') })
+  if (settings?.show_address && settings.address) infoItems.push({ key: 'address', label: 'Dirección', value: settings.address, icon: safeIconName(headerSettings.info_address_icon, 'location'), href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(settings.address)}` })
+  if (settings?.show_email && settings.email) infoItems.push({ key: 'email', label: 'Email', value: settings.email, icon: safeIconName(headerSettings.info_email_icon, 'mail'), href: `mailto:${settings.email}` })
+  const renderInfoContent = (mobile = false) => (
+    <div className={mobile ? 'space-y-4' : ''} style={infoRowStyle}>
+      <h3 className={mobile ? 'mb-4 text-sm' : 'mb-4'} style={{ color: headerSettings.info_title_color || '#111827', fontWeight: headerSettings.info_title_font_weight || '700' }}>{headerSettings.info_title || 'Datos del Negocio'}</h3>
+      {infoItems.length > 0 ? <div className="space-y-4">
+        {infoItems.map(item => <div key={item.key} className="flex items-start gap-3">
+          <Icon name={item.icon} className="mt-0.5 h-5 w-5 flex-shrink-0" style={infoIconStyle} />
+          <div className="min-w-0">
+            <p className={mobile ? 'text-xs' : 'text-sm'} style={infoLabelStyle}>{item.label}</p>
+            {item.href ? <a href={item.href} className="font-semibold transition-colors hover:underline hover:text-[var(--info-hover-color)]" style={{ ...infoValueStyle, '--info-hover-color': headerSettings.info_hover_color || '#1d4ed8' } as React.CSSProperties}>{item.value}</a> : <p className="font-semibold" style={infoValueStyle}>{item.value}</p>}
+          </div>
+        </div>)}
+      </div> : <p className="py-4 text-center text-sm" style={infoLabelStyle}>No hay datos de negocio configurados</p>}
+    </div>
+  )
 
   return (
     <header
@@ -208,16 +265,18 @@ export function Header() {
                   href={link.url}
                   className={`relative py-1.5 text-sm transition-opacity hover:opacity-70 ${headerSettings.nav_uppercase ? 'uppercase' : ''}`}
                   style={{
-                    color: active ? headerActiveColor : headerTextColor,
+                    color: active ? navActiveColor : navTextColor,
                     letterSpacing: LETTER_SPACING_MAP[headerSettings.nav_letter_spacing],
-                    fontWeight: headerSettings.nav_font_weight
+                    fontWeight: headerSettings.nav_font_weight,
+                    fontFamily: navFontFamily
                   }}
                 >
+                  {headerSettings.nav_show_icons && <Icon name={safeIconName(link.icon, defaultMenuIcon(link.url))} className="mr-1.5 inline-block h-4 w-4 align-[-2px]" />}
                   {link.label}
                   {headerSettings.nav_underline && (
                     <span
                       className="absolute left-0 -bottom-0.5 h-0.5 w-full rounded-full transition-opacity"
-                      style={{ backgroundColor: headerActiveColor, opacity: active ? 1 : 0 }}
+                      style={{ backgroundColor: navActiveColor, opacity: active ? 1 : 0 }}
                     />
                   )}
                 </Link>
@@ -232,83 +291,20 @@ export function Header() {
                 onClick={() => setShowInfo(!showInfo)}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg font-bold text-sm uppercase tracking-wide transition-all hover:opacity-80"
                 style={{
-                  color: landingHeaderAtTop ? '#ffffff' : headerActiveColor,
-                  backgroundColor: landingHeaderAtTop ? 'rgba(255,255,255,0.14)' : `${headerActiveColor}14`
+                  color: headerSettings.info_button_text || '#1d4ed8',
+                  backgroundColor: headerSettings.info_button_bg || '#eff6ff',
+                  fontFamily: infoFontFamily,
+                  fontWeight: headerSettings.info_font_weight || '700'
                 }}
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Info</span>
+                <Icon name={safeIconName(headerSettings.info_button_icon, 'info')} className="h-5 w-5" />
+                <span>{headerSettings.info_button_label || 'Info'}</span>
               </button>
 
               {/* Dropdown Info */}
               {showInfo && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 p-6 z-50">
-                  <h3 className="font-bold text-gray-900 mb-4">Datos del Negocio</h3>
-
-                  <div className="space-y-4">
-                    {settings?.show_phone && settings?.phone_number && (
-                      <div className="flex items-start gap-3">
-                        <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                        </svg>
-                        <div>
-                          <p className="text-sm text-gray-600">Teléfono</p>
-                          <a href={`https://wa.me/${settings.phone_number.replace(/\D/g, '')}`} className="font-semibold text-gray-900 hover:text-blue-600 transition-all">
-                            {settings.phone_number}
-                          </a>
-                        </div>
-                      </div>
-                    )}
-
-                    {settings?.show_business_hours && settings?.business_hours && (
-                      <div className="flex items-start gap-3">
-                        <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 2m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <div>
-                          <p className="text-sm text-gray-600">Horarios</p>
-                          <p className="font-semibold text-gray-900">{settings.business_hours}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {settings?.show_address && settings?.address && (
-                      <div className="flex items-start gap-3">
-                        <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        <div>
-                          <p className="text-sm text-gray-600">Dirección</p>
-                          <a href={`https://www.google.com/maps/place/Los+Primos/@-34.7641828,-55.7477291,758m/data=!3m2!1e3!4b1!4m6!3m5!1s0x959ff53fa68babfb:0xaa210ac7416011d2!8m2!3d-34.7641828!4d-55.7477291!16s%2Fg%2F11f06n4mrp?entry=ttu&g_ep=EgoyMDI2MDgwNS4xIKXMDSoASAFQAw%3D%3D${settings.address.replace(/\D/g, '')}`} className="font-semibold text-gray-900 hover:text-blue-600 transition-all">
-                            {settings.address}
-                          </a>
-                        </div>
-                      </div>
-                    )}
-
-                    {settings?.show_email && settings?.email && (
-                      <div className="flex items-start gap-3">
-                        <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                        <div>
-                          <p className="text-sm text-gray-600">Email</p>
-                          <a href={`mailto:${settings.email}`} className="font-semibold text-gray-900 hover:text-blue-600 transition-all">
-                            {settings.email}
-                          </a>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {!settings?.phone_number && !settings?.address && !settings?.business_hours && (
-                    <p className="text-sm text-gray-500 text-center py-4">
-                      No hay datos de negocio configurados
-                    </p>
-                  )}
+                <div className="absolute right-0 z-50 mt-2 w-80 rounded-lg border p-6 shadow-xl" style={{ backgroundColor: headerSettings.info_panel_bg || '#ffffff', borderColor: headerSettings.info_panel_border || '#e5e7eb', fontFamily: infoFontFamily, fontWeight: headerSettings.info_font_weight || '400' }}>
+                  {renderInfoContent()}
                 </div>
               )}
             </div>
@@ -348,13 +344,14 @@ export function Header() {
                       onClick={() => setShowMobileMenu(false)}
                       className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${headerSettings.nav_uppercase ? 'uppercase text-sm' : ''}`}
                       style={{
-                        color: active ? headerSettings.active_color : headerSettings.text_color,
-                        backgroundColor: active ? `${headerSettings.active_color}14` : 'transparent',
+                        color: active ? navActiveColor : navTextColor,
+                        backgroundColor: active ? `${navActiveColor}14` : 'transparent',
                         letterSpacing: LETTER_SPACING_MAP[headerSettings.nav_letter_spacing],
-                        fontWeight: headerSettings.nav_font_weight
+                        fontWeight: headerSettings.nav_font_weight,
+                        fontFamily: navFontFamily
                       }}
                     >
-                      <LinkIcon url={link.url} className="w-5 h-5 flex-shrink-0" />
+                      <Icon name={safeIconName(link.icon, defaultMenuIcon(link.url))} className="h-5 w-5 flex-shrink-0" />
                       {link.label}
                     </Link>
                   )
@@ -363,65 +360,11 @@ export function Header() {
             )}
 
             {hasBusinessInfo && (
-              <div className={`p-4 space-y-4 ${visibleMenuLinks.length > 0 ? 'border-t border-gray-100' : ''}`}>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">Datos del negocio</p>
-
-                {settings?.show_phone && settings?.phone_number && (
-                  <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                    </svg>
-                    <div>
-                      <p className="text-xs text-gray-500">Teléfono</p>
-                      <a href={`https://wa.me/${settings.phone_number.replace(/\D/g, '')}`} className="font-semibold text-gray-900">
-                        {settings.phone_number}
-                      </a>
-                    </div>
-                  </div>
-                )}
-
-                {settings?.show_business_hours && settings?.business_hours && (
-                  <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 2m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <div>
-                      <p className="text-xs text-gray-500">Horarios</p>
-                      <p className="font-semibold text-gray-900">{settings.business_hours}</p>
-                    </div>
-                  </div>
-                )}
-
-                {settings?.show_address && settings?.address && (
-                  <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <div>
-                      <p className="text-xs text-gray-500">Dirección</p>
-                      <a href={`https://www.google.com/maps/place/Los+Primos/@-34.7641828,-55.7477291,758m/data=!3m2!1e3!4b1!4m6!3m5!1s0x959ff53fa68babfb:0xaa210ac7416011d2!8m2!3d-34.7641828!4d-55.7477291!16s%2Fg%2F11f06n4mrp?entry=ttu&g_ep=EgoyMDI2MDgwNS4xIKXMDSoASAFQAw%3D%3D${settings.address.replace(/\D/g, '')}`} className="font-semibold text-gray-900">
-                        {settings.address}
-                      </a>
-                    </div>
-                  </div>
-                )}
-
-                {settings?.show_email && settings?.email && (
-                  <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                    <div>
-                      <p className="text-xs text-gray-500">Email</p>
-                      <a href={`mailto:${settings.email}`} className="font-semibold text-gray-900">
-                        {settings.email}
-                      </a>
-                    </div>
-                  </div>
-                )}
+              <div className="border-t border-gray-100 p-4" style={{ backgroundColor: headerSettings.info_panel_bg || '#ffffff', color: headerSettings.info_value_color || '#111827' }}>
+                {renderInfoContent(true)}
               </div>
             )}
+
           </div>
         )}
       </div>

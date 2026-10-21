@@ -80,6 +80,7 @@ interface MenuLink {
   id: string
   label: string
   url: string
+  icon?: IconName | null
   order_position: number
   is_active: boolean
 }
@@ -97,7 +98,42 @@ interface HeaderSettings {
   nav_font_weight: string
   font_family?: string
   brand_font_weight?: number
+  nav_text_color?: string
+  nav_active_color?: string
+  nav_transparent_text_color?: string
+  nav_transparent_active_color?: string
+  nav_font_family?: string
+  nav_show_icons?: boolean
+  info_button_label?: string
+  info_button_icon?: IconName
+  info_button_bg?: string
+  info_button_text?: string
+  info_panel_bg?: string
+  info_panel_border?: string
+  info_title?: string
+  info_title_color?: string
+  info_label_color?: string
+  info_value_color?: string
+  info_icon_color?: string
+  info_hover_color?: string
+  info_font_family?: string
+  info_font_weight?: string
+  info_title_font_weight?: string
+  info_phone_icon?: IconName
+  info_hours_icon?: IconName
+  info_address_icon?: IconName
+  info_email_icon?: IconName
 }
+
+const HEADER_ICON_OPTIONS: { value: IconName; label: string }[] = [
+  { value: 'home', label: 'Inicio / Casa' }, { value: 'grid', label: 'Cuadrícula' }, { value: 'store', label: 'Tienda' },
+  { value: 'box', label: 'Caja' }, { value: 'tag', label: 'Etiqueta' }, { value: 'cart', label: 'Carrito' },
+  { value: 'phone', label: 'Teléfono' }, { value: 'clock', label: 'Horario' }, { value: 'location', label: 'Ubicación' },
+  { value: 'mail', label: 'Correo' }, { value: 'info', label: 'Información' }, { value: 'link', label: 'Enlace' },
+  { value: 'users', label: 'Personas' }, { value: 'document', label: 'Documento' }, { value: 'chat', label: 'Mensaje' },
+  { value: 'search', label: 'Buscar' }, { value: 'sparkles', label: 'Destellos' },
+]
+const defaultMenuIcon = (url: string): IconName => url === '/' || url === '/landing' ? 'home' : url.includes('catalogo') ? 'grid' : 'link'
 
 interface Popup {
   id: string
@@ -506,7 +542,7 @@ function SitePreviewPanel({
   barForm: { bg_color: string; text_color: string; font_family: string; font_size: string; font_weight: string; letter_spacing: string; animation: string }
   announcements: AnnouncementMessage[]
   logoForm: { site_name: string; site_tagline: string; logo_url: string; logo_transparent_url: string; logo_width: number; logo_sticky_width: number; use_logo_image: boolean }
-  headerForm: { bg_color: string; text_color: string; active_color: string; sticky: boolean; shadow: boolean; nav_uppercase: boolean; nav_underline: boolean; nav_letter_spacing: string; nav_font_weight: string; font_family?: string; brand_font_weight?: number }
+  headerForm: { bg_color: string; text_color: string; active_color: string; sticky: boolean; shadow: boolean; nav_uppercase: boolean; nav_underline: boolean; nav_letter_spacing: string; nav_font_weight: string; font_family?: string; brand_font_weight?: number; nav_text_color?: string; nav_active_color?: string; nav_font_family?: string; nav_show_icons?: boolean; info_button_label?: string; info_button_icon?: IconName; info_button_bg?: string; info_button_text?: string; info_font_family?: string }
   menuLinks: MenuLink[]
   landingSections: LandingSection[]
   footerForm: FooterSettings
@@ -581,12 +617,13 @@ function SitePreviewPanel({
                 key={link.id}
                 className={`relative text-[9px] pb-0.5 ${headerForm.nav_uppercase ? 'uppercase' : ''}`}
                 style={{
-                  color: idx === 0 ? headerForm.active_color : headerForm.text_color,
+                  color: idx === 0 ? headerForm.nav_active_color || headerForm.active_color : headerForm.nav_text_color || headerForm.text_color,
                   letterSpacing: LETTER_SPACING_MAP[headerForm.nav_letter_spacing],
                   fontWeight: headerForm.nav_font_weight,
-                  fontFamily: getSiteFontFamily(headerForm.font_family, customFonts)
+                  fontFamily: getSiteFontFamily(headerForm.nav_font_family || headerForm.font_family, customFonts)
                 }}
               >
+                {headerForm.nav_show_icons && <Icon name={link.icon || defaultMenuIcon(link.url)} className="mr-1 inline h-3 w-3" />}
                 {link.label}
                 {headerForm.nav_underline && idx === 0 && (
                   <span className="absolute left-0 -bottom-0 h-px w-full" style={{ backgroundColor: headerForm.active_color }} />
@@ -832,7 +869,7 @@ export default function WebsiteEditionPage() {
   // Header: Enlaces de Menú
   const [menuLinks, setMenuLinks] = useState<MenuLink[]>([])
   const [editingMenuLink, setEditingMenuLink] = useState<MenuLink | null>(null)
-  const [menuLinkForm, setMenuLinkForm] = useState({ label: '', url: '', is_active: true })
+  const [menuLinkForm, setMenuLinkForm] = useState<{ label: string; url: string; is_active: boolean; icon: IconName }>({ label: '', url: '', is_active: true, icon: 'link' })
   const [savingMenuLink, setSavingMenuLink] = useState(false)
   const [showMenuLinkModal, setShowMenuLinkModal] = useState(false)
 
@@ -849,7 +886,32 @@ export default function WebsiteEditionPage() {
     nav_letter_spacing: 'wide' as 'normal' | 'wide' | 'wider',
     nav_font_weight: '700',
     font_family: 'dm_sans',
-    brand_font_weight: 900
+    brand_font_weight: 900,
+    nav_text_color: '#374151',
+    nav_active_color: '#2563eb',
+    nav_transparent_text_color: '#ffffff',
+    nav_transparent_active_color: '#ffffff',
+    nav_font_family: 'dm_sans',
+    nav_show_icons: false,
+    info_button_label: 'Info',
+    info_button_icon: 'info' as IconName,
+    info_button_bg: '#eff6ff',
+    info_button_text: '#1d4ed8',
+    info_panel_bg: '#ffffff',
+    info_panel_border: '#e5e7eb',
+    info_title: 'Datos del Negocio',
+    info_title_color: '#111827',
+    info_label_color: '#6b7280',
+    info_value_color: '#111827',
+    info_icon_color: '#2563eb',
+    info_hover_color: '#1d4ed8',
+    info_font_family: 'dm_sans',
+    info_font_weight: '400',
+    info_title_font_weight: '700',
+    info_phone_icon: 'phone' as IconName,
+    info_hours_icon: 'clock' as IconName,
+    info_address_icon: 'location' as IconName,
+    info_email_icon: 'mail' as IconName,
   })
   const [savingHeaderSettings, setSavingHeaderSettings] = useState(false)
 
@@ -977,7 +1039,32 @@ export default function WebsiteEditionPage() {
           nav_letter_spacing: h.nav_letter_spacing ?? 'wide',
           nav_font_weight: h.nav_font_weight ?? '700',
           font_family: h.font_family || 'dm_sans',
-          brand_font_weight: h.brand_font_weight || 900
+          brand_font_weight: h.brand_font_weight || 900,
+          nav_text_color: h.nav_text_color || h.text_color || '#374151',
+          nav_active_color: h.nav_active_color || h.active_color || '#2563eb',
+          nav_transparent_text_color: h.nav_transparent_text_color || '#ffffff',
+          nav_transparent_active_color: h.nav_transparent_active_color || '#ffffff',
+          nav_font_family: h.nav_font_family || h.font_family || 'dm_sans',
+          nav_show_icons: h.nav_show_icons ?? false,
+          info_button_label: h.info_button_label || 'Info',
+          info_button_icon: h.info_button_icon || 'info',
+          info_button_bg: h.info_button_bg || '#eff6ff',
+          info_button_text: h.info_button_text || '#1d4ed8',
+          info_panel_bg: h.info_panel_bg || '#ffffff',
+          info_panel_border: h.info_panel_border || '#e5e7eb',
+          info_title: h.info_title || 'Datos del Negocio',
+          info_title_color: h.info_title_color || '#111827',
+          info_label_color: h.info_label_color || '#6b7280',
+          info_value_color: h.info_value_color || '#111827',
+          info_icon_color: h.info_icon_color || '#2563eb',
+          info_hover_color: h.info_hover_color || '#1d4ed8',
+          info_font_family: h.info_font_family || 'dm_sans',
+          info_font_weight: h.info_font_weight || '400',
+          info_title_font_weight: h.info_title_font_weight || '700',
+          info_phone_icon: h.info_phone_icon || 'phone',
+          info_hours_icon: h.info_hours_icon || 'clock',
+          info_address_icon: h.info_address_icon || 'location',
+          info_email_icon: h.info_email_icon || 'mail'
         })
       }
       if (popupsRes.data) setPopups(popupsRes.data as Popup[])
@@ -1904,10 +1991,10 @@ export default function WebsiteEditionPage() {
   function openMenuLinkModal(link?: MenuLink) {
     if (link) {
       setEditingMenuLink(link)
-      setMenuLinkForm({ label: link.label, url: link.url, is_active: link.is_active })
+      setMenuLinkForm({ label: link.label, url: link.url, is_active: link.is_active, icon: link.icon || defaultMenuIcon(link.url) })
     } else {
       setEditingMenuLink(null)
-      setMenuLinkForm({ label: '', url: '', is_active: true })
+      setMenuLinkForm({ label: '', url: '', is_active: true, icon: 'link' })
     }
     setShowMenuLinkModal(true)
   }
@@ -1923,7 +2010,7 @@ export default function WebsiteEditionPage() {
       if (editingMenuLink) {
         const { error } = await supabase
           .from('menu_links')
-          .update({ label: menuLinkForm.label.trim(), url: menuLinkForm.url.trim(), is_active: menuLinkForm.is_active })
+          .update({ label: menuLinkForm.label.trim(), url: menuLinkForm.url.trim(), is_active: menuLinkForm.is_active, icon: menuLinkForm.icon })
           .eq('id', editingMenuLink.id)
 
         if (error) throw error
@@ -2794,12 +2881,12 @@ export default function WebsiteEditionPage() {
                       >
                         {link.label}
                         {headerForm.nav_underline && idx === 0 && (
-                          <span className="absolute left-0 bottom-0 h-0.5 w-full rounded-full" style={{ backgroundColor: headerForm.active_color }} />
+                  <span className="absolute left-0 bottom-0 h-0.5 w-full rounded-full" style={{ backgroundColor: headerForm.nav_active_color || headerForm.active_color }} />
                         )}
                       </span>
                     ))}
                   </div>
-                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center"><Icon name="info" className="h-4 w-4" /></div>
+          <div className="flex items-center gap-1 rounded-lg px-2 py-1 text-[9px] font-bold" style={{ backgroundColor: headerForm.info_button_bg, color: headerForm.info_button_text, fontFamily: getSiteFontFamily(headerForm.info_font_family, customFonts) }}><Icon name={headerForm.info_button_icon || 'info'} className="h-3 w-3" />{headerForm.info_button_label || 'Info'}</div>
                 </div>
               </div>
 
@@ -2925,7 +3012,7 @@ export default function WebsiteEditionPage() {
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-text truncate">{link.label}</p>
+                          <p className="inline-flex max-w-full items-center gap-2 font-semibold text-text truncate"><Icon name={link.icon || defaultMenuIcon(link.url)} className="h-4 w-4 shrink-0 text-text-muted" />{link.label}</p>
                           <p className="text-xs text-text-muted truncate">{link.url}</p>
                         </div>
 
@@ -3006,11 +3093,25 @@ export default function WebsiteEditionPage() {
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-5">
-                  <label className="block text-sm font-semibold text-text-muted sm:col-span-2">Familia tipográfica del header y menú
+                  <label className="block text-sm font-semibold text-text-muted sm:col-span-2">Familia tipográfica del nombre del sitio
                     <select className="input mt-2" value={headerForm.font_family} onChange={e => setHeaderForm({ ...headerForm, font_family: e.target.value })}>
                       {BUILT_IN_FONT_OPTIONS.map(font => <option key={font.value} value={font.value}>{font.label}</option>)}
                       {customFonts.map(font => <option key={font.id} value={`custom:${font.id}`}>{font.name} (personalizada)</option>)}
                     </select>
+                  </label>
+                  <label className="block text-sm font-semibold text-text-muted sm:col-span-2">Familia tipográfica de los enlaces
+                    <select className="input mt-2" value={headerForm.nav_font_family} onChange={e => setHeaderForm({ ...headerForm, nav_font_family: e.target.value })}>
+                      {BUILT_IN_FONT_OPTIONS.map(font => <option key={font.value} value={font.value}>{font.label}</option>)}
+                      {customFonts.map(font => <option key={font.id} value={`custom:${font.id}`}>{font.name} (personalizada)</option>)}
+                    </select>
+                  </label>
+                  <ColorPicker label="Color de los enlaces" value={headerForm.nav_text_color} onChange={hex => setHeaderForm({ ...headerForm, nav_text_color: hex })} palette={palette} />
+                  <ColorPicker label="Color del enlace activo" value={headerForm.nav_active_color} onChange={hex => setHeaderForm({ ...headerForm, nav_active_color: hex })} palette={palette} />
+                  <ColorPicker label="Enlaces sobre header transparente" value={headerForm.nav_transparent_text_color} onChange={hex => setHeaderForm({ ...headerForm, nav_transparent_text_color: hex })} palette={palette} />
+                  <ColorPicker label="Enlace activo sobre header transparente" value={headerForm.nav_transparent_active_color} onChange={hex => setHeaderForm({ ...headerForm, nav_transparent_active_color: hex })} palette={palette} />
+                  <label className="flex items-center gap-2 text-sm font-semibold text-text-muted sm:col-span-2">
+                    <input type="checkbox" checked={headerForm.nav_show_icons} onChange={e => setHeaderForm({ ...headerForm, nav_show_icons: e.target.checked })} className="h-4 w-4 rounded border-gray-300" />
+                    Mostrar también los iconos junto a los enlaces en escritorio
                   </label>
                   <div>
                     <label className="block text-sm font-semibold text-text-muted mb-2">Espaciado entre letras</label>
@@ -3041,6 +3142,58 @@ export default function WebsiteEditionPage() {
                     {FONT_WEIGHT_OPTIONS.map(weight => <option key={weight.value} value={weight.value}>{weight.label}</option>)}
                   </select>
                 </label>
+              </CollapsibleCard>
+
+              <CollapsibleCard icon="info" title="Pestaña Info" subtitle="Iconos, datos, tipografía y colores">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="block text-sm font-semibold text-text-muted">Texto del botón
+                    <input className="input mt-2" value={headerForm.info_button_label} onChange={e => setHeaderForm({ ...headerForm, info_button_label: e.target.value })} />
+                  </label>
+                  <label className="block text-sm font-semibold text-text-muted">Título del panel
+                    <input className="input mt-2" value={headerForm.info_title} onChange={e => setHeaderForm({ ...headerForm, info_title: e.target.value })} />
+                  </label>
+                  {([
+                    ['info_button_icon', 'Icono del botón Info'],
+                    ['info_phone_icon', 'Icono de teléfono'],
+                    ['info_hours_icon', 'Icono de horarios'],
+                    ['info_address_icon', 'Icono de dirección'],
+                    ['info_email_icon', 'Icono de correo'],
+                  ] as const).map(([key, label]) => (
+                    <label key={key} className="block text-sm font-semibold text-text-muted">{label}
+                      <span className="mt-2 flex items-center gap-2">
+                        <Icon name={headerForm[key]} className="h-5 w-5 shrink-0 text-primary" />
+                        <select className="input" value={headerForm[key]} onChange={e => setHeaderForm(current => ({ ...current, [key]: e.target.value as IconName }))}>
+                          {HEADER_ICON_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                        </select>
+                      </span>
+                    </label>
+                  ))}
+                  <label className="block text-sm font-semibold text-text-muted">Tipografía de Info
+                    <select className="input mt-2" value={headerForm.info_font_family} onChange={e => setHeaderForm({ ...headerForm, info_font_family: e.target.value })}>
+                      {BUILT_IN_FONT_OPTIONS.map(font => <option key={font.value} value={font.value}>{font.label}</option>)}
+                      {customFonts.map(font => <option key={font.id} value={`custom:${font.id}`}>{font.name} (personalizada)</option>)}
+                    </select>
+                  </label>
+                  <label className="block text-sm font-semibold text-text-muted">Grosor del texto de Info
+                    <select className="input mt-2" value={headerForm.info_font_weight} onChange={e => setHeaderForm({ ...headerForm, info_font_weight: e.target.value })}>
+                      {FONT_WEIGHT_OPTIONS.map(weight => <option key={weight.value} value={weight.value}>{weight.label}</option>)}
+                    </select>
+                  </label>
+                  <label className="block text-sm font-semibold text-text-muted">Grosor del título del panel
+                    <select className="input mt-2" value={headerForm.info_title_font_weight} onChange={e => setHeaderForm({ ...headerForm, info_title_font_weight: e.target.value })}>
+                      {FONT_WEIGHT_OPTIONS.map(weight => <option key={weight.value} value={weight.value}>{weight.label}</option>)}
+                    </select>
+                  </label>
+                  <ColorPicker label="Fondo del botón Info" value={headerForm.info_button_bg} onChange={hex => setHeaderForm({ ...headerForm, info_button_bg: hex })} palette={palette} />
+                  <ColorPicker label="Texto e icono del botón Info" value={headerForm.info_button_text} onChange={hex => setHeaderForm({ ...headerForm, info_button_text: hex })} palette={palette} />
+                  <ColorPicker label="Fondo del panel" value={headerForm.info_panel_bg} onChange={hex => setHeaderForm({ ...headerForm, info_panel_bg: hex })} palette={palette} />
+                  <ColorPicker label="Borde del panel" value={headerForm.info_panel_border} onChange={hex => setHeaderForm({ ...headerForm, info_panel_border: hex })} palette={palette} />
+                  <ColorPicker label="Título del panel" value={headerForm.info_title_color} onChange={hex => setHeaderForm({ ...headerForm, info_title_color: hex })} palette={palette} />
+                  <ColorPicker label="Etiquetas (Teléfono, Horarios...)" value={headerForm.info_label_color} onChange={hex => setHeaderForm({ ...headerForm, info_label_color: hex })} palette={palette} />
+                  <ColorPicker label="Datos y enlaces" value={headerForm.info_value_color} onChange={hex => setHeaderForm({ ...headerForm, info_value_color: hex })} palette={palette} />
+                  <ColorPicker label="Enlaces al pasar el cursor" value={headerForm.info_hover_color} onChange={hex => setHeaderForm({ ...headerForm, info_hover_color: hex })} palette={palette} />
+                  <ColorPicker label="Iconos de los datos" value={headerForm.info_icon_color} onChange={hex => setHeaderForm({ ...headerForm, info_icon_color: hex })} palette={palette} />
+                </div>
               </CollapsibleCard>
 
               <button onClick={saveHeaderSettings} disabled={savingHeaderSettings} className="btn btn-primary w-full max-w-2xl">
@@ -4513,6 +4666,16 @@ export default function WebsiteEditionPage() {
                 />
                 <CategoryDestinationSelect categories={landingCategories} value={menuLinkForm.url} onChange={url => setMenuLinkForm(current => ({ ...current, url }))} />
                 <ProductDestinationSelect products={landingProducts} value={menuLinkForm.url} onChange={url => setMenuLinkForm(current => ({ ...current, url }))} />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-text-muted">Icono del enlace</label>
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon name={menuLinkForm.icon} className="h-5 w-5" /></span>
+                  <select className="input" value={menuLinkForm.icon} onChange={e => setMenuLinkForm({ ...menuLinkForm, icon: e.target.value as IconName })}>
+                    {HEADER_ICON_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                </div>
               </div>
 
               <label className="flex items-center gap-3 cursor-pointer">
