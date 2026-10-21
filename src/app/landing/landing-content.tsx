@@ -12,13 +12,15 @@ import { getCategoryIconName, isCategoryIconImage } from '@/lib/category-icons'
 import Link from 'next/link'
 import { getSiteFontFamily } from '@/lib/site-fonts'
 import { optimizedImageSource, optimizedImageSourceSet, SiteImage } from '@/components/site-image'
+import { LandingLocation } from '@/components/landing-location'
+import type { LandingLocationSettings } from '@/lib/landing-location'
 
 interface ProductWithDiscount extends Pick<Product, 'id' | 'name' | 'gallery'> {
   discount?: Discount
 }
 
 type LandingBlockType = 'content' | 'categories' | 'banner' | 'feature_cards' | 'instructions' | 'business_info' | 'location_map' | 'image_carousel' | 'product_grid'
-interface LandingSectionSettings {
+interface LandingSectionSettings extends LandingLocationSettings {
   button_text?: string
   button_url?: string
   background_color?: string
@@ -28,8 +30,6 @@ interface LandingSectionSettings {
   show_email?: boolean
   show_address?: boolean
   show_business_hours?: boolean
-  map_address?: string
-  map_link_text?: string
   category_icons?: Record<string, string>
   category_order?: string[]
   category_icon_size_desktop?: number
@@ -336,39 +336,7 @@ function LandingBlockRenderer({
   }
 
   if (section.block_type === 'location_map') {
-    const address = settings.map_address?.trim() || '67P2+8WC Los Primos, Ruta Interbalnearia Gral. Líber Seregni, 15200 Las Toscas, Departamento de Canelones'
-    const encodedAddress = encodeURIComponent(address)
-    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`
-    const embedUrl = `https://maps.google.com/maps?q=${encodedAddress}&output=embed`
-    return (
-      <section data-heading-font={headingFont} data-body-font={bodyFont} style={fontStyle} className={`landing-section bg-[#f6efe5] px-4 py-14 ${responsiveTextClasses(settings)}`}>
-        <div className="mx-auto max-w-6xl">
-          <div className={`mb-6 ${responsiveTextClasses(settings, 'center')}`}>
-            <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">{heading}</h2>
-            {section.subtitle && <p className="mt-2 text-gray-600">{section.subtitle}</p>}
-            {section.description && <p className="mx-auto mt-3 max-w-3xl whitespace-pre-line text-gray-600">{section.description}</p>}
-          </div>
-          <div className="grid overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.6fr)]">
-            <div className="flex flex-col items-start justify-center p-6 sm:p-8">
-              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary"><Icon name="location" className="h-5 w-5" /></span>
-              <h3 className="mt-4 font-bold text-gray-900">Encontranos</h3>
-              <p className="mt-2 whitespace-pre-line text-gray-600">{address}</p>
-              <a href={mapUrl} target="_blank" rel="noreferrer" className="mt-5 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 font-semibold text-white transition hover:brightness-95">
-                {settings.map_link_text || 'Abrir en Google Maps'}<span aria-hidden="true">↗</span>
-              </a>
-            </div>
-            <iframe
-              title={`Mapa de ubicación: ${address}`}
-              src={embedUrl}
-              className="h-72 w-full border-0 lg:h-full lg:min-h-[360px]"
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              allowFullScreen
-            />
-          </div>
-        </div>
-      </section>
-    )
+    return <LandingLocation title={heading} subtitle={section.subtitle} description={section.description} settings={settings} business={businessSettings} />
   }
 
   if (section.block_type === 'image_carousel') {

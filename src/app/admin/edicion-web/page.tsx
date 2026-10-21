@@ -10,6 +10,8 @@ import { Icon, type IconName } from '@/components/ui/icon'
 import { CATEGORY_ICON_OPTIONS, getCategoryIconName, isCategoryIconImage } from '@/lib/category-icons'
 import type { Employee } from '@/types/database'
 import { getSiteFontFamily, type SiteFont } from '@/lib/site-fonts'
+import { LandingLocation } from '@/components/landing-location'
+import { DEFAULT_LOCATION_SETTINGS, googleMapsEmbedSource, safeLocationLink, type LandingLocationSettings } from '@/lib/landing-location'
 
 interface ColorSwatch {
   name: string
@@ -315,7 +317,7 @@ function ProductDestinationSelect({
   )
 }
 
-interface LandingSectionSettings {
+interface LandingSectionSettings extends LandingLocationSettings {
   button_text?: string
   button_url?: string
   background_color?: string
@@ -325,8 +327,6 @@ interface LandingSectionSettings {
   show_email?: boolean
   show_address?: boolean
   show_business_hours?: boolean
-  map_address?: string
-  map_link_text?: string
   category_icons?: Record<string, string>
   category_order?: string[]
   category_icon_size_desktop?: number
@@ -434,6 +434,19 @@ const FONT_WEIGHT_OPTIONS = [
   { value: '900', label: 'Negro' },
 ]
 
+const LOCATION_COLOR_FIELDS = [
+  ['Fondo del bloque', 'map_section_bg'],
+  ['Fondo de la tarjeta', 'map_card_bg'],
+  ['Bordes', 'map_border_color'],
+  ['Títulos', 'map_heading_color'],
+  ['Textos y dirección', 'map_text_color'],
+  ['Etiquetas y línea decorativa', 'map_accent_color'],
+  ['Fondo de iconos y mapa sin cargar', 'map_icon_bg'],
+  ['Icono principal', 'map_icon_color'],
+  ['Fondo del botón', 'map_button_bg'],
+  ['Texto del botón', 'map_button_color'],
+] as const
+
 function defaultLandingSettings(type: LandingBlockType): LandingSectionSettings {
   const typography: Pick<LandingSectionSettings, 'heading_font' | 'body_font' | 'heading_weight' | 'body_weight'> = { heading_font: 'lora', body_font: 'dm_sans', heading_weight: '700', body_weight: '400' }
   if (type === 'banner') return { ...typography, button_text: 'Ver catálogo', button_url: '/catalogo', background_color: '#fff7ed' }
@@ -454,7 +467,7 @@ function defaultLandingSettings(type: LandingBlockType): LandingSectionSettings 
     button_url: '/catalogo',
   }
   if (type === 'business_info') return { ...typography, show_phone: true, show_email: true, show_address: true, show_business_hours: true }
-  if (type === 'location_map') return { ...typography, map_address: '67P2+8WC Los Primos, Ruta Interbalnearia Gral. Líber Seregni, 15200 Las Toscas, Departamento de Canelones', map_link_text: 'Abrir en Google Maps' }
+  if (type === 'location_map') return { ...typography, ...DEFAULT_LOCATION_SETTINGS }
   if (type === 'categories') return {
     ...typography,
     category_icons: {},
@@ -1577,6 +1590,21 @@ export default function WebsiteEditionPage() {
       return
     }
 
+    let savedSettings = sectionForm.settings
+    if (sectionForm.block_type === 'location_map') {
+      const embedInput = sectionForm.settings.map_embed_url?.trim() || ''
+      const directionsInput = sectionForm.settings.map_link_url?.trim() || ''
+      if (embedInput && !googleMapsEmbedSource(embedInput)) {
+        alert('Pegá un enlace para insertar de Google Maps o su código iframe. También podés dejar ese campo vacío y usar la dirección.')
+        return
+      }
+      if (directionsInput && !safeLocationLink(directionsInput)) {
+        alert('El enlace del botón debe comenzar con https:// o http://. Si lo dejás vacío, se genera desde la dirección.')
+        return
+      }
+      savedSettings = { ...sectionForm.settings, map_embed_url: embedInput ? googleMapsEmbedSource(embedInput)! : '', map_link_url: directionsInput ? safeLocationLink(directionsInput)! : '' }
+    }
+
     setSavingSection(true)
     try {
       if (editingSection) {
@@ -1585,7 +1613,7 @@ export default function WebsiteEditionPage() {
           .update({
             section_name: sectionForm.section_name.trim(),
             block_type: sectionForm.block_type,
-            settings: sectionForm.settings,
+            settings: savedSettings,
             title: sectionForm.title.trim(),
             subtitle: sectionForm.subtitle.trim() || null,
             description: sectionForm.description.trim() || null,
@@ -1603,7 +1631,7 @@ export default function WebsiteEditionPage() {
                 ...s,
                 section_name: sectionForm.section_name.trim(),
                 block_type: sectionForm.block_type,
-                settings: sectionForm.settings,
+                settings: savedSettings,
                 order_position: s.order_position,
                 title: sectionForm.title.trim(),
                 subtitle: sectionForm.subtitle.trim() || null,
@@ -1619,7 +1647,7 @@ export default function WebsiteEditionPage() {
           .insert({
             section_name: sectionForm.section_name.trim(),
             block_type: sectionForm.block_type,
-            settings: sectionForm.settings,
+            settings: savedSettings,
             order_position: sections.length ? Math.max(...sections.map(section => section.order_position)) + 10 : 10,
             title: sectionForm.title.trim(),
             subtitle: sectionForm.subtitle.trim() || null,
@@ -4153,7 +4181,7 @@ export default function WebsiteEditionPage() {
       {/* Section Modal */}
       {showSectionModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50" onClick={() => setShowSectionModal(false)}>
-          <div className="bg-surface w-full max-w-lg rounded-t-3xl p-6 animate-slide-up max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
+          <div className={`bg-surface w-full ${sectionForm.block_type === 'location_map' ? 'max-w-3xl' : 'max-w-lg'} rounded-t-3xl p-6 animate-slide-up max-h-[90vh] overflow-auto`} onClick={e => e.stopPropagation()}>
             <div className="w-12 h-1.5 bg-border rounded-full mx-auto mb-6" />
 
             <h3 className="font-bold text-xl mb-6">{editingSection ? 'Editar bloque' : 'Nuevo bloque de landing'}</h3>
@@ -4238,7 +4266,7 @@ export default function WebsiteEditionPage() {
                   </select>
                 </label>
                 <p className="text-xs text-text-muted sm:col-span-2">Sugerencia para el estilo del local: Lora en títulos y DM Sans en textos.</p>
-                <p className="text-sm font-semibold text-text sm:col-span-2">Alineación del texto por dispositivo</p>
+                <p className="text-sm font-semibold text-text sm:col-span-2">{sectionForm.block_type === 'location_map' ? 'Alineación del encabezado por dispositivo' : 'Alineación del texto por dispositivo'}</p>
                 {(['desktop', 'mobile'] as const).map(device => {
                   const key = device === 'desktop' ? 'desktop_text_alignment' : 'mobile_text_alignment'
                   return <label key={key} className="block text-sm font-medium text-text-muted">{device === 'desktop' ? 'Escritorio' : 'Móvil'}
@@ -4247,6 +4275,7 @@ export default function WebsiteEditionPage() {
                     </select>
                   </label>
                 })}
+                {sectionForm.block_type !== 'location_map' && <>
                 <p className="text-sm font-semibold text-text sm:col-span-2">Encuadre de imágenes por dispositivo</p>
                 {(['desktop', 'mobile'] as const).map(device => {
                   const key = device === 'desktop' ? 'desktop_image_position' : 'mobile_image_position'
@@ -4266,6 +4295,7 @@ export default function WebsiteEditionPage() {
                     <option value="first">Imagen antes del texto</option><option value="last">Imagen después del texto</option>
                   </select>
                 </label>
+                </>}
               </div>
 
               {sectionForm.block_type === 'categories' && (
@@ -4539,17 +4569,103 @@ export default function WebsiteEditionPage() {
               )}
 
               {sectionForm.block_type === 'location_map' && (
-                <div className="space-y-3 rounded-xl border border-border p-4">
-                  <h4 className="font-semibold text-text">Mapa y ubicación</h4>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-text-muted">Dirección que se mostrará y buscará en el mapa</label>
-                    <textarea className="input min-h-20" value={sectionForm.settings.map_address || ''} onChange={e => updateLandingSettings({ map_address: e.target.value })} placeholder="Dirección del local" />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-text-muted">Texto del enlace</label>
-                    <input className="input" value={sectionForm.settings.map_link_text || ''} onChange={e => updateLandingSettings({ map_link_text: e.target.value })} placeholder="Abrir en Google Maps" />
-                  </div>
-                  <p className="text-xs text-text-muted">El mapa y el enlace se generan automáticamente con esta dirección.</p>
+                <div className="space-y-4">
+                  <CollapsibleCard icon="location" title="Dirección y datos del local" subtitle="Lo que verán tus clientes junto al mapa" defaultOpen>
+                    <div className="mt-4 space-y-4">
+                      <label className="block text-sm font-medium text-text-muted">Dirección o nombre para buscar en el mapa
+                        <textarea className="input mt-1 min-h-20" value={sectionForm.settings.map_address || ''} onChange={e => updateLandingSettings({ map_address: e.target.value })} placeholder="Ej.: Los Primos, Ruta Interbalnearia, Las Toscas" />
+                        <span className="mt-1 block text-xs">Con esta dirección se generan el mapa y las indicaciones. Si queda vacía, se conserva la ubicación habitual de Los Primos.</span>
+                      </label>
+                      <label className="block text-sm font-medium text-text-muted">Dirección visible (opcional)
+                        <textarea className="input mt-1 min-h-16" value={sectionForm.settings.map_display_address || ''} onChange={e => updateLandingSettings({ map_display_address: e.target.value })} placeholder="Podés escribir una versión más corta, con saltos de línea" />
+                        <span className="mt-1 block text-xs">Este texto cambia lo que se muestra en la tarjeta, sin mover la ubicación del mapa.</span>
+                      </label>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <label className="block text-sm font-medium text-text-muted">Texto pequeño superior
+                          <input className="input mt-1" value={sectionForm.settings.map_eyebrow ?? DEFAULT_LOCATION_SETTINGS.map_eyebrow} onChange={e => updateLandingSettings({ map_eyebrow: e.target.value })} placeholder="Te esperamos en el local" />
+                        </label>
+                        <label className="block text-sm font-medium text-text-muted">Título de la tarjeta
+                          <input className="input mt-1" value={sectionForm.settings.map_card_title ?? DEFAULT_LOCATION_SETTINGS.map_card_title} onChange={e => updateLandingSettings({ map_card_title: e.target.value })} placeholder="Pasá por Los Primos" />
+                        </label>
+                      </div>
+                      <label className="block text-sm font-medium text-text-muted">Mensaje de la tarjeta (opcional)
+                        <textarea className="input mt-1 min-h-16" value={sectionForm.settings.map_card_description || ''} onChange={e => updateLandingSettings({ map_card_description: e.target.value })} placeholder="Una bienvenida, una referencia para llegar o una aclaración" />
+                      </label>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="rounded-xl border border-border p-3">
+                          <label className="flex items-center gap-2 text-sm font-semibold text-text"><input type="checkbox" checked={sectionForm.settings.map_show_hours !== false} onChange={e => updateLandingSettings({ map_show_hours: e.target.checked })} />Mostrar horarios</label>
+                          <label className="mt-3 block text-xs text-text-muted">Horario para este bloque
+                            <textarea disabled={sectionForm.settings.map_show_hours === false} className="input mt-1 min-h-20" value={sectionForm.settings.map_hours_text || ''} onChange={e => updateLandingSettings({ map_hours_text: e.target.value })} placeholder={settings?.business_hours || 'Usar el horario de los datos del negocio'} />
+                          </label>
+                          <p className="mt-1 text-xs text-text-muted">Vacío: usa el horario general del negocio.</p>
+                        </div>
+                        <div className="rounded-xl border border-border p-3">
+                          <label className="flex items-center gap-2 text-sm font-semibold text-text"><input type="checkbox" checked={sectionForm.settings.map_show_phone !== false} onChange={e => updateLandingSettings({ map_show_phone: e.target.checked })} />Mostrar WhatsApp</label>
+                          <label className="mt-3 block text-xs text-text-muted">Número para este bloque
+                            <input type="tel" disabled={sectionForm.settings.map_show_phone === false} className="input mt-1" value={sectionForm.settings.map_phone_text || ''} onChange={e => updateLandingSettings({ map_phone_text: e.target.value })} placeholder={settings?.phone_number || '+598…'} />
+                          </label>
+                          <p className="mt-1 text-xs text-text-muted">Usá el código de país. Vacío: usa el WhatsApp general del negocio.</p>
+                        </div>
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <label className="block text-sm font-medium text-text-muted">Texto del botón
+                          <input className="input mt-1" value={sectionForm.settings.map_link_text ?? DEFAULT_LOCATION_SETTINGS.map_link_text} onChange={e => updateLandingSettings({ map_link_text: e.target.value })} placeholder="Cómo llegar" />
+                          <span className="mt-1 block text-xs">Dejalo vacío para ocultar el botón.</span>
+                        </label>
+                        <label className="block text-sm font-medium text-text-muted">Enlace del botón (opcional)
+                          <input type="url" className="input mt-1" value={sectionForm.settings.map_link_url || ''} onChange={e => updateLandingSettings({ map_link_url: e.target.value })} placeholder="https://maps.app.goo.gl/…" aria-invalid={Boolean(sectionForm.settings.map_link_url && !safeLocationLink(sectionForm.settings.map_link_url))} />
+                          <span className="mt-1 block text-xs">Vacío: genera un enlace de Google Maps desde la dirección.</span>
+                        </label>
+                      </div>
+                    </div>
+                  </CollapsibleCard>
+
+                  <CollapsibleCard icon="compass" title="Mapa y distribución" subtitle="Posición, altura por dispositivo y forma de carga">
+                    <div className="mt-4 space-y-4">
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <label className="block text-sm font-medium text-text-muted">Mapa en tablet y escritorio
+                          <select className="input mt-1" value={sectionForm.settings.map_side || 'right'} onChange={e => updateLandingSettings({ map_side: e.target.value as 'left' | 'right' })}><option value="right">A la derecha de los datos</option><option value="left">A la izquierda de los datos</option></select>
+                        </label>
+                        <label className="block text-sm font-medium text-text-muted">Mapa en celular
+                          <select className="input mt-1" value={sectionForm.settings.map_mobile_order || 'last'} onChange={e => updateLandingSettings({ map_mobile_order: e.target.value as 'first' | 'last' })}><option value="last">Después de los datos</option><option value="first">Antes de los datos</option></select>
+                        </label>
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-3">
+                        {([
+                          ['map_height_mobile', 'Altura mínima en celular', 220, 520],
+                          ['map_height_tablet', 'Altura mínima en tablet', 260, 640],
+                          ['map_height_desktop', 'Altura mínima en escritorio', 300, 720],
+                        ] as const).map(([key, label, min, max]) => <label key={key} className="block text-sm text-text-muted">{label}: {sectionForm.settings[key] ?? DEFAULT_LOCATION_SETTINGS[key]} px<input type="range" min={min} max={max} step="10" className="mt-2 w-full" value={sectionForm.settings[key] ?? DEFAULT_LOCATION_SETTINGS[key]} onChange={e => updateLandingSettings({ [key]: Number(e.target.value) })} /></label>)}
+                      </div>
+                      <label className="block text-sm font-medium text-text-muted">Cuándo cargar el mapa interactivo
+                        <select className="input mt-1" value={sectionForm.settings.map_load_on_click ? 'click' : 'nearby'} onChange={e => updateLandingSettings({ map_load_on_click: e.target.value === 'click' })}><option value="nearby">Cuando el visitante se acerca a esta sección</option><option value="click">Al pulsar “Ver mapa interactivo”</option></select>
+                        <span className="mt-1 block text-xs">Cargarlo al pulsar reduce las descargas de Google Maps y evita que el mapa interrumpa el desplazamiento en celular.</span>
+                      </label>
+                      <label className="block text-sm font-medium text-text-muted">Mapa de Google personalizado (opcional)
+                        <textarea className="input mt-1 min-h-20 font-mono text-xs" value={sectionForm.settings.map_embed_url || ''} onChange={e => updateLandingSettings({ map_embed_url: e.target.value })} placeholder={'https://www.google.com/maps/embed?pb=… o el código <iframe …>'} aria-invalid={Boolean(sectionForm.settings.map_embed_url && !googleMapsEmbedSource(sectionForm.settings.map_embed_url))} />
+                        <span className="mt-1 block text-xs">En Google Maps: Compartir → Insertar un mapa → Copiar HTML. Si lo dejás vacío, se usa la dirección escrita arriba.</span>
+                        {sectionForm.settings.map_embed_url && !googleMapsEmbedSource(sectionForm.settings.map_embed_url) && <span className="mt-2 block text-xs text-red-600">Usá el código para insertar o una URL de google.com/maps/embed.</span>}
+                      </label>
+                    </div>
+                  </CollapsibleCard>
+
+                  <CollapsibleCard icon="palette" title="Colores y tamaños" subtitle="Fondos, títulos, textos, iconos y botón">
+                    <div className="mt-4 space-y-5">
+                      <div className="grid gap-4 sm:grid-cols-3">
+                        {([
+                          ['map_title_size_mobile', 'Título en celular', 24, 52],
+                          ['map_title_size_desktop', 'Título en escritorio', 28, 72],
+                          ['map_text_size', 'Texto de la tarjeta', 13, 22],
+                        ] as const).map(([key, label, min, max]) => <label key={key} className="block text-sm text-text-muted">{label}: {sectionForm.settings[key] ?? DEFAULT_LOCATION_SETTINGS[key]} px<input type="range" min={min} max={max} step="1" className="mt-2 w-full" value={sectionForm.settings[key] ?? DEFAULT_LOCATION_SETTINGS[key]} onChange={e => updateLandingSettings({ [key]: Number(e.target.value) })} /></label>)}
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-2">{LOCATION_COLOR_FIELDS.map(([label, key]) => <ColorPicker key={key} label={label} value={sectionForm.settings[key] || DEFAULT_LOCATION_SETTINGS[key]} onChange={color => updateLandingSettings({ [key]: color })} palette={palette} />)}</div>
+                      <button type="button" className="text-sm font-semibold text-primary hover:underline" onClick={() => updateLandingSettings(Object.fromEntries(LOCATION_COLOR_FIELDS.map(([, key]) => [key, DEFAULT_LOCATION_SETTINGS[key]])))}>Restablecer los colores cálidos del bloque</button>
+                    </div>
+                  </CollapsibleCard>
+
+                  <CollapsibleCard icon="image" title="Vista previa del bloque" subtitle="Refleja los textos, colores y distribución antes de guardar">
+                    <div className="mt-4 overflow-hidden rounded-2xl border border-border"><LandingLocation title={sectionForm.title || 'Dónde nos encontramos'} subtitle={sectionForm.subtitle} description={sectionForm.description} settings={sectionForm.settings} business={settings} preview /></div>
+                  </CollapsibleCard>
                 </div>
               )}
 
