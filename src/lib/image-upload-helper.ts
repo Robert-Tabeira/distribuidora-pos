@@ -1,5 +1,36 @@
 import { supabase } from '@/lib/supabase'
 
+async function compressForWeb(file: File, folder: string): Promise<File> {
+  // No rasterizar SVG ni animaciones: se preserva el original.
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return file
+
+  const maxDimension = folder === 'logo' ? 900 : folder === 'hero-images' ? 2200 : 1800
+  const quality = folder === 'logo' ? 0.9 : 0.82
+
+  try {
+    const bitmap = await createImageBitmap(file)
+    const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height))
+    const width = Math.max(1, Math.round(bitmap.width * scale))
+    const height = Math.max(1, Math.round(bitmap.height * scale))
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const context = canvas.getContext('2d')
+    if (!context) return file
+    context.drawImage(bitmap, 0, 0, width, height)
+    bitmap.close()
+
+    const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/webp', quality))
+    if (!blob || blob.type !== 'image/webp' || blob.size >= file.size) return file
+
+    const baseName = file.name.replace(/\.[^.]+$/, '')
+    return new File([blob], `${baseName}.webp`, { type: 'image/webp', lastModified: file.lastModified })
+  } catch (error) {
+    console.warn('No se pudo optimizar la imagen en este navegador; se subirá el original.', error)
+    return file
+  }
+}
+
 export async function uploadImageToSupabase(
   file: File,
   folder: string = 'hero-images'
@@ -14,22 +45,25 @@ export async function uploadImageToSupabase(
       return { url: '', error: 'El archivo debe ser una imagen (JPG, PNG, WebP, etc)' }
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      return { url: '', error: 'La imagen no puede pesar más de 5MB' }
+    if (file.size > 20 * 1024 * 1024) {
+      return { url: '', error: 'La imagen original no puede pesar más de 20MB' }
     }
+
+    const uploadFile = await compressForWeb(file, folder)
 
     // Crear nombre único para el archivo
     const timestamp = Date.now()
     const random = Math.random().toString(36).substring(7)
-    const extension = file.name.split('.').pop()
+    const extension = uploadFile.name.split('.').pop()
     const fileName = `${timestamp}_${random}.${extension}`
     const filePath = `${folder}/${fileName}`
 
     // Subir a Supabase Storage
     const { error: uploadError } = await supabase.storage
       .from('product-images')
-      .upload(filePath, file, {
-        cacheControl: '3600',
+      .upload(filePath, uploadFile, {
+        cacheControl: '31536000',
+        contentType: uploadFile.type || file.type,
         upsert: false
       })
 

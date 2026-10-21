@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import type { Employee, Product } from '@/types/database'
+import { uploadImageToSupabase } from '@/lib/image-upload-helper'
 
 // Normaliza texto para comparar sin importar tildes/diacríticos
 // ("azucar" debe coincidir con "azúcar")
@@ -347,30 +348,9 @@ export default function ProductosPage() {
     setUploadingImage(true)
 
     try {
-      // Validar tamaño (5MB max)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('La imagen no puede pesar más de 5MB')
-        return
-      }
-
-      // Crear nombre de archivo
-      const fileName = `${editingProduct.id}/${Date.now()}_${file.name.replace(/\s+/g, '_')}`
-      
-      // Subir a Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('product-images')
-        .upload(fileName, file)
-
-      if (uploadError) throw uploadError
-
-      // Obtener URL pública
-      const { data: publicData } = supabase.storage
-        .from('product-images')
-        .getPublicUrl(fileName)
-
-      if (publicData?.publicUrl) {
-        setEditGallery([...editGallery, publicData.publicUrl])
-      }
+      const { url, error } = await uploadImageToSupabase(file, editingProduct.id)
+      if (error) throw new Error(error)
+      if (url) setEditGallery([...editGallery, url])
 
       // Limpiar
       setImagePreview(null)

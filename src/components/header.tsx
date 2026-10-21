@@ -234,6 +234,8 @@ export function Header() {
                 key={activeLogoUrl}
                 src={activeLogoUrl}
                 alt={siteName}
+                fetchPriority="high"
+                decoding="async"
                 className="max-w-full object-contain transition-all duration-300"
                 style={{ width: `${activeLogoWidth}px`, maxHeight: isScrolled ? '48px' : '64px', height: 'auto' }}
               />
