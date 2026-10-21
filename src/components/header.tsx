@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { getSiteFontFamily } from '@/lib/site-fonts'
 import { Icon, type IconName } from '@/components/ui/icon'
+import { SiteImage } from '@/components/site-image'
 
 interface WebsiteSettings {
   phone_number: string | null
@@ -230,15 +231,18 @@ export function Header() {
           {/* Logo */}
           <Link href={settings?.logo_link_url || '/landing'} className="absolute left-1/2 z-10 flex max-w-[calc(100vw-7rem)] -translate-x-1/2 items-center justify-center gap-3 lg:static lg:max-w-none lg:translate-x-0">
             {settings?.use_logo_image && activeLogoUrl ? (
-              <img
-                key={activeLogoUrl}
-                src={activeLogoUrl}
-                alt={siteName}
-                fetchPriority="high"
-                decoding="async"
-                className="max-w-full object-contain transition-all duration-300"
-                style={{ width: `${activeLogoWidth}px`, maxHeight: isScrolled ? '48px' : '64px', height: 'auto' }}
-              />
+              <span className="relative block shrink-0" style={{ width: `${activeLogoWidth}px`, height: isScrolled ? '48px' : '64px' }}>
+                <SiteImage
+                  key={activeLogoUrl}
+                  src={activeLogoUrl}
+                  alt={siteName}
+                  fill
+                  sizes={`${activeLogoWidth}px`}
+                  priority
+                  quality={85}
+                  className="object-contain transition-all duration-300"
+                />
+              </span>
             ) : (
               <div className="flex min-w-0 flex-col items-center text-center lg:items-start lg:text-left">
                 <h1

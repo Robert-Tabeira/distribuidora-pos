@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, type CSSProperties } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getSiteFontFamily } from '@/lib/site-fonts'
+import { optimizedImageSource, SiteImage } from '@/components/site-image'
 
 interface HeroSlide {
   id: string
@@ -197,13 +198,15 @@ export function HeroSlider() {
       }}
     >
       <picture className="absolute inset-0 block">
-        {currentSlideData.mobile_image_url && <source media="(max-width: 767px)" srcSet={currentSlideData.mobile_image_url} />}
-        <img
+        {currentSlideData.mobile_image_url && <source media="(max-width: 767px)" srcSet={optimizedImageSource(currentSlideData.mobile_image_url, 1080)} />}
+        <SiteImage
           src={currentSlideData.image_url}
           alt=""
           aria-hidden="true"
-          fetchPriority="high"
-          decoding="async"
+          fill
+          sizes="100vw"
+          priority
+          quality={75}
           className={`h-full w-full ${IMAGE_FIT[currentSlideData.mobile_image_fit || 'contain']} ${DESKTOP_IMAGE_FIT[currentSlideData.desktop_image_fit || 'contain']} ${IMAGE_POSITION[currentSlideData.mobile_image_position || 'center']} ${DESKTOP_IMAGE_POSITION[currentSlideData.desktop_image_position || 'center']}`}
         />
       </picture>

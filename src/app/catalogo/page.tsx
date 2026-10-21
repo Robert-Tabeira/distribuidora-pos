@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import type { Product, Category, Discount } from '@/types/database'
 import { getCustomerSession } from '@/lib/customer-auth'
 import { Icon } from '@/components/ui/icon'
+import { SiteImage } from '@/components/site-image'
 
 interface ProductWithDiscount extends Pick<Product, 'id' | 'name' | 'unit' | 'category_id' | 'created_at' | 'gallery' | 'description' | 'product_code'> {
   discount?: Discount
@@ -476,11 +477,13 @@ export default function CatalogPage() {
         {/* Imagen */}
         <div className="relative h-28 sm:h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
           {product.gallery?.[0] ? (
-            <img
+            <SiteImage
               src={product.gallery[0]}
               alt={product.name}
+              fill
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 240px"
+              quality={75}
               loading="lazy"
-              decoding="async"
               className="w-full h-full object-contain group-hover:opacity-90 transition-opacity"
             />
           ) : (
@@ -795,10 +798,14 @@ export default function CatalogPage() {
             {/* Galería */}
             <div className="relative h-64 sm:h-80 bg-gradient-to-br from-gray-100 to-gray-200 flex-shrink-0">
               {selectedProduct.gallery && selectedProduct.gallery.length > 0 ? (
-                <img
+                <SiteImage
                   src={selectedProduct.gallery[activeImageIndex]}
                   alt={selectedProduct.name}
-                  className="w-full h-full object-contain"
+                  fill
+                  sizes="(max-width: 640px) 100vw, 512px"
+                  quality={80}
+                  priority
+                  className="object-contain"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-300"><Icon name="box" className="h-20 w-20" /></div>
@@ -853,11 +860,11 @@ export default function CatalogPage() {
                   <button
                     key={idx}
                     onClick={() => setActiveImageIndex(idx)}
-                    className={`flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all ${
+                    className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all ${
                       idx === activeImageIndex ? 'border-blue-900' : 'border-transparent opacity-60'
                     }`}
                   >
-                    <img src={img} alt="" className="w-full h-full object-contain bg-gray-50" />
+                    <SiteImage src={img} alt="" fill sizes="56px" quality={60} loading="lazy" className="object-contain bg-gray-50" />
                   </button>
                 ))}
               </div>
@@ -932,8 +939,8 @@ export default function CatalogPage() {
               </div> : (
                 <ul className="space-y-3">
                   {priceInquiryProducts.map(product => <li key={product.id} className="flex items-center gap-3 rounded-2xl border border-[#e7d9c8] bg-white p-3 shadow-sm sm:gap-4 sm:p-4">
-                    <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#eee3d6] bg-[#f8f3ec] sm:h-[72px] sm:w-[72px]">
-                      {product.gallery?.[0] ? <img src={product.gallery[0]} alt={product.name} className="h-full w-full object-contain p-1" /> : <Icon name="box" className="h-8 w-8 text-[#b58b5d]" />}
+                    <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#eee3d6] bg-[#f8f3ec] sm:h-[72px] sm:w-[72px]">
+                      {product.gallery?.[0] ? <SiteImage src={product.gallery[0]} alt={product.name} fill sizes="72px" quality={60} loading="lazy" className="object-contain p-1" /> : <Icon name="box" className="h-8 w-8 text-[#b58b5d]" />}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="line-clamp-2 font-bold leading-snug text-[#3b2a20]">{product.name}</p>

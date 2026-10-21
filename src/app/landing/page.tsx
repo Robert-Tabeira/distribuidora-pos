@@ -11,6 +11,7 @@ import { CategoryIconImage } from '@/components/category-icon-image'
 import { getCategoryIconName, isCategoryIconImage } from '@/lib/category-icons'
 import Link from 'next/link'
 import { getSiteFontFamily } from '@/lib/site-fonts'
+import { optimizedImageSource, SiteImage } from '@/components/site-image'
 
 interface ProductWithDiscount extends Pick<Product, 'id' | 'name' | 'gallery'> {
   discount?: Discount
@@ -120,9 +121,9 @@ function responsiveTextClasses(settings: LandingSectionSettings, fallback?: 'lef
 function ResponsiveImage({ desktopSrc, mobileSrc, alt, className, settings }: { desktopSrc: string; mobileSrc?: string; alt: string; className: string; settings: LandingSectionSettings }) {
   const mobilePosition = OBJECT_POSITION_CLASS[settings.mobile_image_position || 'center']
   const desktopPosition = DESKTOP_OBJECT_POSITION_CLASS[settings.desktop_image_position || 'center']
-  return <picture className="block">
-    {mobileSrc && <source media="(max-width: 767px)" srcSet={mobileSrc} />}
-    <img src={desktopSrc} alt={alt} loading="lazy" decoding="async" className={`${className} ${mobilePosition} ${desktopPosition}`} />
+  return <picture className={`relative block h-full w-full ${className}`}>
+    {mobileSrc && <source media="(max-width: 767px)" srcSet={optimizedImageSource(mobileSrc, 828)} />}
+    <SiteImage src={desktopSrc} alt={alt} fill sizes="(max-width: 767px) 100vw, 1280px" quality={75} loading="lazy" className={`${mobilePosition} ${desktopPosition} object-cover`} />
   </picture>
 }
 
@@ -227,7 +228,7 @@ function LandingBlockRenderer({
                     {step.image_url
                       ? <picture className="block w-full overflow-hidden rounded-2xl" style={{ backgroundColor: settings.instruction_image_bg || '#f5f0e6' }}>
                           {step.mobile_image_url && <source media="(max-width: 767px)" srcSet={step.mobile_image_url} />}
-                          <img src={step.image_url} alt={step.title || `Imagen del paso ${index + 1}`} className="mx-auto block h-auto max-h-[340px] w-full object-contain" />
+                          <img src={optimizedImageSource(step.image_url, 900)} alt={step.title || `Imagen del paso ${index + 1}`} loading="lazy" decoding="async" className="mx-auto block h-auto max-h-[340px] w-full object-contain" />
                         </picture>
                       : <div className="flex min-h-40 w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-[#d9ceb9] bg-[#f8f4eb] sm:min-h-48" style={{ color: settings.instruction_placeholder_color || '#a99a7c' }}><Icon name="image" className="h-8 w-8" /><span className="text-xs font-medium">Imagen del paso {index + 1}</span></div>}
                   </div>
