@@ -4163,14 +4163,29 @@ export default function WebsiteEditionPage() {
                       updateLandingSettings({ category_order: nextOrder })
                     }
                     return <>
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        {availableCategories.map(category => (
-                          <label key={category.id} className="flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-white px-3 py-2 text-sm">
-                            <input type="checkbox" checked={selectedOrder.includes(category.id)} onChange={event => toggleCategory(category.id, event.target.checked)} className="h-4 w-4 rounded border-gray-300" />
-                            <span className="min-w-0 truncate">{category.parent_id ? '↳ ' : ''}{category.name}</span>
-                            {category.parent_id && <span className="ml-auto shrink-0 text-[10px] uppercase tracking-wide text-text-muted">Subcategoría</span>}
-                          </label>
-                        ))}
+                      <div className="space-y-2">
+                        {availableCategories.filter(category => !category.parent_id).map(category => {
+                          const children = availableCategories.filter(child => child.parent_id === category.id)
+                          return <div key={category.id} className="rounded-lg border border-border bg-white p-2">
+                            <label className="flex cursor-pointer items-center gap-2 px-1 py-1 text-sm font-medium">
+                              <input type="checkbox" checked={selectedOrder.includes(category.id)} onChange={event => toggleCategory(category.id, event.target.checked)} className="h-4 w-4 rounded border-gray-300" />
+                              <span className="min-w-0 flex-1 truncate">{category.name}</span>
+                            </label>
+                            {children.length > 0 && <details className="group mt-1 border-t border-gray-100 pt-1">
+                              <summary className="flex cursor-pointer list-none items-center gap-2 px-1 py-1 text-xs font-medium text-text-muted [&::-webkit-details-marker]:hidden">
+                                <span className="transition-transform group-open:rotate-90">›</span>
+                                Ver subcategorías ({children.length})
+                              </summary>
+                              <div className="mt-1 space-y-1 pl-5">
+                                {children.map(child => <label key={child.id} className="flex cursor-pointer items-center gap-2 rounded-md bg-gray-50 px-2 py-2 text-sm">
+                                  <input type="checkbox" checked={selectedOrder.includes(child.id)} onChange={event => toggleCategory(child.id, event.target.checked)} className="h-4 w-4 rounded border-gray-300" />
+                                  <span className="min-w-0 truncate">{child.name}</span>
+                                  {selectedOrder.includes(child.id) && <span className="ml-auto text-[10px] uppercase tracking-wide text-text-muted">Incluida</span>}
+                                </label>)}
+                              </div>
+                            </details>}
+                          </div>
+                        })}
                       </div>
                       <div className="space-y-1">
                         {selectedOrder.map((categoryId, index) => {
@@ -4191,7 +4206,10 @@ export default function WebsiteEditionPage() {
                     <h4 className="font-semibold text-text">Icono para cada categoría</h4>
                     <p className="mt-1 text-xs text-text-muted">Subí un SVG o PNG propio, o elegí uno de los iconos disponibles. Si no personalizás, se sugiere automáticamente según el nombre.</p>
                   </div>
-                  {landingCategories.filter(category => category.show_in_catalog !== false).map(category => {
+                  {(sectionForm.settings.category_order ?? landingCategories.filter(category => !category.parent_id && category.show_in_catalog !== false).map(category => category.id))
+                    .map(categoryId => landingCategories.find(category => category.id === categoryId && category.show_in_catalog !== false))
+                    .filter((category): category is EditableLandingCategory => Boolean(category))
+                    .map(category => {
                     const customIcon = sectionForm.settings.category_icons?.[category.id] || ''
                     const selectedIcon = getCategoryIconName(category.name, customIcon)
                     const customImage = isCategoryIconImage(customIcon) ? customIcon : ''
@@ -4247,7 +4265,7 @@ export default function WebsiteEditionPage() {
                       </div>
                     )
                   })}
-                  {landingCategories.filter(category => category.show_in_catalog !== false).length === 0 && <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">No hay categorías visibles para configurar.</p>}
+                  {(sectionForm.settings.category_order ?? landingCategories.filter(category => !category.parent_id && category.show_in_catalog !== false).map(category => category.id)).length === 0 && <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">Seleccioná categorías para configurar sus iconos.</p>}
                 </div>
               )}
 
