@@ -1525,11 +1525,11 @@ export default function WebsiteEditionPage() {
   }
 
   // ===== LANDING SECTIONS =====
-  async function uploadLandingAsset(file: File | undefined, onUploaded: (url: string) => void) {
+  async function uploadLandingAsset(file: File | undefined, onUploaded: (url: string) => void, preset: 'default' | 'category-icon' = 'default') {
     if (!file) return
     setUploadingImage(true)
     try {
-      const { url, error } = await uploadImageToSupabase(file, 'landing-sections')
+      const { url, error } = await uploadImageToSupabase(file, 'landing-sections', preset)
       if (error) throw new Error(error)
       onUploaded(url)
     } catch (error) {
@@ -4405,7 +4405,7 @@ export default function WebsiteEditionPage() {
                                 void uploadLandingAsset(file, url => setSectionForm(current => ({
                                   ...current,
                                   settings: { ...current.settings, category_icons: { ...(current.settings.category_icons || {}), [category.id]: url } }
-                                })))
+                                })), 'category-icon')
                                 e.currentTarget.value = ''
                               }}
                             />

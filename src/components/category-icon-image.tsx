@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { optimizedImageSource } from '@/lib/site-image-url'
 
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg'
 const ALLOWED_ELEMENTS = new Set(['svg', 'g', 'path', 'circle', 'ellipse', 'rect', 'line', 'polyline', 'polygon'])
@@ -110,49 +111,123 @@ function getSvgRequestUrl(src: string) {
   }
 }
 
+const svgRequests = new Map<string, Promise<string>>()
+
+function loadSvgSource(src: string): Promise<string> {
+  const requestUrl = getSvgRequestUrl(src)
+  const cached = svgRequests.get(requestUrl)
+  if (cached) return cached
+
+  const request = fetch(requestUrl, { credentials: 'same-origin' })
+    .then(async response => {
+      if (!response.ok) throw new Error('No se pudo cargar el icono')
+      const source = await response.text()
+      if (source.length > 1_000_000) throw new Error('El icono es demasiado grande')
+      return source
+    })
+    .catch(error => {
+      if (svgRequests.get(requestUrl) === request) svgRequests.delete(requestUrl)
+      throw error
+    })
+  if (svgRequests.size >= 128) svgRequests.delete(svgRequests.keys().next().value!)
+  svgRequests.set(requestUrl, request)
+  return request
+}
+
 export function CategoryIconImage({ src, weight = 0, className = '' }: { src: string; weight?: number; className?: string }) {
-  const [svgMarkup, setSvgMarkup] = useState('')
-  const [displayWidth, setDisplayWidth] = useState(24)
+  const [nearViewport, setNearViewport] = useState(false)
+  const [svgSource, setSvgSource] = useState<{ src: string; text: string } | null>(null)
+  const [maskImage, setMaskImage] = useState<{ request: string; url: string } | null>(null)
+  const [dimensions, setDimensions] = useState({ width: 0, pixelRatio: 1 })
   const iconRef = useRef<HTMLSpanElement>(null)
   const svg = isSvgUrl(src)
 
   useEffect(() => {
-    if (!svg || !svgMarkup || !iconRef.current || typeof ResizeObserver === 'undefined') return
-    const observer = new ResizeObserver(entries => {
-      const width = entries[0]?.contentRect.width
-      if (width && width > 0) setDisplayWidth(current => Math.abs(current - width) < 0.5 ? current : width)
-    })
-    observer.observe(iconRef.current)
-    return () => observer.disconnect()
-  }, [src, svg, svgMarkup])
-
-  useEffect(() => {
-    if (!svg) {
-      setSvgMarkup('')
+    if (!iconRef.current) return
+    if (typeof IntersectionObserver === 'undefined') {
+      setNearViewport(true)
       return
     }
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) {
+        setNearViewport(true)
+        observer.disconnect()
+      }
+    }, { rootMargin: '250px' })
+    observer.observe(iconRef.current)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (!nearViewport || !iconRef.current) return
+    const measure = () => {
+      const width = iconRef.current?.getBoundingClientRect().width || 0
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 3)
+      if (width > 0) setDimensions(current => Math.abs(current.width - width) < 0.5 && current.pixelRatio === pixelRatio ? current : { width, pixelRatio })
+    }
+    measure()
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure)
+    observer?.observe(iconRef.current)
+    window.addEventListener('resize', measure, { passive: true })
+    return () => {
+      observer?.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [nearViewport])
+
+  useEffect(() => {
+    if (!nearViewport || !svg) return
     let active = true
-    async function load() {
-      try {
-        const response = await fetch(getSvgRequestUrl(src), { credentials: 'same-origin' })
-        if (!response.ok) return
-        const text = await response.text()
-        if (text.length > 1_000_000) return
-        const markup = sanitizedSvg(text, Math.max(0, Math.min(6, weight)), displayWidth)
-        if (active) setSvgMarkup(markup)
-      } catch {
-        if (active) setSvgMarkup('')
+    loadSvgSource(src).then(text => {
+      if (active) setSvgSource({ src, text })
+    }).catch(() => {
+      if (active) setSvgSource({ src, text: '' })
+    })
+    return () => { active = false }
+  }, [src, svg, nearViewport])
+
+  const source = svgSource?.src === src ? svgSource.text : ''
+  const svgMarkup = useMemo(() => source && dimensions.width > 0
+    ? sanitizedSvg(source, Math.max(0, Math.min(6, weight)), dimensions.width)
+    : '', [source, weight, dimensions.width])
+  const rasterRequest = !svg && dimensions.width > 0
+    ? optimizedImageSource(src, Math.ceil(dimensions.width * dimensions.pixelRatio))
+    : ''
+
+  useEffect(() => {
+    if (!nearViewport || !rasterRequest) return
+    let active = true
+    let triedOriginal = rasterRequest === src
+    const image = new window.Image()
+    image.crossOrigin = 'anonymous'
+    image.onload = () => {
+      if (active) setMaskImage({ request: rasterRequest, url: image.src })
+    }
+    image.onerror = () => {
+      if (!triedOriginal) {
+        triedOriginal = true
+        image.src = src
       }
     }
-    void load()
-    return () => { active = false }
-  }, [src, svg, weight, displayWidth])
+    image.src = rasterRequest
+    return () => {
+      active = false
+      image.onload = null
+      image.onerror = null
+    }
+  }, [src, rasterRequest, nearViewport])
 
-  if (svg) {
-    return svgMarkup
-      ? <span ref={iconRef} className={`category-inline-svg block ${className}`} aria-hidden="true" dangerouslySetInnerHTML={{ __html: svgMarkup }} />
-      : <span aria-hidden="true" className={`category-custom-icon block ${className}`} style={{ maskImage: `url("${src}")`, WebkitMaskImage: `url("${src}")` }} />
-  }
-
-  return <span aria-hidden="true" className={`category-custom-icon block ${className}`} style={{ maskImage: `url("${src}")`, WebkitMaskImage: `url("${src}")` }} />
+  const maskSource = svg
+    ? nearViewport && dimensions.width > 0 && svgSource?.src === src && !svgMarkup ? src : ''
+    : maskImage?.request === rasterRequest ? maskImage.url : ''
+  const inline = svg && Boolean(svgMarkup)
+  return <span
+    ref={iconRef}
+    aria-hidden="true"
+    className={`${inline || svg && !maskSource ? 'category-inline-svg' : 'category-custom-icon'} block ${className}`}
+    style={inline ? undefined : maskSource
+      ? { maskImage: `url("${maskSource}")`, WebkitMaskImage: `url("${maskSource}")` }
+      : { visibility: 'hidden' }}
+    dangerouslySetInnerHTML={inline ? { __html: svgMarkup } : undefined}
+  />
 }

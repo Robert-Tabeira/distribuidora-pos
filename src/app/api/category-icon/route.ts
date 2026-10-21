@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 export const runtime = 'nodejs'
-export const dynamic = 'force-dynamic'
 
 // The client needs to read uploaded SVG markup to adjust its stroke. Proxy only
 // category icons from the public landing-sections folder to avoid an open proxy.
@@ -17,7 +16,7 @@ export async function GET(request: NextRequest) {
   try {
     const baseUrl = new URL(supabaseUrl)
     const upstreamUrl = new URL(`/storage/v1/object/public/product-images/landing-sections/${encodeURIComponent(file)}`, baseUrl)
-    const response = await fetch(upstreamUrl, { cache: 'no-store' })
+    const response = await fetch(upstreamUrl, { next: { revalidate: 86400 } })
     if (!response.ok) return NextResponse.json({ message: 'No se pudo cargar el icono' }, { status: response.status === 404 ? 404 : 502 })
 
     const svg = await response.text()
@@ -28,7 +27,7 @@ export async function GET(request: NextRequest) {
     return new NextResponse(svg, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
-        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+        'Cache-Control': 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400',
         'X-Content-Type-Options': 'nosniff',
       },
     })

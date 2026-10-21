@@ -1,11 +1,11 @@
 import { supabase } from '@/lib/supabase'
 
-async function compressForWeb(file: File, folder: string): Promise<File> {
+async function compressForWeb(file: File, folder: string, preset: 'default' | 'category-icon'): Promise<File> {
   // No rasterizar SVG ni animaciones: se preserva el original.
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return file
 
-  const maxDimension = folder === 'logo' ? 900 : folder === 'hero-images' ? 2200 : 1800
-  const quality = folder === 'logo' ? 0.9 : 0.82
+  const maxDimension = preset === 'category-icon' ? 384 : folder === 'logo' ? 900 : folder === 'hero-images' ? 2200 : 1800
+  const quality = preset === 'category-icon' || folder === 'logo' ? 0.9 : 0.82
 
   try {
     const bitmap = await createImageBitmap(file)
@@ -33,7 +33,8 @@ async function compressForWeb(file: File, folder: string): Promise<File> {
 
 export async function uploadImageToSupabase(
   file: File,
-  folder: string = 'hero-images'
+  folder: string = 'hero-images',
+  preset: 'default' | 'category-icon' = 'default'
 ): Promise<{ url: string; error: string | null }> {
   try {
     // Validar archivo
@@ -49,7 +50,7 @@ export async function uploadImageToSupabase(
       return { url: '', error: 'La imagen original no puede pesar más de 20MB' }
     }
 
-    const uploadFile = await compressForWeb(file, folder)
+    const uploadFile = await compressForWeb(file, folder, preset)
 
     // Crear nombre único para el archivo
     const timestamp = Date.now()
