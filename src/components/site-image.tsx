@@ -23,12 +23,32 @@ export function isOptimizableStorageImage(src: string) {
 
 export function optimizedImageSource(src: string, width: number) {
   if (!isOptimizableStorageImage(src)) return src
-  return `/_next/image?url=${encodeURIComponent(src)}&w=${width}&q=75`
+  // Keep manual <picture><source> requests within Next's configured device widths.
+  const allowedWidths = [640, 750, 828, 1080, 1200, 1920, 2048, 3840]
+  const validWidth = allowedWidths.reduce((closest, candidate) =>
+    Math.abs(candidate - width) < Math.abs(closest - width) ? candidate : closest
+  )
+  return `/_next/image?url=${encodeURIComponent(src)}&w=${validWidth}&q=75`
 }
 
 type SiteImageProps = Omit<ImageProps, 'src'> & { src: string }
 
 /** Optimizes existing public Supabase images through Next/Vercel's image cache. */
 export function SiteImage({ src, unoptimized, ...props }: SiteImageProps) {
-  return <Image src={src} unoptimized={unoptimized ?? !isOptimizableStorageImage(src)} {...props} />
+  const optimize = !unoptimized && isOptimizableStorageImage(src)
+  const callerOnError = props.onError
+  return <Image
+    src={src}
+    unoptimized={unoptimized ?? !isOptimizableStorageImage(src)}
+    {...props}
+    onError={event => {
+      callerOnError?.(event)
+      const image = event.currentTarget
+      if (optimize && image.dataset.originalFallback !== 'true') {
+        image.dataset.originalFallback = 'true'
+        image.removeAttribute('srcset')
+        image.src = src
+      }
+    }}
+  />
 }

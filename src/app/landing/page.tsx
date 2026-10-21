@@ -228,7 +228,21 @@ function LandingBlockRenderer({
                     {step.image_url
                       ? <picture className="block w-full overflow-hidden rounded-2xl" style={{ backgroundColor: settings.instruction_image_bg || '#f5f0e6' }}>
                           {step.mobile_image_url && <source media="(max-width: 767px)" srcSet={step.mobile_image_url} />}
-                          <img src={optimizedImageSource(step.image_url, 900)} alt={step.title || `Imagen del paso ${index + 1}`} loading="lazy" decoding="async" className="mx-auto block h-auto max-h-[340px] w-full object-contain" />
+                          <img
+                            src={optimizedImageSource(step.image_url, 900)}
+                            alt={step.title || `Imagen del paso ${index + 1}`}
+                            loading="lazy"
+                            decoding="async"
+                            onError={event => {
+                              const image = event.currentTarget
+                              if (image.dataset.originalFallback !== 'true' && image.src !== step.image_url) {
+                                image.dataset.originalFallback = 'true'
+                                image.removeAttribute('srcset')
+                                image.src = step.image_url
+                              }
+                            }}
+                            className="mx-auto block h-auto max-h-[340px] w-full object-contain"
+                          />
                         </picture>
                       : <div className="flex min-h-40 w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-[#d9ceb9] bg-[#f8f4eb] sm:min-h-48" style={{ color: settings.instruction_placeholder_color || '#a99a7c' }}><Icon name="image" className="h-8 w-8" /><span className="text-xs font-medium">Imagen del paso {index + 1}</span></div>}
                   </div>
