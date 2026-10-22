@@ -16,6 +16,8 @@ import { FooterEditor } from '@/components/footer-editor'
 import { DEFAULT_FOOTER_SETTINGS, FOOTER_COLOR_FIELDS, normalizeFooterSettings, safeFooterLink, type FooterSettings, type FooterBusinessInfo } from '@/lib/footer-settings'
 import { DEFAULT_LOCATION_SETTINGS, googleMapsEmbedSource, safeLocationLink, type LandingLocationSettings } from '@/lib/landing-location'
 import { CATEGORY_APPEARANCE_DEFAULTS, CATEGORY_APPEARANCE_COLORS, type LandingCategoryAppearance } from '@/lib/landing-category-appearance'
+import { MobileMenuPanel } from '@/components/mobile-menu-panel'
+import { DEFAULT_MOBILE_MENU_SETTINGS, MOBILE_MENU_COLOR_FIELDS, resolveMobileMenuSettings, type MobileMenuSettings } from '@/lib/mobile-menu-settings'
 
 interface ColorSwatch {
   name: string
@@ -59,6 +61,7 @@ interface MenuLink {
 
 interface HeaderSettings {
   id: string
+  mobile_menu_settings?: Partial<MobileMenuSettings> | null
   bg_color: string
   text_color: string
   active_color: string
@@ -875,6 +878,7 @@ export default function WebsiteEditionPage() {
     nav_transparent_active_color: '#ffffff',
     nav_font_family: 'dm_sans',
     nav_show_icons: false,
+    mobile_menu_settings: { ...DEFAULT_MOBILE_MENU_SETTINGS },
     info_button_label: 'Info',
     info_button_icon: 'info' as IconName,
     info_button_bg: '#eff6ff',
@@ -1028,6 +1032,7 @@ export default function WebsiteEditionPage() {
           nav_transparent_active_color: h.nav_transparent_active_color || '#ffffff',
           nav_font_family: h.nav_font_family || h.font_family || 'dm_sans',
           nav_show_icons: h.nav_show_icons ?? false,
+          mobile_menu_settings: resolveMobileMenuSettings(h.mobile_menu_settings),
           info_button_label: h.info_button_label || 'Info',
           info_button_icon: h.info_button_icon || 'info',
           info_button_bg: h.info_button_bg || '#eff6ff',
@@ -2109,7 +2114,12 @@ export default function WebsiteEditionPage() {
       alert('✅ Estilo guardado correctamente')
     } catch (error) {
       console.error('Error saving header settings:', error)
-      alert('❌ Error al guardar. Verificá que la tabla "header_settings" ya exista en Supabase.')
+      const details = error instanceof Error ? error.message : (error as { message?: string })?.message || 'Error desconocido'
+      if (details.includes('mobile_menu_settings')) {
+        alert('❌ Para guardar los colores del menú móvil, ejecutá primero el archivo supabase/migrations/202610210001_mobile_menu_colors.sql en el SQL Editor de Supabase. Después volvé a guardar.')
+      } else {
+        alert(`❌ No se pudo guardar el estilo del header: ${details}`)
+      }
     } finally {
       setSavingHeaderSettings(false)
     }
@@ -3151,6 +3161,26 @@ export default function WebsiteEditionPage() {
                     {FONT_WEIGHT_OPTIONS.map(weight => <option key={weight.value} value={weight.value}>{weight.label}</option>)}
                   </select>
                 </label>
+              </CollapsibleCard>
+
+              <CollapsibleCard icon="palette" title="Menú móvil y tablet" subtitle="Fondo y enlaces con colores propios, independientes del scroll" defaultOpen>
+                <p className="mb-5 text-sm text-text-muted">Estos colores se usan en el menú que se abre con el botón de tres líneas. Se mantienen al inicio de la página y al desplazarte, tanto en la landing como en el catálogo.</p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {MOBILE_MENU_COLOR_FIELDS.map(([key, label]) => <ColorPicker key={key} label={label} value={headerForm.mobile_menu_settings[key]} onChange={color => setHeaderForm(current => ({ ...current, mobile_menu_settings: { ...current.mobile_menu_settings, [key]: color } }))} palette={palette} />)}
+                </div>
+                <div className="mt-6 rounded-2xl border border-border bg-gray-50 p-4">
+                  <p className="mb-3 text-xs font-bold uppercase tracking-wide text-text-muted">Vista previa del menú desplegado</p>
+                  <MobileMenuPanel
+                    settings={headerForm.mobile_menu_settings}
+                    links={menuLinks.filter(link => link.is_active).sort((a, b) => a.order_position - b.order_position).map((link, index) => ({ ...link, active: index === 0, icon: link.icon || defaultMenuIcon(link.url) }))}
+                    fontFamily={getSiteFontFamily(headerForm.nav_font_family || headerForm.font_family)}
+                    fontWeight={headerForm.nav_font_weight}
+                    letterSpacing={{ normal: 'normal', wide: '0.025em', wider: '0.05em' }[headerForm.nav_letter_spacing]}
+                    uppercase={headerForm.nav_uppercase}
+                    preview
+                  />
+                  <p className="mt-3 text-xs text-text-muted">La tipografía y el grosor se toman de «Texto del menú». El bloque de datos del negocio usa los colores de «Pestaña Info».</p>
+                </div>
               </CollapsibleCard>
 
               <CollapsibleCard icon="info" title="Pestaña Info" subtitle="Iconos, datos, tipografía y colores">

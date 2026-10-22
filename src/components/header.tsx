@@ -7,6 +7,8 @@ import Link from 'next/link'
 import { getSiteFontFamily } from '@/lib/site-fonts'
 import { Icon, type IconName } from '@/components/ui/icon'
 import { SiteImage } from '@/components/site-image'
+import { MobileMenuPanel } from '@/components/mobile-menu-panel'
+import type { MobileMenuSettings } from '@/lib/mobile-menu-settings'
 
 interface WebsiteSettings {
   phone_number: string | null
@@ -38,6 +40,7 @@ interface MenuLink {
 }
 
 interface HeaderSettings {
+  mobile_menu_settings?: Partial<MobileMenuSettings> | null
   bg_color: string
   text_color: string
   active_color: string
@@ -321,6 +324,7 @@ export function Header() {
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
                 aria-label={showMobileMenu ? 'Cerrar menú principal' : 'Abrir menú principal'}
                 aria-expanded={showMobileMenu}
+                aria-controls="public-mobile-menu"
                 className="lg:hidden flex items-center justify-center w-9 h-9 rounded-lg transition-all hover:opacity-70"
                 style={{ backgroundColor: showMobileMenu ? `${headerTextColor}0d` : 'transparent' }}
               >
@@ -340,40 +344,23 @@ export function Header() {
 
         {/* Menú - Mobile: tarjeta con links + info del negocio */}
         {showMobileMenu && (visibleMenuLinks.length > 0 || hasBusinessInfo) && (
-          <div className="lg:hidden mt-3 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-            {visibleMenuLinks.length > 0 && (
-              <nav className="p-2">
-                {visibleMenuLinks.map(link => {
-                  const active = isActive(link.url)
-                  return (
-                    <Link
-                      key={link.id}
-                      href={link.url}
-                      onClick={() => setShowMobileMenu(false)}
-                      className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${headerSettings.nav_uppercase ? 'uppercase text-sm' : ''}`}
-                      style={{
-                        color: active ? navActiveColor : navTextColor,
-                        backgroundColor: active ? `${navActiveColor}14` : 'transparent',
-                        letterSpacing: LETTER_SPACING_MAP[headerSettings.nav_letter_spacing],
-                        fontWeight: headerSettings.nav_font_weight,
-                        fontFamily: navFontFamily
-                      }}
-                    >
-                      <Icon name={safeIconName(link.icon, defaultMenuIcon(link.url))} className="h-5 w-5 flex-shrink-0" />
-                      {link.label}
-                    </Link>
-                  )
-                })}
-              </nav>
-            )}
-
+          <MobileMenuPanel
+            id="public-mobile-menu"
+            className="lg:hidden mt-3"
+            settings={headerSettings.mobile_menu_settings}
+            links={visibleMenuLinks.map(link => ({ ...link, active: isActive(link.url), icon: safeIconName(link.icon, defaultMenuIcon(link.url)) }))}
+            fontFamily={navFontFamily}
+            fontWeight={headerSettings.nav_font_weight}
+            letterSpacing={LETTER_SPACING_MAP[headerSettings.nav_letter_spacing]}
+            uppercase={headerSettings.nav_uppercase}
+            onNavigate={() => setShowMobileMenu(false)}
+          >
             {hasBusinessInfo && (
-              <div className="border-t border-gray-100 p-4" style={{ backgroundColor: headerSettings.info_panel_bg || '#ffffff', color: headerSettings.info_value_color || '#111827' }}>
+              <div className="p-4" style={{ backgroundColor: headerSettings.info_panel_bg || '#ffffff', color: headerSettings.info_value_color || '#111827' }}>
                 {renderInfoContent(true)}
               </div>
             )}
-
-          </div>
+          </MobileMenuPanel>
         )}
       </div>
     </header>

@@ -1,0 +1,8 @@
+.panel { background: var(--mobile-menu-background); border: 1px solid var(--mobile-menu-border); border-radius: 18px; box-shadow: 0 12px 30px rgb(34 29 22 / 12%); overflow: auto; max-height: calc(100vh - 120px); max-height: calc(100svh - 120px); overscroll-behavior: contain; }
+.nav { padding: 8px; display: grid; gap: 4px; }
+.link { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 12px; border-radius: 12px; color: var(--mobile-menu-text); font-size: 14px; transition: background-color .15s, color .15s; overflow-wrap: anywhere; }
+.link:hover, .link:focus-visible { color: var(--mobile-menu-hover-text); background: var(--mobile-menu-hover-background); }
+.link[aria-current="page"], .link[data-active="true"] { color: var(--mobile-menu-active-text); background: var(--mobile-menu-active-background); }
+.link:focus-visible { outline: 2px solid currentColor; outline-offset: -3px; }
+.info { border-top: 1px solid var(--mobile-menu-border); }
+@media (prefers-reduced-motion: reduce) { .link { transition: none; } }
