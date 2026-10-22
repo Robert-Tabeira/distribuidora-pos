@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Icon } from '@/components/ui/icon'
+import { clearAnalyticsAccess } from '@/lib/analytics-admin'
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -35,6 +36,11 @@ export default function AdminDashboard() {
 
       <main className="max-w-7xl mx-auto px-6 py-12">
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <button onClick={() => router.push('/admin/metricas')} className="rounded-2xl border-2 border-[#c8c9a6] bg-[#eeeedf] p-6 text-left transition-all hover:shadow-lg">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[#686f43]/10 text-[#575e35]"><Icon name="compass" className="h-6 w-6" /></div>
+            <h3 className="text-lg font-bold text-gray-900">Métricas Web</h3>
+            <p className="text-sm text-gray-600">Visitas, búsquedas, productos y consultas</p>
+          </button>
           {/* PRODUCTOS */}
           <button onClick={() => router.push('/productos')} className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-2xl hover:shadow-lg transition-all text-left">
             <div className="w-12 h-12 mb-4 rounded-xl bg-blue-600/10 text-blue-700 flex items-center justify-center"><Icon name="box" className="w-6 h-6" /></div>
@@ -87,7 +93,7 @@ export default function AdminDashboard() {
 
         {/* LOGOUT */}
         <div className="mt-12 text-center">
-          <button onClick={() => { localStorage.removeItem('employee'); router.push('/login') }} className="px-8 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 font-bold text-lg transition-all">
+          <button onClick={() => { void clearAnalyticsAccess(); localStorage.removeItem('employee'); router.push('/login') }} className="px-8 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 font-bold text-lg transition-all">
             <span className="inline-flex items-center justify-center gap-2"><Icon name="logout" className="w-5 h-5" />Cerrar Sesión</span>
           </button>
         </div>

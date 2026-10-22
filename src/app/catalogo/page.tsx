@@ -9,6 +9,7 @@ import { getCustomerSession } from '@/lib/customer-auth'
 import { Icon } from '@/components/ui/icon'
 import { SiteImage } from '@/components/site-image'
 import styles from './catalog.module.css'
+import { normalizeSearchTerm, trackSiteEvent } from '@/lib/site-analytics'
 
 interface ProductWithDiscount extends Pick<Product, 'id' | 'name' | 'unit' | 'category_id' | 'created_at' | 'gallery' | 'description' | 'product_code'> {
   discount?: Discount
@@ -69,6 +70,20 @@ export default function CatalogPage() {
   const [productNotes, setProductNotes] = useState('')
   const [customerOrderingEnabled, setCustomerOrderingEnabled] = useState(false)
   const [showRecentProductBadge, setShowRecentProductBadge] = useState(true)
+  const trackedSearchRef = useRef('')
+  const trackedCategoriesRef = useRef<string[]>([])
+
+  useEffect(() => {
+    if (selectedProduct) trackSiteEvent('product_view', { product_id: selectedProduct.id })
+  }, [selectedProduct?.id])
+
+  useEffect(() => {
+    if (!urlStateReady) return
+    for (const id of selectedCategories) {
+      if (!trackedCategoriesRef.current.includes(id)) trackSiteEvent('category_select', { category_id: id })
+    }
+    trackedCategoriesRef.current = selectedCategories
+  }, [selectedCategories, urlStateReady])
 
   useEffect(() => {
     if (!sidebarOpen) return
@@ -221,6 +236,7 @@ export default function CatalogPage() {
   }
 
   function addToPriceInquiry(productId: string) {
+    if (!priceInquiryProductIds.includes(productId)) trackSiteEvent('inquiry_add', { product_id: productId })
     savePriceInquiry([...priceInquiryProductIds, productId])
     closeProductDetail()
     setShowPriceInquiry(true)
@@ -245,6 +261,7 @@ export default function CatalogPage() {
     const lines = priceInquiryProducts.map(product => `• ${product.name}`)
     const message = `Hola, quisiera consultar el precio de estos productos:\n\n${lines.join('\n')}`
     const url = `https://wa.me/${businessPhone}?text=${encodeURIComponent(message)}`
+    trackSiteEvent('whatsapp_inquiry', { item_count: priceInquiryProducts.length })
     if (popup) popup.location.href = url
     else window.location.href = url
   }
@@ -255,6 +272,7 @@ export default function CatalogPage() {
   }
 
   function addToCart(productId: string, unit: string, notes: string) {
+    trackSiteEvent('cart_add', { product_id: productId })
     const existing = cartItems.find(item => item.productId === productId && item.unit === unit && item.notes === notes)
     if (existing) {
       saveCart(cartItems.map(item =>
@@ -334,6 +352,10 @@ export default function CatalogPage() {
   }
 
   function sendCartToWhatsApp() {
+    if (!cartProducts.length || !businessPhone) {
+      setCartMessage('Agregá productos y verificá que el negocio tenga un teléfono de WhatsApp configurado.')
+      return
+    }
     const popup = window.open('about:blank', '_blank')
     void (async () => {
       const access = await getOrderAccess()
@@ -346,6 +368,7 @@ export default function CatalogPage() {
       const lines = cartProducts.map(({ product, quantity, unit, notes }) => `• ${quantity} ${unit === 'caja' ? (quantity === 1 ? 'caja' : 'cajas') : unit === 'funda' ? (quantity === 1 ? 'funda' : 'fundas') : unit === 'unidad' ? (quantity === 1 ? 'unidad' : 'unidades') : unit} de ${product.name}${notes ? `\n  Nota: ${notes}` : ''}`)
       const message = `Hola, quiero hacer este pedido a nombre de ${customer?.name || ''}${customer?.business_name ? `, del comercio ${customer.business_name}` : ''}:\n\n${lines.join('\n')}`
       const url = `https://wa.me/${businessPhone}?text=${encodeURIComponent(message)}`
+      trackSiteEvent('whatsapp_cart', { item_count: cartProducts.length })
       if (popup) popup.location.href = url
       else window.location.href = url
     })()
@@ -400,6 +423,17 @@ export default function CatalogPage() {
 
     return filtered
   }, [products, categories, searchQuery, selectedCategories, showOnlyDiscounts, showOnlyRecentlyAdded, showRecentProductBadge, sortOption])
+
+  useEffect(() => {
+    const term = normalizeSearchTerm(searchQuery)
+    if (!term) { trackedSearchRef.current = ''; return }
+    if (loading || trackedSearchRef.current === term) return
+    const timer = window.setTimeout(() => {
+      trackedSearchRef.current = term
+      trackSiteEvent('search', { search_term: term, result_count: filteredProducts.length })
+    }, 1000)
+    return () => window.clearTimeout(timer)
+  }, [searchQuery, filteredProducts.length, loading])
 
   // Agrupa filteredProducts en secciones por categoría (y, dentro de cada
   // una, por subcategoría si corresponde), respetando el orden y color
