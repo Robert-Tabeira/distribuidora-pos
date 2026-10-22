@@ -9,6 +9,7 @@ import { Icon, type IconName } from '@/components/ui/icon'
 import { SiteImage } from '@/components/site-image'
 import { MobileMenuPanel } from '@/components/mobile-menu-panel'
 import type { MobileMenuSettings } from '@/lib/mobile-menu-settings'
+import { headerNavigationColors } from '@/lib/header-navigation'
 
 interface WebsiteSettings {
   phone_number: string | null
@@ -143,6 +144,7 @@ export function Header() {
       setIsScrolled(window.scrollY > 50)
     }
 
+    handleScroll()
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
@@ -189,8 +191,7 @@ export function Header() {
     ? settings?.logo_sticky_width || 144
     : settings?.logo_width || 180
   const headerTextColor = landingHeaderAtTop ? '#ffffff' : headerSettings.text_color
-  const navTextColor = landingHeaderAtTop ? headerSettings.nav_transparent_text_color || '#ffffff' : headerSettings.nav_text_color || headerSettings.text_color
-  const navActiveColor = landingHeaderAtTop ? headerSettings.nav_transparent_active_color || '#ffffff' : headerSettings.nav_active_color || headerSettings.active_color
+  const { text: navTextColor, active: navActiveColor } = headerNavigationColors(headerSettings, landingHeaderAtTop)
   const navFontFamily = getSiteFontFamily(headerSettings.nav_font_family || headerSettings.font_family)
   const infoFontFamily = getSiteFontFamily(headerSettings.info_font_family || 'dm_sans')
   const infoRowStyle = { fontFamily: infoFontFamily, fontWeight: headerSettings.info_font_weight || '400' }

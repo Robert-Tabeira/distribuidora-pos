@@ -17,6 +17,7 @@ import { DEFAULT_FOOTER_SETTINGS, FOOTER_COLOR_FIELDS, normalizeFooterSettings, 
 import { DEFAULT_LOCATION_SETTINGS, googleMapsEmbedSource, safeLocationLink, type LandingLocationSettings } from '@/lib/landing-location'
 import { CATEGORY_APPEARANCE_DEFAULTS, CATEGORY_APPEARANCE_COLORS, type LandingCategoryAppearance } from '@/lib/landing-category-appearance'
 import { MobileMenuPanel } from '@/components/mobile-menu-panel'
+import { headerNavigationColors } from '@/lib/header-navigation'
 import { DEFAULT_MOBILE_MENU_SETTINGS, MOBILE_MENU_COLOR_FIELDS, resolveMobileMenuSettings, type MobileMenuSettings } from '@/lib/mobile-menu-settings'
 
 interface ColorSwatch {
@@ -519,6 +520,7 @@ function SitePreviewPanel({
   announcements,
   logoForm,
   headerForm,
+  headerPreviewMode,
   menuLinks,
   landingSections,
   footerForm,
@@ -527,10 +529,11 @@ function SitePreviewPanel({
   customFonts
 }: {
   sectionView: string | null
+  headerPreviewMode: 'hero' | 'solid'
   barForm: { bg_color: string; text_color: string; font_family: string; font_size: string; font_weight: string; letter_spacing: string; animation: string }
   announcements: AnnouncementMessage[]
   logoForm: { site_name: string; site_tagline: string; logo_url: string; logo_transparent_url: string; logo_width: number; logo_sticky_width: number; use_logo_image: boolean }
-  headerForm: { bg_color: string; text_color: string; active_color: string; sticky: boolean; shadow: boolean; nav_uppercase: boolean; nav_underline: boolean; nav_letter_spacing: string; nav_font_weight: string; font_family?: string; brand_font_weight?: number; nav_text_color?: string; nav_active_color?: string; nav_font_family?: string; nav_show_icons?: boolean; info_button_label?: string; info_button_icon?: IconName; info_button_bg?: string; info_button_text?: string; info_font_family?: string }
+  headerForm: { bg_color: string; text_color: string; active_color: string; sticky: boolean; shadow: boolean; nav_uppercase: boolean; nav_underline: boolean; nav_letter_spacing: string; nav_font_weight: string; font_family?: string; brand_font_weight?: number; nav_text_color?: string; nav_active_color?: string; nav_transparent_text_color?: string; nav_transparent_active_color?: string; nav_font_family?: string; nav_show_icons?: boolean; info_button_label?: string; info_button_icon?: IconName; info_button_bg?: string; info_button_text?: string; info_font_family?: string }
   menuLinks: MenuLink[]
   landingSections: LandingSection[]
   footerForm: FooterSettings
@@ -547,6 +550,10 @@ function SitePreviewPanel({
   const LETTER_SPACING_MAP: Record<string, string> = { normal: 'normal', wide: '0.025em', wider: '0.05em' }
 
   const activeAnnouncement = announcements.filter(a => a.is_active).sort((a, b) => a.order_position - b.order_position)[0]
+  const heroPreview = sectionView === 'header' && headerPreviewMode === 'hero'
+  const previewNavColors = headerNavigationColors(headerForm, heroPreview)
+  const previewLogo = heroPreview ? logoForm.logo_transparent_url || logoForm.logo_url : logoForm.logo_url
+  const previewBrandColor = heroPreview ? '#ffffff' : headerForm.text_color
   const isGradient = barForm.animation === 'gradient'
   const sortedLinks = [...menuLinks].sort((a, b) => a.order_position - b.order_position).filter(l => l.is_active)
 
@@ -590,14 +597,14 @@ function SitePreviewPanel({
         {/* Header */}
         <div
           className={`px-3 py-2.5 flex items-center justify-between transition-all ${headerForm.shadow ? 'shadow-sm' : ''} ${highlight('header')}`}
-          style={{ backgroundColor: headerForm.bg_color, fontFamily: getSiteFontFamily(headerForm.font_family, customFonts) }}
+          style={{ backgroundColor: heroPreview ? '#30281f' : '#ffffff', fontFamily: getSiteFontFamily(headerForm.font_family, customFonts) }}
         >
-          {logoForm.use_logo_image && logoForm.logo_url ? (
-            <img src={logoForm.logo_url} alt={logoForm.site_name} className="h-6 object-contain" style={{ width: `${logoForm.logo_width}px` }} />
+          {logoForm.use_logo_image && previewLogo ? (
+            <img src={previewLogo} alt={logoForm.site_name} className="h-6 object-contain" style={{ width: `${logoForm.logo_width}px` }} />
           ) : (
             <div className="min-w-0">
-              <p className="font-black text-xs truncate" style={{ color: headerForm.text_color, fontFamily: getSiteFontFamily(headerForm.font_family, customFonts), fontWeight: headerForm.brand_font_weight }}>{logoForm.site_name}</p>
-              <p className="text-[8px] font-semibold truncate" style={{ color: headerForm.text_color, opacity: 0.7, fontWeight: headerForm.brand_font_weight }}>{logoForm.site_tagline}</p>
+              <p className="font-black text-xs truncate" style={{ color: previewBrandColor, fontFamily: getSiteFontFamily(headerForm.font_family, customFonts), fontWeight: headerForm.brand_font_weight }}>{logoForm.site_name}</p>
+              <p className="text-[8px] font-semibold truncate" style={{ color: previewBrandColor, opacity: 0.7, fontWeight: headerForm.brand_font_weight }}>{logoForm.site_tagline}</p>
             </div>
           )}
           <div className="flex gap-2.5 flex-shrink-0">
@@ -606,7 +613,7 @@ function SitePreviewPanel({
                 key={link.id}
                 className={`relative text-[9px] pb-0.5 ${headerForm.nav_uppercase ? 'uppercase' : ''}`}
                 style={{
-                  color: idx === 0 ? headerForm.nav_active_color || headerForm.active_color : headerForm.nav_text_color || headerForm.text_color,
+                  color: idx === 0 ? previewNavColors.active : previewNavColors.text,
                   letterSpacing: LETTER_SPACING_MAP[headerForm.nav_letter_spacing],
                   fontWeight: headerForm.nav_font_weight,
                   fontFamily: getSiteFontFamily(headerForm.nav_font_family || headerForm.font_family, customFonts)
@@ -615,7 +622,7 @@ function SitePreviewPanel({
                 {headerForm.nav_show_icons && <Icon name={link.icon || defaultMenuIcon(link.url)} className="mr-1 inline h-3 w-3" />}
                 {link.label}
                 {headerForm.nav_underline && idx === 0 && (
-                  <span className="absolute left-0 -bottom-0 h-px w-full" style={{ backgroundColor: headerForm.active_color }} />
+                  <span className="absolute left-0 -bottom-0 h-px w-full" style={{ backgroundColor: previewNavColors.active }} />
                 )}
               </span>
             ))}
@@ -765,6 +772,7 @@ export default function WebsiteEditionPage() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'settings' | 'sections'>('settings')
   const [sectionView, setSectionView] = useState<'announcement' | 'header' | 'hero' | 'landing' | 'popups' | 'footer' | 'fonts'>('announcement')
+  const [headerPreviewMode, setHeaderPreviewMode] = useState<'hero' | 'solid'>('solid')
 
   // Settings
   const [settings, setSettings] = useState<WebsiteSettings | null>(null)
@@ -2104,14 +2112,31 @@ export default function WebsiteEditionPage() {
     if (!headerSettings) return
     setSavingHeaderSettings(true)
     try {
-      const { error } = await supabase
+      let { error } = await supabase
         .from('header_settings')
         .update({ ...headerForm, updated_at: new Date().toISOString() })
         .eq('id', headerSettings.id)
+        .select('id')
+        .single()
+
+      const { mobile_menu_settings, ...desktopForm } = headerForm
+      let mobileSettingsSaved = true
+      // A pending mobile migration must not prevent saving existing desktop fields.
+      if (error && ['PGRST204', '42703'].includes(error.code) && error.message.includes('mobile_menu_settings')) {
+        const result = await supabase.from('header_settings')
+          .update({ ...desktopForm, updated_at: new Date().toISOString() })
+          .eq('id', headerSettings.id)
+          .select('id')
+          .single()
+        error = result.error
+        mobileSettingsSaved = false
+      }
 
       if (error) throw error
-      setHeaderSettings({ ...headerSettings, ...headerForm })
-      alert('✅ Estilo guardado correctamente')
+      setHeaderSettings({ ...headerSettings, ...(mobileSettingsSaved ? { ...desktopForm, mobile_menu_settings } : desktopForm) })
+      alert(mobileSettingsSaved
+        ? '✅ Estilo guardado correctamente'
+        : '✅ Se guardó el estilo de escritorio. Los colores personalizados del menú móvil todavía no se guardaron: ejecutá supabase/migrations/202610210001_mobile_menu_colors.sql en Supabase y después volvé a guardar.')
     } catch (error) {
       console.error('Error saving header settings:', error)
       const details = error instanceof Error ? error.message : (error as { message?: string })?.message || 'Error desconocido'
@@ -2865,6 +2890,10 @@ export default function WebsiteEditionPage() {
         {activeTab === 'sections' && sectionView === 'header' && (() => {
           const sortedLinks = [...menuLinks].sort((a, b) => a.order_position - b.order_position)
           const activePreviewLinks = sortedLinks.filter(l => l.is_active)
+          const heroPreview = headerPreviewMode === 'hero'
+          const previewNavColors = headerNavigationColors(headerForm, heroPreview)
+          const previewLogo = heroPreview ? logoForm.logo_transparent_url || logoForm.logo_url : logoForm.logo_url
+          const previewBrandColor = heroPreview ? '#ffffff' : headerForm.text_color
           const LETTER_SPACING_MAP: Record<string, string> = { normal: 'normal', wide: '0.025em', wider: '0.05em' }
 
           return (
@@ -2874,17 +2903,21 @@ export default function WebsiteEditionPage() {
 
               {/* Vista previa en vivo */}
               <div className="mb-6">
-                <p className="text-xs font-semibold text-text-muted mb-2">VISTA PREVIA</p>
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <p className="mr-2 text-xs font-semibold text-text-muted">VISTA PREVIA DE ESCRITORIO</p>
+                  <button type="button" aria-pressed={heroPreview} onClick={() => setHeaderPreviewMode('hero')} className={`rounded-lg border px-3 py-2 text-xs font-semibold ${heroPreview ? 'border-primary bg-primary/10 text-primary' : 'border-border text-text-muted'}`}>Inicio de la landing</button>
+                  <button type="button" aria-pressed={!heroPreview} onClick={() => setHeaderPreviewMode('solid')} className={`rounded-lg border px-3 py-2 text-xs font-semibold ${!heroPreview ? 'border-primary bg-primary/10 text-primary' : 'border-border text-text-muted'}`}>Sticky / Catálogo</button>
+                </div>
                 <div
                   className={`rounded-lg border border-gray-200 px-4 py-3 flex items-center justify-between ${headerForm.shadow ? 'shadow-md' : ''}`}
-                  style={{ backgroundColor: headerForm.bg_color, fontFamily: getSiteFontFamily(headerForm.font_family, customFonts) }}
+                  style={{ backgroundColor: heroPreview ? '#30281f' : '#ffffff', fontFamily: getSiteFontFamily(headerForm.font_family, customFonts) }}
                 >
-                  {logoForm.use_logo_image && logoForm.logo_url ? (
-                    <img src={logoForm.logo_url} alt={logoForm.site_name} className="h-8 object-contain" />
+                  {logoForm.use_logo_image && previewLogo ? (
+                    <img src={previewLogo} alt={logoForm.site_name} className="h-8 object-contain" />
                   ) : (
                     <div>
-                      <p className="font-black text-lg" style={{ color: headerForm.text_color, fontWeight: headerForm.brand_font_weight }}>{logoForm.site_name}</p>
-                      <p className="text-[10px] font-semibold" style={{ color: headerForm.text_color, opacity: 0.7, fontWeight: headerForm.brand_font_weight }}>{logoForm.site_tagline}</p>
+                      <p className="font-black text-lg" style={{ color: previewBrandColor, fontWeight: headerForm.brand_font_weight }}>{logoForm.site_name}</p>
+                      <p className="text-[10px] font-semibold" style={{ color: previewBrandColor, opacity: 0.7, fontWeight: headerForm.brand_font_weight }}>{logoForm.site_tagline}</p>
                     </div>
                   )}
                   <div className="hidden sm:flex gap-5">
@@ -2893,14 +2926,16 @@ export default function WebsiteEditionPage() {
                         key={link.id}
                         className={`relative pb-1 text-sm ${headerForm.nav_uppercase ? 'uppercase' : ''}`}
                         style={{
-                          color: idx === 0 ? headerForm.active_color : headerForm.text_color,
+                          color: idx === 0 ? previewNavColors.active : previewNavColors.text,
                           letterSpacing: LETTER_SPACING_MAP[headerForm.nav_letter_spacing],
-                          fontWeight: headerForm.nav_font_weight
+                          fontWeight: headerForm.nav_font_weight,
+                          fontFamily: getSiteFontFamily(headerForm.nav_font_family || headerForm.font_family, customFonts)
                         }}
                       >
+                        {headerForm.nav_show_icons && <Icon name={link.icon || defaultMenuIcon(link.url)} className="mr-1.5 inline h-4 w-4 align-[-2px]" />}
                         {link.label}
                         {headerForm.nav_underline && idx === 0 && (
-                  <span className="absolute left-0 bottom-0 h-0.5 w-full rounded-full" style={{ backgroundColor: headerForm.nav_active_color || headerForm.active_color }} />
+                  <span className="absolute left-0 bottom-0 h-0.5 w-full rounded-full" style={{ backgroundColor: previewNavColors.active }} />
                         )}
                       </span>
                     ))}
@@ -3049,7 +3084,7 @@ export default function WebsiteEditionPage() {
 
               {/* ESTILO */}
               <CollapsibleCard icon="palette" title="Estilo del Header" subtitle="Colores y comportamiento">
-                <div className="grid sm:grid-cols-3 gap-5 mb-5">
+                <div className="grid sm:grid-cols-2 gap-5 mb-5">
                   <div className="space-y-3">
                     <label className="flex items-start gap-3 rounded-xl border border-border p-3">
                       <input
@@ -3067,9 +3102,9 @@ export default function WebsiteEditionPage() {
                       <ColorPicker label="Color de fondo" value={headerForm.bg_color} onChange={(hex) => setHeaderForm({ ...headerForm, bg_color: hex })} palette={palette} />
                     )}
                   </div>
-                  <ColorPicker label="Color de texto" value={headerForm.text_color} onChange={(hex) => setHeaderForm({ ...headerForm, text_color: hex })} palette={palette} />
-                  <ColorPicker label="Color de enlace activo" value={headerForm.active_color} onChange={(hex) => setHeaderForm({ ...headerForm, active_color: hex })} palette={palette} />
+                  <ColorPicker label="Nombre del sitio y botón del menú (header sólido)" value={headerForm.text_color} onChange={(hex) => setHeaderForm({ ...headerForm, text_color: hex })} palette={palette} />
                 </div>
+                <p className="mb-5 text-xs text-text-muted">Los colores de los enlaces se configuran en «Texto del menú», según el estado del header.</p>
 
                 <div className="flex flex-wrap gap-6">
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -3124,10 +3159,12 @@ export default function WebsiteEditionPage() {
                       {customFonts.map(font => <option key={font.id} value={`custom:${font.id}`}>{font.name} (personalizada)</option>)}
                     </select>
                   </label>
-                  <ColorPicker label="Color de los enlaces" value={headerForm.nav_text_color} onChange={hex => setHeaderForm({ ...headerForm, nav_text_color: hex })} palette={palette} />
-                  <ColorPicker label="Color del enlace activo" value={headerForm.nav_active_color} onChange={hex => setHeaderForm({ ...headerForm, nav_active_color: hex })} palette={palette} />
-                  <ColorPicker label="Enlaces sobre header transparente" value={headerForm.nav_transparent_text_color} onChange={hex => setHeaderForm({ ...headerForm, nav_transparent_text_color: hex })} palette={palette} />
-                  <ColorPicker label="Enlace activo sobre header transparente" value={headerForm.nav_transparent_active_color} onChange={hex => setHeaderForm({ ...headerForm, nav_transparent_active_color: hex })} palette={palette} />
+                  <div className="sm:col-span-2"><h4 className="font-semibold">Escritorio: header sólido</h4><p className="mt-1 text-xs text-text-muted">Estos colores se usan en el catálogo y al bajar en la landing.</p></div>
+                  <ColorPicker label="Enlaces en sticky / catálogo" value={headerForm.nav_text_color} onChange={hex => { setHeaderPreviewMode('solid'); setHeaderForm(current => ({ ...current, nav_text_color: hex })) }} palette={palette} />
+                  <ColorPicker label="Enlace activo en sticky / catálogo" value={headerForm.nav_active_color} onChange={hex => { setHeaderPreviewMode('solid'); setHeaderForm(current => ({ ...current, nav_active_color: hex })) }} palette={palette} />
+                  <div className="sm:col-span-2"><h4 className="font-semibold">Escritorio: sobre el hero</h4><p className="mt-1 text-xs text-text-muted">Estos colores se usan al inicio de la landing. El menú móvil tiene sus propios controles.</p></div>
+                  <ColorPicker label="Enlaces al inicio de la landing" value={headerForm.nav_transparent_text_color} onChange={hex => { setHeaderPreviewMode('hero'); setHeaderForm(current => ({ ...current, nav_transparent_text_color: hex })) }} palette={palette} />
+                  <ColorPicker label="Enlace activo al inicio de la landing" value={headerForm.nav_transparent_active_color} onChange={hex => { setHeaderPreviewMode('hero'); setHeaderForm(current => ({ ...current, nav_transparent_active_color: hex })) }} palette={palette} />
                   <label className="flex items-center gap-2 text-sm font-semibold text-text-muted sm:col-span-2">
                     <input type="checkbox" checked={headerForm.nav_show_icons} onChange={e => setHeaderForm({ ...headerForm, nav_show_icons: e.target.checked })} className="h-4 w-4 rounded border-gray-300" />
                     Mostrar también los iconos junto a los enlaces en escritorio
@@ -3856,6 +3893,7 @@ export default function WebsiteEditionPage() {
           announcements={announcements}
           logoForm={logoForm}
           headerForm={headerForm}
+          headerPreviewMode={headerPreviewMode}
           menuLinks={menuLinks}
           landingSections={sections}
           footerForm={footerForm}
