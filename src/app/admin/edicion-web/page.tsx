@@ -11,6 +11,9 @@ import { CATEGORY_ICON_OPTIONS, getCategoryIconName, isCategoryIconImage } from 
 import type { Employee } from '@/types/database'
 import { getSiteFontFamily, type SiteFont } from '@/lib/site-fonts'
 import { LandingLocation } from '@/components/landing-location'
+import { FooterDesign } from '@/components/footer-design'
+import { FooterEditor } from '@/components/footer-editor'
+import { DEFAULT_FOOTER_SETTINGS, FOOTER_COLOR_FIELDS, normalizeFooterSettings, safeFooterLink, type FooterSettings, type FooterBusinessInfo } from '@/lib/footer-settings'
 import { DEFAULT_LOCATION_SETTINGS, googleMapsEmbedSource, safeLocationLink, type LandingLocationSettings } from '@/lib/landing-location'
 
 interface ColorSwatch {
@@ -42,40 +45,6 @@ interface WebsiteSettings {
   use_logo_image?: boolean
   footer_settings?: FooterSettings
   custom_fonts?: SiteFont[]
-}
-
-interface FooterSettings {
-  brand_title: string
-  description: string
-  contact_title: string
-  hours_title: string
-  copyright_text: string
-  show_contact: boolean
-  show_phone: boolean
-  show_email: boolean
-  show_address: boolean
-  show_hours: boolean
-  heading_font?: string
-  body_font?: string
-  heading_weight?: string
-  body_weight?: string
-}
-
-const DEFAULT_FOOTER_SETTINGS: FooterSettings = {
-  brand_title: '',
-  description: 'Distribuidora oficial de Sarubbi en Uruguay',
-  contact_title: 'Contacto',
-  hours_title: 'Horarios',
-  copyright_text: 'Todos los derechos reservados.',
-  show_contact: true,
-  show_phone: true,
-  show_email: true,
-  show_address: true,
-  show_hours: true,
-  heading_font: 'lora',
-  body_font: 'dm_sans',
-  heading_weight: '700',
-  body_weight: '400'
 }
 
 interface MenuLink {
@@ -548,6 +517,7 @@ function SitePreviewPanel({
   menuLinks,
   landingSections,
   footerForm,
+  footerBusiness,
   editingPopupForm,
   customFonts
 }: {
@@ -559,6 +529,7 @@ function SitePreviewPanel({
   menuLinks: MenuLink[]
   landingSections: LandingSection[]
   footerForm: FooterSettings
+  footerBusiness?: FooterBusinessInfo | null
   editingPopupForm?: any
   customFonts: SiteFont[]
 }) {
@@ -647,11 +618,7 @@ function SitePreviewPanel({
         </div>
 
         {sectionView === 'footer' ? (
-          <div className="grid grid-cols-3 gap-3 bg-gray-900 p-4 text-gray-300">
-            <div><p className="text-sm font-black text-white">{footerForm.brand_title || logoForm.site_name || 'Los Primos'}</p><p className="mt-1 text-[9px]">{footerForm.description || 'Descripción del negocio'}</p></div>
-            {footerForm.show_contact && <div><p className="mb-1 text-[9px] font-bold text-white">{footerForm.contact_title || 'Contacto'}</p><p className="text-[8px]">{footerForm.show_phone ? 'WhatsApp · ' : ''}{footerForm.show_email ? 'Email · ' : ''}{footerForm.show_address ? 'Dirección' : ''}</p></div>}
-            {footerForm.show_hours && <div><p className="mb-1 text-[9px] font-bold text-white">{footerForm.hours_title || 'Horarios'}</p><p className="text-[8px]">Horario configurado</p></div>}
-          </div>
+          <div className="max-h-[560px] overflow-auto"><FooterDesign settings={footerForm} business={footerBusiness} preview /></div>
         ) : sectionView === 'landing' ? (
           <div className="max-h-72 space-y-2 overflow-auto bg-gray-50 p-3">
             {landingSections.filter(section => section.is_visible).length > 0 ? landingSections.filter(section => section.is_visible).map(section => (
@@ -1003,7 +970,7 @@ export default function WebsiteEditionPage() {
         setSettings(settingsRes.data as WebsiteSettings)
         setCustomFonts(Array.isArray(settingsRes.data.custom_fonts) ? settingsRes.data.custom_fonts as SiteFont[] : [])
         setHeroAutoplaySeconds(settingsRes.data.hero_autoplay_seconds ?? 5)
-        setFooterForm({ ...DEFAULT_FOOTER_SETTINGS, ...(settingsRes.data.footer_settings || {}) })
+        setFooterForm(normalizeFooterSettings(settingsRes.data.footer_settings))
         setSettingsForm({
           phone_number: settingsRes.data.phone_number || '',
           email: settingsRes.data.email || '',
@@ -1244,19 +1211,31 @@ export default function WebsiteEditionPage() {
       return
     }
 
+    const invalidLink = footerForm.links.find(link => (link.label.trim() || link.url.trim()) && (!link.label.trim() || !safeFooterLink(link.url)))
+    if (invalidLink || (footerForm.show_cta && footerForm.cta_label.trim() && !safeFooterLink(footerForm.cta_url))) {
+      setFooterMessage({ type: 'error', text: 'Completá el texto y el destino de los enlaces. Usá una ruta como /catalogo o un enlace https:// válido.' })
+      return
+    }
+    if (FOOTER_COLOR_FIELDS.some(([key]) => !/^#[\da-f]{6}$/i.test(footerForm[key]))) {
+      setFooterMessage({ type: 'error', text: 'Revisá los colores: usá un código de seis dígitos, por ejemplo #292d23.' })
+      return
+    }
+    const nextFooter = normalizeFooterSettings(footerForm)
+    nextFooter.links = nextFooter.links.filter(link => link.label.trim() && link.url.trim())
     setSavingFooter(true)
     try {
       const { error } = await supabase
         .from('website_settings')
-        .update({ footer_settings: footerForm, updated_at: new Date().toISOString() })
+        .update({ footer_settings: nextFooter, updated_at: new Date().toISOString() })
         .eq('id', settings.id)
 
       if (error) throw error
-      setSettings({ ...settings, footer_settings: footerForm })
+      setSettings({ ...settings, footer_settings: nextFooter })
+      setFooterForm(nextFooter)
       setFooterMessage({ type: 'success', text: 'Footer guardado correctamente.' })
     } catch (error) {
       console.error('Error saving footer:', error)
-      setFooterMessage({ type: 'error', text: 'No se pudo guardar. Verificá que hayas ejecutado la migración de Supabase.' })
+      setFooterMessage({ type: 'error', text: `No se pudo guardar el footer: ${error instanceof Error ? error.message : (error as { message?: string })?.message || 'Revisá tu conexión e intentá nuevamente.'}` })
     } finally {
       setSavingFooter(false)
     }
@@ -3823,72 +3802,17 @@ export default function WebsiteEditionPage() {
 
         {/* FOOTER */}
         {activeTab === 'sections' && sectionView === 'footer' && (
-          <div className="space-y-5">
-            <div>
-              <h3 className="font-bold text-xl mb-1">Footer del sitio</h3>
-              <p className="text-sm text-text-muted">Editá la información y elegí qué datos del negocio aparecen al pie de las páginas públicas.</p>
-            </div>
-
-            <div className="card space-y-4">
-              <h4 className="font-bold text-text">Identidad</h4>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-text-muted">Nombre del negocio</label>
-                <input className="input" value={footerForm.brand_title} onChange={e => setFooterForm({ ...footerForm, brand_title: e.target.value })} placeholder={logoForm.site_name || 'Los Primos'} />
-                <p className="mt-1 text-xs text-text-muted">Dejalo vacío para usar el nombre de Header / Menú.</p>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-text-muted">Descripción</label>
-                <textarea className="input min-h-20" value={footerForm.description} onChange={e => setFooterForm({ ...footerForm, description: e.target.value })} placeholder="Breve descripción del negocio" />
-              </div>
-            </div>
-
-            <div className="card grid gap-4 sm:grid-cols-2">
-              <h4 className="font-bold text-text sm:col-span-2">Tipografía del footer</h4>
-              <label className="block text-sm font-medium text-text-muted">Títulos
-                <select className="input mt-1" value={footerForm.heading_font || 'lora'} onChange={e => setFooterForm({ ...footerForm, heading_font: e.target.value })}>
-                  {BUILT_IN_FONT_OPTIONS.map(font => <option key={font.value} value={font.value}>{font.label}</option>)}
-                  {customFonts.map(font => <option key={font.id} value={`custom:${font.id}`}>{font.name} (personalizada)</option>)}
-                </select>
-              </label>
-              <label className="block text-sm font-medium text-text-muted">Grosor de títulos
-                <select className="input mt-1" value={footerForm.heading_weight || '700'} onChange={e => setFooterForm({ ...footerForm, heading_weight: e.target.value })}>
-                  {FONT_WEIGHT_OPTIONS.map(weight => <option key={weight.value} value={weight.value}>{weight.label}</option>)}
-                </select>
-              </label>
-              <label className="block text-sm font-medium text-text-muted">Texto y descripciones
-                <select className="input mt-1" value={footerForm.body_font || 'dm_sans'} onChange={e => setFooterForm({ ...footerForm, body_font: e.target.value })}>
-                  {BUILT_IN_FONT_OPTIONS.map(font => <option key={font.value} value={font.value}>{font.label}</option>)}
-                  {customFonts.map(font => <option key={font.id} value={`custom:${font.id}`}>{font.name} (personalizada)</option>)}
-                </select>
-              </label>
-              <label className="block text-sm font-medium text-text-muted">Grosor del texto
-                <select className="input mt-1" value={footerForm.body_weight || '400'} onChange={e => setFooterForm({ ...footerForm, body_weight: e.target.value })}>
-                  {FONT_WEIGHT_OPTIONS.map(weight => <option key={weight.value} value={weight.value}>{weight.label}</option>)}
-                </select>
-              </label>
-            </div>
-
-            <div className="card space-y-4">
-              <h4 className="font-bold text-text">Secciones e información</h4>
-              <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-border p-3 text-sm font-medium text-text-muted"><input type="checkbox" checked={footerForm.show_contact} onChange={e => setFooterForm({ ...footerForm, show_contact: e.target.checked })} className="h-4 w-4 rounded" />Mostrar sección de contacto</label>
-              {footerForm.show_contact && <div className="space-y-3 rounded-xl bg-gray-50 p-3">
-                <div><label className="mb-1 block text-xs font-medium text-text-muted">Título de contacto</label><input className="input" value={footerForm.contact_title} onChange={e => setFooterForm({ ...footerForm, contact_title: e.target.value })} /></div>
-                {([['show_phone', 'Teléfono y WhatsApp'], ['show_email', 'Email'], ['show_address', 'Dirección']] as const).map(([key, label]) => <label key={key} className="flex cursor-pointer items-center gap-3 text-sm text-text-muted"><input type="checkbox" checked={footerForm[key]} onChange={e => setFooterForm({ ...footerForm, [key]: e.target.checked })} className="h-4 w-4 rounded" />Mostrar {label.toLowerCase()}</label>)}
-                <p className="text-xs text-text-muted">Los datos se toman de Configuración del negocio.</p>
-              </div>}
-              <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-border p-3 text-sm font-medium text-text-muted"><input type="checkbox" checked={footerForm.show_hours} onChange={e => setFooterForm({ ...footerForm, show_hours: e.target.checked })} className="h-4 w-4 rounded" />Mostrar sección de horarios</label>
-              {footerForm.show_hours && <div className="pl-1"><label className="mb-1 block text-xs font-medium text-text-muted">Título de horarios</label><input className="input" value={footerForm.hours_title} onChange={e => setFooterForm({ ...footerForm, hours_title: e.target.value })} /><p className="mt-1 text-xs text-text-muted">El horario se toma de Configuración del negocio.</p></div>}
-            </div>
-
-            <div className="card space-y-3">
-              <h4 className="font-bold text-text">Texto inferior</h4>
-              <div><label className="mb-1 block text-sm font-medium text-text-muted">Aviso de derechos</label><input className="input" value={footerForm.copyright_text} onChange={e => setFooterForm({ ...footerForm, copyright_text: e.target.value })} placeholder="Todos los derechos reservados." /></div>
-              <p className="text-xs text-text-muted">Se mostrará junto al año actual y el nombre del negocio.</p>
-            </div>
-
-            {footerMessage && <p role="status" className={`rounded-xl p-3 text-sm ${footerMessage.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{footerMessage.text}</p>}
-            <button type="button" onClick={saveFooter} disabled={savingFooter || loading} className="btn btn-primary w-full">{savingFooter ? 'Guardando…' : 'Guardar footer'}</button>
-          </div>
+          <FooterEditor
+            value={footerForm}
+            onChange={setFooterForm}
+            business={{ ...settings, site_name: logoForm.site_name }}
+            customFonts={customFonts}
+            palette={palette}
+            saving={savingFooter}
+            disabled={loading}
+            message={footerMessage}
+            onSave={saveFooter}
+          />
         )}
       </div>
 
@@ -3903,6 +3827,7 @@ export default function WebsiteEditionPage() {
           menuLinks={menuLinks}
           landingSections={sections}
           footerForm={footerForm}
+          footerBusiness={{ ...settings, site_name: logoForm.site_name }}
           editingPopupForm={sectionView === 'popups' && showPopupModal ? popupForm : null}
           customFonts={customFonts}
         />
