@@ -36,6 +36,12 @@
 .filterLabel:has(input:checked) { background: #eeeedf; color: #4f5534; }
 .filterLabel:has(input:checked) > span { color: #4f5534; }
 .filterSublabel { margin-left: 16px; padding-left: 16px; border-left: 1px solid #e3d7c4; }
+.categoryToggle { display: flex; align-items: center; justify-content: center; width: 40px; min-height: 40px; flex-shrink: 0; border-radius: 10px; color: #6d7048; }
+.categoryToggle:hover { background: #f0ecdf; }
+.categoryToggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+.clearFilters { display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-top: 24px; min-height: 40px; padding: 8px 14px; border: 1px solid #d9cdb8; border-radius: 999px; background: #fffdf8; color: #655d4d; font-size: 12px; font-weight: 600; }
+.clearFilters:hover:not(:disabled) { background: #eeebdc; border-color: #bdb99b; }
+.clearFilters:disabled { opacity: .45; }
 .toolbar { padding: 18px; margin-bottom: 28px; background: #fffdf8; border: 1px solid #e3d7c4; border-radius: 20px; box-shadow: 0 3px 14px rgb(63 47 27 / 3%); }
 .toolbarTitle { color: #40372b; font-size: 15px; font-weight: 700; }
 .toolbarHint { font-size: 12px; color: #776c5e; margin-top: 3px; }

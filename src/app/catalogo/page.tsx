@@ -58,6 +58,7 @@ export default function CatalogPage() {
   const [selectedProduct, setSelectedProduct] = useState<ProductWithDiscount | null>(null)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [expandedCategoryIds, setExpandedCategoryIds] = useState<string[]>([])
   const filterPanelRef = useRef<HTMLDivElement>(null)
   const filterToggleRef = useRef<HTMLButtonElement>(null)
   const [sortOption, setSortOption] = useState<'default' | 'name_asc' | 'name_desc' | 'recent'>('default')
@@ -487,6 +488,13 @@ export default function CatalogPage() {
     )
   }
 
+  function clearFilters() {
+    setSelectedCategories([])
+    setShowOnlyDiscounts(false)
+    setShowOnlyRecentlyAdded(false)
+    setSearchQuery('')
+  }
+
   function closeProductDetail() {
     setSelectedProduct(null)
     const url = new URL(window.location.href)
@@ -569,21 +577,6 @@ export default function CatalogPage() {
                 </button>
               </div>
 
-              {/* Limpiar Filtros */}
-              {(selectedCategories.length > 0 || showOnlyDiscounts || showOnlyRecentlyAdded || searchQuery.trim()) && (
-                <button
-                  onClick={() => {
-                    setSelectedCategories([])
-                    setShowOnlyDiscounts(false)
-                    setShowOnlyRecentlyAdded(false)
-                    setSearchQuery('')
-                  }}
-                  className="w-full mb-6 py-2 px-4 border border-[#d9cdb8] text-[#514738] rounded-lg hover:bg-[#f8f4eb] transition-all text-sm font-semibold"
-                >
-                  Limpiar Filtros
-                </button>
-              )}
-
               {/* Categorías */}
               <div className="mb-8">
                 <h4 className="font-bold text-[#30261d] mb-4 text-sm uppercase">Categorías</h4>
@@ -591,38 +584,46 @@ export default function CatalogPage() {
                   {(categories as CategoryExt[])
                     .filter(c => !c.parent_id && c.show_in_catalog !== false)
                     .sort((a, b) => a.order_position - b.order_position)
-                    .map(category => (
-                      <div key={category.id}>
-                        <label className={`${styles.filterLabel} group`}>
-                          <input
-                            type="checkbox"
-                            checked={selectedCategories.includes(category.id)}
-                            onChange={() => toggleCategory(category.id)}
-                            className="w-5 h-5 rounded border-[#d9cdb8] text-[#575b36] cursor-pointer"
-                          />
-                          <span className="text-[#514738] group-hover:text-[#575b36] transition-colors text-sm font-semibold">
-                            {category.name}
-                          </span>
-                        </label>
-
-                        {(categories as CategoryExt[])
-                          .filter(c => c.parent_id === category.id && c.show_in_catalog !== false)
-                          .sort((a, b) => a.order_position - b.order_position)
-                          .map(sub => (
-                            <label key={sub.id} className={`${styles.filterLabel} ${styles.filterSublabel} group`}>
-                              <input
-                                type="checkbox"
-                                checked={selectedCategories.includes(sub.id)}
-                                onChange={() => toggleCategory(sub.id)}
-                                className="w-4 h-4 rounded border-[#d9cdb8] text-[#575b36] cursor-pointer"
-                              />
-                              <span className="text-[#706556] group-hover:text-[#575b36] transition-colors text-sm">
-                                {sub.name}
-                              </span>
-                            </label>
-                          ))}
+                    .map(category => {
+                      const subcategories = (categories as CategoryExt[])
+                        .filter(sub => sub.parent_id === category.id && sub.show_in_catalog !== false)
+                        .sort((a, b) => a.order_position - b.order_position)
+                      const expanded = expandedCategoryIds.includes(category.id)
+                      return <div key={category.id}>
+                        <div className="flex items-center gap-1">
+                          <label className={`${styles.filterLabel} min-w-0 flex-1 group`}>
+                            <input
+                              type="checkbox"
+                              checked={selectedCategories.includes(category.id)}
+                              onChange={() => toggleCategory(category.id)}
+                              className="w-5 h-5 rounded border-[#d9cdb8] text-[#575b36] cursor-pointer"
+                            />
+                            <span className="min-w-0 text-[#514738] group-hover:text-[#575b36] transition-colors text-sm font-semibold">{category.name}</span>
+                          </label>
+                          {subcategories.length > 0 && <button
+                            type="button"
+                            className={styles.categoryToggle}
+                            aria-expanded={expanded}
+                            aria-controls={`catalog-subcategories-${category.id}`}
+                            aria-label={`${expanded ? 'Ocultar' : 'Mostrar'} subcategorías de ${category.name}`}
+                            onClick={() => setExpandedCategoryIds(current => current.includes(category.id) ? current.filter(id => id !== category.id) : [...current, category.id])}
+                          >
+                            <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                          </button>}
+                        </div>
+                        {subcategories.length > 0 && <div id={`catalog-subcategories-${category.id}`} hidden={!expanded} className="mt-1 space-y-1">
+                          {subcategories.map(sub => <label key={sub.id} className={`${styles.filterLabel} ${styles.filterSublabel} group`}>
+                            <input
+                              type="checkbox"
+                              checked={selectedCategories.includes(sub.id)}
+                              onChange={() => toggleCategory(sub.id)}
+                              className="w-4 h-4 rounded border-[#d9cdb8] text-[#575b36] cursor-pointer"
+                            />
+                            <span className="text-[#706556] group-hover:text-[#575b36] transition-colors text-sm">{sub.name}</span>
+                          </label>)}
+                        </div>}
                       </div>
-                    ))}
+                    })}
                 </div>
               </div>
 
@@ -657,7 +658,7 @@ export default function CatalogPage() {
                 </label>
                 {!showRecentProductBadge && <p className="mt-2 text-xs text-[#817565]">La etiqueta está desactivada en la configuración del sitio.</p>}
               </div>
-              <button type="button" onClick={() => setSidebarOpen(false)} className={`${styles.primaryButton} mt-6 w-full md:hidden`}>{loading ? 'Ver productos' : `Ver ${filteredProducts.length} productos`}</button>
+              <button type="button" onClick={clearFilters} disabled={activeFilterCount === 0 && !searchQuery.trim()} className={styles.clearFilters}><Icon name="close" className="h-3.5 w-3.5" />Limpiar filtros</button>
             </div>
           </div>
 
@@ -759,12 +760,7 @@ export default function CatalogPage() {
                   {showOnlyRecentlyAdded && ` con la etiqueta “Recién agregado”`}
                 </p>
                 <button
-                  onClick={() => {
-                    setSearchQuery('')
-                    setSelectedCategories([])
-                    setShowOnlyDiscounts(false)
-                    setShowOnlyRecentlyAdded(false)
-                  }}
+                  onClick={clearFilters}
                   className="mt-4 px-4 py-2 bg-[#575b36] text-white rounded-lg hover:bg-[#414529] transition-all text-sm font-semibold"
                 >
                   Limpiar Filtros
