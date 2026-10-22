@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { PublicLayout } from '@/components/public-layout'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
@@ -8,6 +8,7 @@ import type { Product, Category, Discount } from '@/types/database'
 import { getCustomerSession } from '@/lib/customer-auth'
 import { Icon } from '@/components/ui/icon'
 import { SiteImage } from '@/components/site-image'
+import styles from './catalog.module.css'
 
 interface ProductWithDiscount extends Pick<Product, 'id' | 'name' | 'unit' | 'category_id' | 'created_at' | 'gallery' | 'description' | 'product_code'> {
   discount?: Discount
@@ -57,6 +58,8 @@ export default function CatalogPage() {
   const [selectedProduct, setSelectedProduct] = useState<ProductWithDiscount | null>(null)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const filterPanelRef = useRef<HTMLDivElement>(null)
+  const filterToggleRef = useRef<HTMLButtonElement>(null)
   const [sortOption, setSortOption] = useState<'default' | 'name_asc' | 'name_desc' | 'recent'>('default')
   const [businessPhone, setBusinessPhone] = useState('')
   const [cartMessage, setCartMessage] = useState('')
@@ -65,6 +68,44 @@ export default function CatalogPage() {
   const [productNotes, setProductNotes] = useState('')
   const [customerOrderingEnabled, setCustomerOrderingEnabled] = useState(false)
   const [showRecentProductBadge, setShowRecentProductBadge] = useState(true)
+
+  useEffect(() => {
+    if (!sidebarOpen) return
+    const mobile = window.matchMedia('(max-width: 767px)')
+    if (!mobile.matches) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    filterPanelRef.current?.focus()
+    function closeOnDesktop() {
+      if (!mobile.matches) setSidebarOpen(false)
+    }
+    function handleFilterKeys(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setSidebarOpen(false)
+      }
+      if (event.key !== 'Tab') return
+      const controls = Array.from(filterPanelRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select:not(:disabled), a[href]') || []).filter(element => element.getClientRects().length > 0)
+      const first = controls[0]
+      const last = controls[controls.length - 1]
+      if (!first || !last) return
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === filterPanelRef.current)) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+    document.addEventListener('keydown', handleFilterKeys)
+    mobile.addEventListener('change', closeOnDesktop)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', handleFilterKeys)
+      mobile.removeEventListener('change', closeOnDesktop)
+      if (filterToggleRef.current?.getClientRects().length) filterToggleRef.current.focus()
+    }
+  }, [sidebarOpen])
 
   useEffect(() => {
     loadData()
@@ -464,76 +505,63 @@ export default function CatalogPage() {
     window.history.pushState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`)
   }
 
-  // Card de producto, reutilizada en cada sección/subsección del catálogo
+  // Las tarjetas abren el mismo detalle y conservan los enlaces por producto.
   function renderProductCard(product: ProductWithDiscount) {
     const isRecentlyAdded = showRecentProductBadge && isRecentlyAddedProduct(product)
+    const inInquiry = priceInquiryProductIds.includes(product.id)
 
     return (
-      <div
-        key={product.id}
-        className="relative bg-white rounded-xl sm:rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col h-full cursor-pointer group"
-        onClick={() => openProductDetail(product)}
-      >
-        {/* Imagen */}
-        <div className="relative h-28 sm:h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
-          {product.gallery?.[0] ? (
-            <SiteImage
-              src={product.gallery[0]}
-              alt={product.name}
-              fill
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 240px"
-              quality={75}
-              loading="lazy"
-              className="w-full h-full object-contain group-hover:opacity-90 transition-opacity"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-300"><Icon name="box" className="h-12 w-12" /></div>
-          )}
-          {product.discount && (
-            <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-red-500 text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full font-black text-[10px] sm:text-sm shadow-lg">
-              -{product.discount.percentage}%
-            </div>
-          )}
-          {isRecentlyAdded && (
-            <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-emerald-600 text-white px-2 py-1 rounded-full font-bold text-[10px] sm:text-xs shadow-lg">
-              Recién agregado
-            </div>
-          )}
-        </div>
-
-        {/* Info - Altura fija */}
-        <div className="p-2.5 sm:p-4 flex flex-col flex-1">
-          <h3 className="font-bold text-gray-900 text-sm sm:text-base line-clamp-2 mb-1 sm:mb-2 flex-1">{product.name}</h3>
-
-          {product.description && (
-            <p className="hidden sm:block text-xs text-gray-600 line-clamp-2 mb-2">{product.description}</p>
-          )}
-
-          {product.discount && (
-            <p className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-red-600 font-semibold"><Icon name="tag" className="h-3.5 w-3.5" />{product.discount.name}</p>
-          )}
-        </div>
-      </div>
+      <button type="button" key={product.id} className={styles.productCard} onClick={() => openProductDetail(product)} aria-label={`Ver ${product.name}`}>
+        <span className={styles.imageWell}>
+          {product.gallery?.[0] ? <SiteImage
+            src={product.gallery[0]}
+            alt=""
+            fill
+            sizes="(max-width: 767px) 50vw, (max-width: 1023px) 33vw, 300px"
+            quality={75}
+            loading="lazy"
+            className="object-contain p-3 sm:p-5"
+          /> : <span className="flex h-full items-center justify-center text-[#b9ad97]"><Icon name="box" className="h-12 w-12" /></span>}
+          <span className={styles.badges}>
+            {product.discount && <span className={styles.discountBadge}>−{product.discount.percentage}%</span>}
+            {isRecentlyAdded && <span className={styles.newBadge}>Recién agregado</span>}
+          </span>
+        </span>
+        <span className={styles.productBody}>
+          <span className={`${styles.productName} line-clamp-3`}>{product.name}</span>
+          {product.description && <span className="mb-2 hidden text-xs leading-relaxed text-[#776c5e] sm:line-clamp-2">{product.description}</span>}
+          {product.discount && <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#9a5035] sm:text-xs"><Icon name="tag" className="h-3.5 w-3.5 shrink-0" />{product.discount.name}</span>}
+          <span className="flex-1" />
+          <span className={styles.productFoot}>{inInquiry ? <><span className="inline-flex items-center gap-1"><Icon name="check" className="h-3.5 w-3.5 shrink-0" />En tu consulta</span><span aria-hidden="true">→</span></> : <><span>Ver producto</span><span aria-hidden="true">↗</span></>}</span>
+        </span>
+      </button>
     )
   }
 
   return (
     <PublicLayout>
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3 lg:grid-cols-4">
+    <div className={styles.catalog}>
+      <div className={styles.container}>
+        <nav className={styles.breadcrumb} aria-label="Ruta de navegación"><Link href="/landing">Inicio</Link><span aria-hidden="true">/</span><span aria-current="page">Catálogo</span></nav>
+        <header className={styles.intro}>
+          <div><p className={styles.eyebrow}>Los Primos · Por mayor y menor</p><h1 className={styles.title}>Nuestro catálogo</h1><p className={styles.introText}>Encontrá lo que necesitás, armá tu consulta y preguntanos los precios por WhatsApp.</p></div>
+          <div className={styles.actions}>
+            <button type="button" onClick={() => setShowPriceInquiry(true)} className={styles.primaryButton}><Icon name="document" className="h-4 w-4 shrink-0" />Consulta de precios<span className={styles.count}>{priceInquiryProductIds.length}</span></button>
+            {customerOrderingEnabled && <button type="button" onClick={() => setShowCart(true)} className={styles.secondaryButton}><Icon name="cart" className="h-4 w-4 shrink-0" />Mi lista ({cartTotal})</button>}
+          </div>
+        </header>
+        <div className={styles.layout}>
           {/* SIDEBAR FILTROS */}
-          <div
-            className={`md:block ${
-              sidebarOpen ? 'block' : 'hidden'
-            } md:col-span-1`}
-          >
-            <div className="bg-white rounded-2xl p-4 lg:p-6 border border-gray-200 shadow-sm lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+          <div id="catalog-filters" className={`${styles.sidebarHost} ${sidebarOpen ? styles.sidebarVisible : ''}`}>
+            <button type="button" className={styles.filterBackdrop} aria-label="Cerrar panel de filtros" onClick={() => setSidebarOpen(false)} />
+            <div ref={filterPanelRef} tabIndex={-1} className={styles.sidebarPanel} role={sidebarOpen ? 'dialog' : 'region'} aria-modal={sidebarOpen || undefined} aria-labelledby="catalog-filters-title">
+              <p className={styles.eyebrow}>A tu gusto</p>
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-black text-lg text-gray-900">Filtros</h3>
+                <h2 id="catalog-filters-title" className={styles.sidebarTitle}>Explorá por categoría</h2>
                 <button
                   onClick={() => setSidebarOpen(false)}
-                  className="md:hidden w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500"
+                  aria-label="Cerrar filtros"
+                  className="md:hidden h-11 w-11 shrink-0 flex items-center justify-center rounded-full hover:bg-[#f2ecdf] text-[#817565]"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -550,7 +578,7 @@ export default function CatalogPage() {
                     setShowOnlyRecentlyAdded(false)
                     setSearchQuery('')
                   }}
-                  className="w-full mb-6 py-2 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all text-sm font-semibold"
+                  className="w-full mb-6 py-2 px-4 border border-[#d9cdb8] text-[#514738] rounded-lg hover:bg-[#f8f4eb] transition-all text-sm font-semibold"
                 >
                   Limpiar Filtros
                 </button>
@@ -558,21 +586,21 @@ export default function CatalogPage() {
 
               {/* Categorías */}
               <div className="mb-8">
-                <h4 className="font-bold text-gray-900 mb-4 text-sm uppercase">Categorías</h4>
+                <h4 className="font-bold text-[#30261d] mb-4 text-sm uppercase">Categorías</h4>
                 <div className="space-y-3">
                   {(categories as CategoryExt[])
                     .filter(c => !c.parent_id && c.show_in_catalog !== false)
                     .sort((a, b) => a.order_position - b.order_position)
                     .map(category => (
                       <div key={category.id}>
-                        <label className="flex items-center gap-3 cursor-pointer group">
+                        <label className={`${styles.filterLabel} group`}>
                           <input
                             type="checkbox"
                             checked={selectedCategories.includes(category.id)}
                             onChange={() => toggleCategory(category.id)}
-                            className="w-5 h-5 rounded border-gray-300 text-blue-900 cursor-pointer"
+                            className="w-5 h-5 rounded border-[#d9cdb8] text-[#575b36] cursor-pointer"
                           />
-                          <span className="text-gray-700 group-hover:text-blue-900 transition-colors text-sm font-semibold">
+                          <span className="text-[#514738] group-hover:text-[#575b36] transition-colors text-sm font-semibold">
                             {category.name}
                           </span>
                         </label>
@@ -581,14 +609,14 @@ export default function CatalogPage() {
                           .filter(c => c.parent_id === category.id && c.show_in_catalog !== false)
                           .sort((a, b) => a.order_position - b.order_position)
                           .map(sub => (
-                            <label key={sub.id} className="flex items-center gap-3 cursor-pointer group pl-8 mt-2">
+                            <label key={sub.id} className={`${styles.filterLabel} ${styles.filterSublabel} group`}>
                               <input
                                 type="checkbox"
                                 checked={selectedCategories.includes(sub.id)}
                                 onChange={() => toggleCategory(sub.id)}
-                                className="w-4 h-4 rounded border-gray-300 text-blue-900 cursor-pointer"
+                                className="w-4 h-4 rounded border-[#d9cdb8] text-[#575b36] cursor-pointer"
                               />
-                              <span className="text-gray-600 group-hover:text-blue-900 transition-colors text-sm">
+                              <span className="text-[#706556] group-hover:text-[#575b36] transition-colors text-sm">
                                 {sub.name}
                               </span>
                             </label>
@@ -600,59 +628,51 @@ export default function CatalogPage() {
 
               {/* Descuentos */}
               <div>
-                <h4 className="font-bold text-gray-900 mb-4 text-sm uppercase">Ofertas</h4>
-                <label className="flex items-center gap-3 cursor-pointer group">
+                <h4 className="font-bold text-[#30261d] mb-4 text-sm uppercase">Ofertas</h4>
+                <label className={`${styles.filterLabel} group`}>
                   <input
                     type="checkbox"
                     checked={showOnlyDiscounts}
                     onChange={(e) => setShowOnlyDiscounts(e.target.checked)}
-                    className="w-5 h-5 rounded border-gray-300 text-blue-900 cursor-pointer"
+                    className="w-5 h-5 rounded border-[#d9cdb8] text-[#575b36] cursor-pointer"
                   />
-                  <span className="text-gray-700 group-hover:text-blue-900 transition-colors text-sm">
+                  <span className="text-[#514738] group-hover:text-[#575b36] transition-colors text-sm">
                     Solo con Descuento
                   </span>
                 </label>
               </div>
 
-              <div className="mt-8 border-t border-gray-100 pt-6">
-                <h4 className="font-bold text-gray-900 mb-4 text-sm uppercase">Novedades</h4>
-                <label className="flex items-center gap-3 cursor-pointer group">
+              <div className="mt-8 border-t border-[#eee5d7] pt-6">
+                <h4 className="font-bold text-[#30261d] mb-4 text-sm uppercase">Novedades</h4>
+                <label className={`${styles.filterLabel} group`}>
                   <input
                     type="checkbox"
                     checked={showOnlyRecentlyAdded}
                     onChange={(e) => setShowOnlyRecentlyAdded(e.target.checked)}
-                    className="w-5 h-5 rounded border-gray-300 text-blue-900 cursor-pointer"
+                    className="w-5 h-5 rounded border-[#d9cdb8] text-[#575b36] cursor-pointer"
                   />
-                  <span className="inline-flex items-center gap-2 text-gray-700 group-hover:text-blue-900 transition-colors text-sm">
-                    <span className="rounded-full bg-emerald-600 px-2 py-1 text-[10px] font-bold text-white">Recién agregado</span>
+                  <span className="inline-flex items-center gap-2 text-[#514738] group-hover:text-[#575b36] transition-colors text-sm">
+                    <span className="rounded-full bg-[#676d45] px-2 py-1 text-[10px] font-bold text-white">Recién agregado</span>
                   </span>
                 </label>
-                {!showRecentProductBadge && <p className="mt-2 text-xs text-gray-500">La etiqueta está desactivada en la configuración del sitio.</p>}
+                {!showRecentProductBadge && <p className="mt-2 text-xs text-[#817565]">La etiqueta está desactivada en la configuración del sitio.</p>}
               </div>
+              <button type="button" onClick={() => setSidebarOpen(false)} className={`${styles.primaryButton} mt-6 w-full md:hidden`}>{loading ? 'Ver productos' : `Ver ${filteredProducts.length} productos`}</button>
             </div>
           </div>
 
           {/* GRID PRODUCTOS */}
-          <div className="md:col-span-2 lg:col-span-3">
+          <div className="min-w-0">
             {/* Info y Búsqueda */}
-            <div className="mb-6">
-              <div className="mb-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div><h2 className="text-2xl sm:text-3xl font-black text-gray-900">Productos</h2>
-                <p className="text-sm text-gray-600 mt-1">
-                  {filteredProducts.length} producto{filteredProducts.length !== 1 ? 's' : ''} disponible{filteredProducts.length !== 1 ? 's' : ''}
-                </p>
-                  </div>
-                  <div className="flex shrink-0 gap-2">
-                    <button onClick={() => setShowPriceInquiry(true)} className="inline-flex items-center gap-2 rounded-xl border border-[#8b4a2f] bg-[#fffaf5] px-3 py-2.5 text-sm font-bold text-[#71391f] shadow-sm hover:bg-[#f6e9dc] sm:px-4"><span className="sm:hidden">Precios ({priceInquiryProductIds.length})</span><span className="hidden sm:inline">Consultar precios ({priceInquiryProductIds.length})</span></button>
-                    {customerOrderingEnabled && <button onClick={() => setShowCart(true)} className="inline-flex items-center gap-2 rounded-xl bg-blue-900 px-3 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-blue-800 sm:px-4"><Icon name="cart" className="h-4 w-4" />Lista ({cartTotal})</button>}
-                  </div>
-                </div>
+            <div className={styles.toolbar}>
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                <div><h2 className={styles.toolbarTitle}>Elegí tus productos</h2><p className={styles.toolbarHint} role="status">{loading ? 'Cargando catálogo…' : `${filteredProducts.length} producto${filteredProducts.length !== 1 ? 's' : ''} encontrado${filteredProducts.length !== 1 ? 's' : ''}`}</p></div>
+                <span className="hidden items-center gap-2 text-xs text-[#776c5e] sm:inline-flex"><Icon name="chat" className="h-4 w-4" />Precios por consulta</span>
               </div>
 
               {/* Buscador */}
               <div className="relative mb-3">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9a8e7d]">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
@@ -660,16 +680,18 @@ export default function CatalogPage() {
 
                 <input
                   type="text"
-                  placeholder="Buscar por nombre, código o descripción..."
+                  aria-label="Buscar productos"
+                  placeholder="Buscar por nombre, código o descripción…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-900 focus:border-transparent transition-all"
+                  className="w-full pl-12 pr-12 py-3.5 border border-[#d9cdb8] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#777b52] focus:border-transparent transition-all"
                 />
 
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    aria-label="Limpiar búsqueda"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#9a8e7d] hover:text-[#706556] transition-colors"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -681,24 +703,28 @@ export default function CatalogPage() {
               {/* Fila de controles: filtros (mobile) + orden */}
               <div className="flex gap-2">
                 <button
+                  ref={filterToggleRef}
                   onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="md:hidden flex-shrink-0 flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-xl font-semibold text-sm text-gray-700 bg-white active:scale-95 transition-all"
+                  aria-expanded={sidebarOpen}
+                  aria-controls="catalog-filters"
+                  className="md:hidden flex-shrink-0 flex items-center gap-2 px-4 py-2.5 border border-[#d9cdb8] rounded-xl font-semibold text-sm text-[#514738] bg-white active:scale-95 transition-all"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                   </svg>
                   Filtros
                   {activeFilterCount > 0 && (
-                    <span className="w-5 h-5 flex items-center justify-center bg-blue-900 text-white text-xs rounded-full">
+                    <span className="w-5 h-5 flex items-center justify-center bg-[#575b36] text-white text-xs rounded-full">
                       {activeFilterCount}
                     </span>
                   )}
                 </button>
 
                 <select
+                  aria-label="Ordenar productos"
                   value={sortOption}
                   onChange={(e) => setSortOption(e.target.value as typeof sortOption)}
-                  className="flex-1 min-w-0 px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-900"
+                  className="flex-1 min-w-0 px-3 py-2.5 border border-[#d9cdb8] rounded-xl text-sm font-semibold text-[#514738] bg-white focus:outline-none focus:ring-2 focus:ring-[#777b52]"
                 >
                   <option value="default">Ordenar: relevancia</option>
                   <option value="recent">Fecha de agregado (más nuevos)</option>
@@ -706,19 +732,27 @@ export default function CatalogPage() {
                   <option value="name_desc">Nombre (Z-A)</option>
                 </select>
               </div>
+              {activeFilterCount > 0 && <div className={styles.chips}>
+                {selectedCategories.map(id => {
+                  const category = categories.find(item => item.id === id)
+                  return category ? <button type="button" key={id} className={styles.chip} onClick={() => toggleCategory(id)} aria-label={`Quitar filtro ${category.name}`}>{category.name}<span aria-hidden="true">×</span></button> : null
+                })}
+                {showOnlyDiscounts && <button type="button" className={styles.chip} onClick={() => setShowOnlyDiscounts(false)} aria-label="Quitar filtro de ofertas">Con descuento <span aria-hidden="true">×</span></button>}
+                {showOnlyRecentlyAdded && <button type="button" className={styles.chip} onClick={() => setShowOnlyRecentlyAdded(false)} aria-label="Quitar filtro de novedades">Recién agregados <span aria-hidden="true">×</span></button>}
+              </div>}
             </div>
 
             {loading ? (
               <div className="flex justify-center py-20">
-                <svg className="w-12 h-12 text-blue-900 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-12 h-12 text-[#575b36] animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
             ) : filteredProducts.length === 0 ? (
-              <div className="text-center py-20 bg-white rounded-2xl">
-                <div className="mb-4 text-gray-300"><Icon name="search" className="mx-auto h-12 w-12" /></div>
-                <p className="text-lg text-gray-600 font-medium">No se encontraron productos</p>
-                <p className="text-sm text-gray-500 mt-2">
+              <div className={styles.emptyState}>
+                <div className="mb-4 text-[#b9ad97]"><Icon name="search" className="mx-auto h-12 w-12" /></div>
+                <p className="text-lg text-[#706556] font-medium">No se encontraron productos</p>
+                <p className="text-sm text-[#817565] mt-2">
                   {searchQuery && `No coinciden con: "${searchQuery}"`}
                   {selectedCategories.length > 0 && ` en las categorías seleccionadas`}
                   {showOnlyDiscounts && ` con descuento`}
@@ -731,7 +765,7 @@ export default function CatalogPage() {
                     setShowOnlyDiscounts(false)
                     setShowOnlyRecentlyAdded(false)
                   }}
-                  className="mt-4 px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition-all text-sm font-semibold"
+                  className="mt-4 px-4 py-2 bg-[#575b36] text-white rounded-lg hover:bg-[#414529] transition-all text-sm font-semibold"
                 >
                   Limpiar Filtros
                 </button>
@@ -740,15 +774,14 @@ export default function CatalogPage() {
               <div>
                 {groupedSections.sections.map(section => (
                   <div id={`catalog-category-${section.category.id}`} key={section.category.id} className="mb-10 scroll-mt-24">
-                    <div
-                      className="rounded-2xl px-4 py-3 sm:px-5 sm:py-4 mb-4"
-                      style={{ backgroundColor: (section.category as any).color || '#f3f4f6' }}
-                    >
-                      <h2 className="text-lg sm:text-2xl font-black text-gray-900">{section.category.name}</h2>
+                    <div className={styles.sectionHeader}>
+                      <span className={styles.categoryDot} style={{ backgroundColor: section.category.color || '#777b52' }} aria-hidden="true" />
+                      <h2 className={styles.sectionTitle}>{section.category.name}</h2>
+                      <span className={styles.sectionCount}>{section.directProducts.length + section.subGroups.reduce((total, group) => total + group.products.length, 0)} productos</span>
                     </div>
 
                     {section.directProducts.length > 0 && (
-                      <div className={`grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 ${section.subGroups.length > 0 ? 'mb-6' : ''}`}>
+                      <div className={`grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 ${section.subGroups.length > 0 ? 'mb-6' : ''}`}>
                         {section.directProducts.map(product => renderProductCard(product))}
                       </div>
                     )}
@@ -756,12 +789,12 @@ export default function CatalogPage() {
                     {section.subGroups.map((group, idx) => (
                       <div key={group.subcategory.id} className={idx !== section.subGroups.length - 1 ? 'mb-6' : ''}>
                         <h3
-                          className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3 pl-3 border-l-4"
-                          style={{ borderColor: (group.subcategory as any).color || '#9ca3af' }}
+                          className={styles.subcategoryTitle}
+                          style={{ borderColor: group.subcategory.color || '#7b7c53' }}
                         >
                           {group.subcategory.name}
                         </h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+                        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                           {group.products.map(product => renderProductCard(product))}
                         </div>
                       </div>
@@ -771,10 +804,11 @@ export default function CatalogPage() {
 
                 {groupedSections.uncategorized.length > 0 && (
                   <div className="mb-10">
-                    <div className="rounded-2xl px-4 py-3 sm:px-5 sm:py-4 mb-4 bg-gray-100">
-                      <h2 className="text-lg sm:text-2xl font-black text-gray-900">Otros productos</h2>
+                    <div className={styles.sectionHeader}>
+                      <h2 className={styles.sectionTitle}>Otros productos</h2>
+                      <span className={styles.sectionCount}>{groupedSections.uncategorized.length} productos</span>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                       {groupedSections.uncategorized.map(product => renderProductCard(product))}
                     </div>
                   </div>
@@ -792,11 +826,11 @@ export default function CatalogPage() {
           onClick={closeProductDetail}
         >
           <div
-            className="bg-white w-full sm:max-w-lg sm:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col animate-slide-up"
+            className="bg-[#fffdf8] w-full sm:max-w-lg sm:rounded-3xl rounded-t-3xl border border-[#e5dac9] shadow-2xl overflow-hidden max-h-[92vh] flex flex-col animate-slide-up"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Galería */}
-            <div className="relative h-64 sm:h-80 bg-gradient-to-br from-gray-100 to-gray-200 flex-shrink-0">
+            <div className="relative h-64 sm:h-80 bg-gradient-to-br from-[#fffdf8] to-[#f3eddf] flex-shrink-0">
               {selectedProduct.gallery && selectedProduct.gallery.length > 0 ? (
                 <SiteImage
                   src={selectedProduct.gallery[activeImageIndex]}
@@ -808,7 +842,7 @@ export default function CatalogPage() {
                   className="object-contain"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-300"><Icon name="box" className="h-20 w-20" /></div>
+                <div className="w-full h-full flex items-center justify-center text-[#b9ad97]"><Icon name="box" className="h-20 w-20" /></div>
               )}
 
               {selectedProduct.discount && (
@@ -819,9 +853,10 @@ export default function CatalogPage() {
 
               <button
                 onClick={closeProductDetail}
+                aria-label="Cerrar detalle del producto"
                 className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-lg transition-all"
               >
-                <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-[#514738]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -830,22 +865,24 @@ export default function CatalogPage() {
               {selectedProduct.gallery && selectedProduct.gallery.length > 1 && (
                 <>
                   <button
+                    aria-label="Imagen anterior"
                     onClick={() =>
                       setActiveImageIndex(i => (i === 0 ? selectedProduct.gallery!.length - 1 : i - 1))
                     }
                     className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-lg transition-all"
                   >
-                    <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-[#514738]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
                   <button
+                    aria-label="Imagen siguiente"
                     onClick={() =>
                       setActiveImageIndex(i => (i === selectedProduct.gallery!.length - 1 ? 0 : i + 1))
                     }
                     className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-lg transition-all"
                   >
-                    <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-[#514738]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
@@ -859,12 +896,14 @@ export default function CatalogPage() {
                 {selectedProduct.gallery.map((img, idx) => (
                   <button
                     key={idx}
+                    aria-label={`Ver imagen ${idx + 1}`}
+                    aria-pressed={idx === activeImageIndex}
                     onClick={() => setActiveImageIndex(idx)}
                     className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all ${
-                      idx === activeImageIndex ? 'border-blue-900' : 'border-transparent opacity-60'
+                      idx === activeImageIndex ? 'border-[#73794e]' : 'border-transparent opacity-60'
                     }`}
                   >
-                    <SiteImage src={img} alt="" fill sizes="56px" quality={60} loading="lazy" className="object-contain bg-gray-50" />
+                    <SiteImage src={img} alt="" fill sizes="56px" quality={60} loading="lazy" className="object-contain bg-[#f8f4eb]" />
                   </button>
                 ))}
               </div>
@@ -872,10 +911,10 @@ export default function CatalogPage() {
 
             {/* Info */}
             <div className="p-5 overflow-y-auto">
-              <h3 className="font-black text-xl text-gray-900 mb-2">{selectedProduct.name}</h3>
+              <h2 className={`${styles.modalTitle} mb-3`}>{selectedProduct.name}</h2>
 
               {selectedProduct.description && (
-                <p className="text-sm text-gray-600 mb-4 leading-relaxed">{selectedProduct.description}</p>
+                <p className="text-sm text-[#706556] mb-4 leading-relaxed">{selectedProduct.description}</p>
               )}
 
               {selectedProduct.discount && (
@@ -886,17 +925,17 @@ export default function CatalogPage() {
                 const units = Array.isArray(selectedProduct.unit) ? selectedProduct.unit : [selectedProduct.unit]
                 const saleOptions = [...new Set(['unidad', ...(units.includes('caja') ? ['caja'] : []), ...(units.includes('funda') ? ['funda'] : [])])]
                 return <div className="mb-4">
-                  <p className="text-sm font-semibold text-gray-700 mb-2">¿Cómo lo querés?</p>
-                  <div className="grid grid-cols-2 gap-2">{saleOptions.map(unit => <button key={unit} onClick={() => setSelectedProductUnit(unit)} className={`py-2.5 px-3 rounded-xl border font-semibold capitalize ${selectedProductUnit === unit ? 'border-blue-900 bg-blue-50 text-blue-900' : 'border-gray-300 text-gray-700'}`}>{unit === 'unidad' ? 'Por unidad' : `Por ${unit}`}</button>)}</div>
+                  <p className="text-sm font-semibold text-[#514738] mb-2">¿Cómo lo querés?</p>
+                  <div className="grid grid-cols-2 gap-2">{saleOptions.map(unit => <button key={unit} onClick={() => setSelectedProductUnit(unit)} className={`py-2.5 px-3 rounded-xl border font-semibold capitalize ${selectedProductUnit === unit ? 'border-[#73794e] bg-[#eeeedf] text-[#575b36]' : 'border-[#d9cdb8] text-[#514738]'}`}>{unit === 'unidad' ? 'Por unidad' : `Por ${unit}`}</button>)}</div>
                 </div>
               })()}
-              {customerOrderingEnabled && <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="catalog-product-notes">Anotación para este producto <span className="font-normal text-gray-400">(opcional)</span></label>}
-              {customerOrderingEnabled && <textarea id="catalog-product-notes" value={productNotes} onChange={event => setProductNotes(event.target.value)} maxLength={300} rows={3} placeholder="Ej.: sabor, presentación o alguna indicación" className="w-full px-3 py-2 border border-gray-300 rounded-xl resize-y focus:outline-none focus:ring-2 focus:ring-blue-900" />}
+              {customerOrderingEnabled && <label className="block text-sm font-semibold text-[#514738] mb-2" htmlFor="catalog-product-notes">Anotación para este producto <span className="font-normal text-[#9a8e7d]">(opcional)</span></label>}
+              {customerOrderingEnabled && <textarea id="catalog-product-notes" value={productNotes} onChange={event => setProductNotes(event.target.value)} maxLength={300} rows={3} placeholder="Ej.: sabor, presentación o alguna indicación" className="w-full px-3 py-2 border border-[#d9cdb8] rounded-xl resize-y focus:outline-none focus:ring-2 focus:ring-[#777b52]" />}
 
-              <button onClick={() => addToPriceInquiry(selectedProduct.id)} className="mt-4 w-full rounded-xl bg-[#8b4a2f] py-3 font-bold text-white hover:bg-[#71391f]">
-                Agregar a consulta de precios
+              <button onClick={() => addToPriceInquiry(selectedProduct.id)} className={`${styles.primaryButton} mt-4 w-full`}>
+                {priceInquiryProductIds.includes(selectedProduct.id) ? 'Ver mi consulta de precios' : 'Agregar a consulta de precios'}
               </button>
-              {customerOrderingEnabled && <button onClick={handleAddToCart} className="mt-2 w-full rounded-xl border border-blue-900 py-3 font-bold text-blue-900 hover:bg-blue-50">
+              {customerOrderingEnabled && <button onClick={handleAddToCart} className={`${styles.secondaryButton} mt-2 w-full`}>
                 Agregar a la lista de compras
               </button>}
             </div>
@@ -907,13 +946,13 @@ export default function CatalogPage() {
       {customerOrderingEnabled && showCart && (
         <div className="fixed inset-0 z-[60] bg-black/60 flex items-end sm:items-center justify-center sm:p-4" onClick={() => setShowCart(false)}>
           <section className="bg-white w-full sm:max-w-xl rounded-t-3xl sm:rounded-3xl max-h-[90vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="p-5 border-b flex items-center justify-between"><div><h2 className="text-xl font-black">Mi lista de compras</h2><p className="text-sm text-gray-500">{cartTotal} producto{cartTotal !== 1 ? 's' : ''}</p></div><button onClick={() => setShowCart(false)} className="text-2xl text-gray-500" aria-label="Cerrar">×</button></div>
+            <div className="p-5 border-b flex items-center justify-between"><div><h2 className={styles.modalTitle}>Mi lista de compras</h2><p className="text-sm text-[#817565]">{cartTotal} producto{cartTotal !== 1 ? 's' : ''}</p></div><button onClick={() => setShowCart(false)} className="text-2xl text-[#817565]" aria-label="Cerrar">×</button></div>
             <div className="p-5 overflow-y-auto flex-1">
-              {cartProducts.length === 0 ? <p className="text-center text-gray-500 py-10">Todavía no agregaste productos.</p> : <ul className="divide-y">{cartProducts.map(({ itemId, product, quantity, unit, notes }) => <li key={itemId} className="py-3"><div className="flex items-center gap-3"><div className="flex-1 min-w-0"><p className="font-semibold">{product.name}</p><p className="text-xs text-gray-500 capitalize">Por {unit}</p></div><div className="flex items-center gap-2"><button onClick={() => updateCartQuantity(itemId, quantity - 1)} className="w-8 h-8 rounded-lg border">−</button><span className="w-6 text-center">{quantity}</span><button onClick={() => updateCartQuantity(itemId, quantity + 1)} className="w-8 h-8 rounded-lg border">+</button></div><button onClick={() => removeFromCart(itemId)} className="text-red-600 text-sm ml-2">Quitar</button></div>{notes && <p className="text-sm text-gray-600 mt-2">Nota: {notes}</p>}</li>)}</ul>}
-              {cartMessage && <div className="mt-4 text-sm text-blue-900 bg-blue-50 border border-blue-100 rounded-xl p-3"><p>{cartMessage}</p>{cartMessage.includes('registrarte') && <p className="mt-2"><Link href="/cliente/registro" className="font-bold underline">Solicitar acceso</Link>{' · '}<Link href="/cliente/login" className="font-bold underline">Iniciar sesión</Link></p>}{cartMessage.includes('pendiente') && <p className="mt-2"><Link href="/cliente/login" className="font-bold underline">Consultar estado</Link></p>}</div>}
+              {cartProducts.length === 0 ? <p className="text-center text-[#817565] py-10">Todavía no agregaste productos.</p> : <ul className="divide-y">{cartProducts.map(({ itemId, product, quantity, unit, notes }) => <li key={itemId} className="py-3"><div className="flex items-center gap-3"><div className="flex-1 min-w-0"><p className="font-semibold">{product.name}</p><p className="text-xs text-[#817565] capitalize">Por {unit}</p></div><div className="flex items-center gap-2"><button onClick={() => updateCartQuantity(itemId, quantity - 1)} className="w-8 h-8 rounded-lg border">−</button><span className="w-6 text-center">{quantity}</span><button onClick={() => updateCartQuantity(itemId, quantity + 1)} className="w-8 h-8 rounded-lg border">+</button></div><button onClick={() => removeFromCart(itemId)} className="text-red-600 text-sm ml-2">Quitar</button></div>{notes && <p className="text-sm text-[#706556] mt-2">Nota: {notes}</p>}</li>)}</ul>}
+              {cartMessage && <div className="mt-4 text-sm text-[#575b36] bg-[#eeeedf] border border-[#d9dcc0] rounded-xl p-3"><p>{cartMessage}</p>{cartMessage.includes('registrarte') && <p className="mt-2"><Link href="/cliente/registro" className="font-bold underline">Solicitar acceso</Link>{' · '}<Link href="/cliente/login" className="font-bold underline">Iniciar sesión</Link></p>}{cartMessage.includes('pendiente') && <p className="mt-2"><Link href="/cliente/login" className="font-bold underline">Consultar estado</Link></p>}</div>}
             </div>
             <div className="p-5 border-t space-y-2">
-              <button onClick={saveShoppingList} disabled={!cartProducts.length || savingList} className="w-full py-3 rounded-xl border border-blue-900 text-blue-900 font-bold disabled:opacity-50">{savingList ? 'Guardando…' : 'Guardar lista en mi cuenta'}</button>
+              <button onClick={saveShoppingList} disabled={!cartProducts.length || savingList} className="w-full py-3 rounded-xl border border-[#73794e] text-[#575b36] font-bold disabled:opacity-50">{savingList ? 'Guardando…' : 'Guardar lista en mi cuenta'}</button>
               <button onClick={sendCartToWhatsApp} disabled={!cartProducts.length} className="w-full py-3 rounded-xl bg-green-600 text-white font-bold disabled:opacity-50">Enviar por WhatsApp</button>
             </div>
           </section>
@@ -926,7 +965,7 @@ export default function CatalogPage() {
             <div className="flex items-center justify-between bg-[#38251a] px-5 py-5 text-[#fff8ec] sm:px-6">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d9b98c]">Los Primos · Catálogo</p>
-                <h2 className="mt-1 text-xl font-black">Consulta de precios</h2>
+                <h2 className="mt-1 text-2xl font-bold" style={{ fontFamily: "'Lora', Georgia, serif" }}>Consulta de precios</h2>
                 <p className="mt-1 text-sm text-[#e9ddcf]">{priceInquiryProducts.length} producto{priceInquiryProducts.length !== 1 ? 's' : ''} en tu lista</p>
               </div>
               <button onClick={() => setShowPriceInquiry(false)} className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition hover:bg-white/20" aria-label="Cerrar">×</button>
@@ -935,7 +974,7 @@ export default function CatalogPage() {
               {priceInquiryProducts.length === 0 ? <div className="rounded-2xl border border-dashed border-[#d8c1a3] bg-white/70 px-6 py-12 text-center">
                 <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#f2e9e3] text-[#8b4a2f]"><Icon name="tag" className="h-7 w-7" /></span>
                 <p className="mt-4 font-bold text-[#3b2a20]">Tu consulta está vacía</p>
-                <p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-gray-600">Abrí un producto del catálogo y elegí “Agregar a consulta de precios” para pedir su cotización.</p>
+                <p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-[#706556]">Abrí un producto del catálogo y elegí “Agregar a consulta de precios” para pedir su cotización.</p>
               </div> : (
                 <ul className="space-y-3">
                   {priceInquiryProducts.map(product => <li key={product.id} className="flex items-center gap-3 rounded-2xl border border-[#e7d9c8] bg-white p-3 shadow-sm sm:gap-4 sm:p-4">
@@ -944,7 +983,7 @@ export default function CatalogPage() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="line-clamp-2 font-bold leading-snug text-[#3b2a20]">{product.name}</p>
-                      <p className="mt-1 text-xs font-medium text-gray-500">Precio a consultar</p>
+                      <p className="mt-1 text-xs font-medium text-[#817565]">Precio a consultar</p>
                     </div>
                     <button onClick={() => removeFromPriceInquiry(product.id)} className="shrink-0 rounded-lg px-2 py-2 text-xs font-bold text-[#8b4a2f] transition hover:bg-[#f6efe5] hover:text-red-700 sm:px-3 sm:text-sm">Quitar</button>
                   </li>)}
@@ -953,7 +992,7 @@ export default function CatalogPage() {
             </div>
             <div className="space-y-3 border-t border-[#e7d9c8] bg-white px-4 py-4 sm:px-6 sm:py-5">
               <button onClick={sendPriceInquiryToWhatsApp} disabled={!priceInquiryProducts.length} className="w-full rounded-xl bg-[#16834d] py-3.5 font-bold text-white shadow-sm transition hover:bg-[#126c40] disabled:cursor-not-allowed disabled:opacity-50">Preguntar precios por WhatsApp</button>
-              {priceInquiryProducts.length > 0 && <button onClick={() => savePriceInquiry([])} className="w-full py-1 text-sm font-semibold text-gray-500 transition hover:text-red-600">Vaciar consulta</button>}
+              {priceInquiryProducts.length > 0 && <button onClick={() => savePriceInquiry([])} className="w-full py-1 text-sm font-semibold text-[#817565] transition hover:text-red-600">Vaciar consulta</button>}
             </div>
           </section>
         </div>
