@@ -15,6 +15,7 @@ import { FooterDesign } from '@/components/footer-design'
 import { FooterEditor } from '@/components/footer-editor'
 import { DEFAULT_FOOTER_SETTINGS, FOOTER_COLOR_FIELDS, normalizeFooterSettings, safeFooterLink, type FooterSettings, type FooterBusinessInfo } from '@/lib/footer-settings'
 import { DEFAULT_LOCATION_SETTINGS, googleMapsEmbedSource, safeLocationLink, type LandingLocationSettings } from '@/lib/landing-location'
+import { CATEGORY_APPEARANCE_DEFAULTS, CATEGORY_APPEARANCE_COLORS, type LandingCategoryAppearance } from '@/lib/landing-category-appearance'
 
 interface ColorSwatch {
   name: string
@@ -286,7 +287,7 @@ function ProductDestinationSelect({
   )
 }
 
-interface LandingSectionSettings extends LandingLocationSettings {
+interface LandingSectionSettings extends LandingLocationSettings, LandingCategoryAppearance {
   button_text?: string
   button_url?: string
   background_color?: string
@@ -439,6 +440,7 @@ function defaultLandingSettings(type: LandingBlockType): LandingSectionSettings 
   if (type === 'location_map') return { ...typography, ...DEFAULT_LOCATION_SETTINGS }
   if (type === 'categories') return {
     ...typography,
+    ...CATEGORY_APPEARANCE_DEFAULTS,
     category_icons: {},
     category_icon_size_desktop: 44,
     category_icon_size_mobile: 44,
@@ -4225,6 +4227,25 @@ export default function WebsiteEditionPage() {
 
               {sectionForm.block_type === 'categories' && (
                 <div className="space-y-3 rounded-xl border border-border p-4">
+                  <CollapsibleCard icon="palette" title="Encabezado y colores del bloque" subtitle="Tonos crema y oliva, con títulos y tarjetas personalizables" defaultOpen>
+                    <div className="space-y-4">
+                      <label className="block text-sm font-medium text-text-muted">Etiqueta sobre el título
+                        <input className="input mt-1" value={sectionForm.settings.category_eyebrow ?? CATEGORY_APPEARANCE_DEFAULTS.category_eyebrow} onChange={e => updateLandingSettings({ category_eyebrow: e.target.value })} placeholder="Nuestro catálogo" />
+                      </label>
+                      <p className="text-xs text-text-muted">Dejala vacía para ocultarla. El título, subtítulo y descripción se editan en los campos generales de este bloque.</p>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        {(['mobile', 'desktop'] as const).map(device => {
+                          const key = device === 'mobile' ? 'category_title_size_mobile' : 'category_title_size_desktop'
+                          const size = sectionForm.settings[key] ?? CATEGORY_APPEARANCE_DEFAULTS[key]
+                          return <label key={key} className="block text-sm font-medium text-text-muted">Título en {device === 'mobile' ? 'móvil' : 'escritorio'}: {size} px
+                            <input type="range" min="22" max={device === 'mobile' ? 60 : 80} value={size} onChange={e => updateLandingSettings({ [key]: Number(e.target.value) })} className="mt-2 w-full" />
+                          </label>
+                        })}
+                        {CATEGORY_APPEARANCE_COLORS.map(([key, label]) => <ColorPicker key={key} label={label} value={sectionForm.settings[key] || CATEGORY_APPEARANCE_DEFAULTS[key]} onChange={color => updateLandingSettings({ [key]: color })} palette={palette} />)}
+                      </div>
+                      <p className="text-xs text-text-muted">En tablet, el título usa un tamaño intermedio. Los colores al pasar el cursor también se muestran al enfocar una tarjeta con el teclado.</p>
+                    </div>
+                  </CollapsibleCard>
                   <div>
                     <h4 className="font-semibold text-text">Tamaño y colores de los iconos</h4>
                     <p className="mt-1 text-xs text-text-muted">Los colores también se aplican a los SVG y PNG personalizados como una silueta. Usá archivos con fondo transparente.</p>

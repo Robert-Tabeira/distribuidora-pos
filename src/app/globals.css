@@ -30,6 +30,40 @@
 .landing-section[data-body-font] { font-family: var(--landing-body-font, inherit); font-weight: var(--landing-body-weight, 400); }
 .landing-section[data-heading-font] :is(h1, h2, h3) { font-family: var(--landing-heading-font, inherit); font-weight: var(--landing-heading-weight, 700); }
 
+.landing-categories { background-color: var(--category-section-bg, #f8f3e9); }
+.landing-categories-eyebrow { color: var(--category-accent-color, #77764e); }
+.landing-categories-title { color: var(--category-heading-color, #30261d); font-size: var(--category-title-mobile, 30px); overflow-wrap: anywhere; }
+.landing-categories-subtitle { color: var(--category-subtitle-color, #656044); }
+.landing-categories-description { color: var(--category-description-color, #61594f); }
+.landing-categories-rule { background-color: var(--category-accent-color, #77764e); }
+.landing-category-card {
+  background-color: var(--category-card-bg, #fffdf8);
+  border-color: var(--category-card-border, #e3d7c4);
+  color: var(--category-label-color, #332a20);
+  box-shadow: 0 2px 8px rgb(63 47 27 / 3%);
+  overflow-wrap: anywhere;
+  transition: background-color .2s, border-color .2s, color .2s, box-shadow .2s, transform .2s;
+}
+.landing-category-card .category-icon-container { max-width: 100%; height: auto; aspect-ratio: 1; flex-shrink: 0; }
+.landing-category-card:hover, .landing-category-card:focus-visible {
+  background-color: var(--category-card-hover-bg, #f1eddf);
+  border-color: var(--category-card-hover-border, #a8a07c);
+  color: var(--category-label-hover-color, #4f5233);
+  box-shadow: 0 8px 20px rgb(63 47 27 / 7%);
+  transform: translateY(-2px);
+}
+.landing-category-card:focus-visible { outline: 2px solid var(--category-accent-color, #77764e); outline-offset: 3px; }
+@media (min-width: 768px) {
+  .landing-categories-title { font-size: calc((var(--category-title-mobile, 30px) + var(--category-title-desktop, 42px)) / 2); }
+}
+@media (min-width: 1024px) {
+  .landing-categories-title { font-size: var(--category-title-desktop, 42px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-category-card { transition: none; }
+  .landing-category-card:hover, .landing-category-card:focus-visible { transform: none; }
+}
+
 .category-icon-container {
   width: var(--category-icon-size-mobile, 44px);
   height: var(--category-icon-size-mobile, 44px);

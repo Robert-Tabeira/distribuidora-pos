@@ -14,13 +14,14 @@ import { getSiteFontFamily } from '@/lib/site-fonts'
 import { optimizedImageSource, optimizedImageSourceSet, SiteImage } from '@/components/site-image'
 import { LandingLocation } from '@/components/landing-location'
 import type { LandingLocationSettings } from '@/lib/landing-location'
+import { CATEGORY_APPEARANCE_DEFAULTS, CATEGORY_APPEARANCE_COLORS, categoryTitleSize, type LandingCategoryAppearance } from '@/lib/landing-category-appearance'
 
 interface ProductWithDiscount extends Pick<Product, 'id' | 'name' | 'gallery'> {
   discount?: Discount
 }
 
 type LandingBlockType = 'content' | 'categories' | 'banner' | 'feature_cards' | 'instructions' | 'business_info' | 'location_map' | 'image_carousel' | 'product_grid'
-interface LandingSectionSettings extends LandingLocationSettings {
+interface LandingSectionSettings extends LandingLocationSettings, LandingCategoryAppearance {
   button_text?: string
   button_url?: string
   background_color?: string
@@ -170,20 +171,35 @@ function LandingBlockRenderer({
       .map(id => visibleCategories.find(category => category.id === id))
       .filter((category): category is CategoryForLanding => Boolean(category))
     if (displayedCategories.length === 0) return null
+    const appearance = { ...CATEGORY_APPEARANCE_DEFAULTS, ...settings }
+    const categoryStyle = {
+      ...fontStyle,
+      ...categoryIconStyle,
+      ...Object.fromEntries(CATEGORY_APPEARANCE_COLORS.map(([key]) => [`--${key.replaceAll('_', '-')}`, settings[key] || CATEGORY_APPEARANCE_DEFAULTS[key]])),
+      '--landing-heading-font': getSiteFontFamily(headingFont || 'lora'),
+      '--landing-body-font': getSiteFontFamily(bodyFont || 'dm_sans'),
+      '--category-title-mobile': `${categoryTitleSize(settings.category_title_size_mobile, CATEGORY_APPEARANCE_DEFAULTS.category_title_size_mobile)}px`,
+      '--category-title-desktop': `${categoryTitleSize(settings.category_title_size_desktop, CATEGORY_APPEARANCE_DEFAULTS.category_title_size_desktop)}px`,
+    } as CSSProperties
     return (
-      <section data-heading-font={headingFont} data-body-font={bodyFont} style={{ ...fontStyle, ...categoryIconStyle }} className={`landing-section bg-[#fbf7f0] px-4 py-14 ${responsiveTextClasses(settings)}`}>
+      <section data-heading-font={headingFont || 'lora'} data-body-font={bodyFont || 'dm_sans'} style={categoryStyle} className={`landing-section landing-categories px-4 py-14 sm:px-6 sm:py-16 ${responsiveTextClasses(settings)}`}>
         <div className="mx-auto max-w-7xl">
-          <h2 className={`font-serif text-3xl font-bold text-[#3b2a20] sm:text-4xl ${responsiveTextClasses(settings, 'center')}`}>{heading}</h2>
-          {section.subtitle && <p className={`mt-2 text-gray-600 ${responsiveTextClasses(settings, 'center')}`}>{section.subtitle}</p>}
-          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <div className={`mx-auto max-w-3xl ${responsiveTextClasses(settings, 'center')}`}>
+            {appearance.category_eyebrow && <p className="landing-categories-eyebrow mb-3 text-[11px] font-semibold uppercase tracking-[0.2em]">{appearance.category_eyebrow}</p>}
+            <h2 className="landing-categories-title font-bold leading-tight">{heading}</h2>
+            {section.subtitle && <p className="landing-categories-subtitle mt-3 text-base leading-relaxed sm:text-lg">{section.subtitle}</p>}
+            {section.description && <p className="landing-categories-description mt-3 whitespace-pre-line text-sm leading-7 sm:text-base">{section.description}</p>}
+            <span className="landing-categories-rule mt-5 inline-block h-0.5 w-12 rounded-full" aria-hidden="true" />
+          </div>
+          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4 xl:grid-cols-6">
             {displayedCategories.map(category => (
-              <Link key={category.id} href={`/catalogo?categoria=${encodeURIComponent(category.id)}`} className="category-card group flex min-h-28 flex-col items-center justify-center gap-3 rounded-2xl border border-[#e7d9c8] bg-[#fffdf9] p-4 text-center transition hover:-translate-y-1 hover:border-[#b77a4d] hover:shadow-md">
+              <Link key={category.id} href={`/catalogo?categoria=${encodeURIComponent(category.id)}`} className="category-card landing-category-card group flex min-h-36 min-w-0 flex-col items-center justify-center gap-4 rounded-2xl border p-4 text-center sm:p-5">
                 <span className="category-icon-container flex items-center justify-center overflow-hidden rounded-full transition-colors">
                   {isCategoryIconImage(settings.category_icons?.[category.id])
                     ? <CategoryIconImage src={settings.category_icons[category.id]} weight={settings.category_custom_icon_weight || 0} />
                     : <Icon name={getCategoryIconName(category.name, settings.category_icons?.[category.id])} className="category-icon-glyph" />}
                 </span>
-                <span className="text-sm font-semibold text-gray-800">{category.name}</span>
+                <span className="text-sm font-semibold leading-snug">{category.name}</span>
               </Link>
             ))}
           </div>
