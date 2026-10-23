@@ -6,6 +6,8 @@ import { SiteImage } from '@/components/site-image'
 import { getSiteFontFamily } from '@/lib/site-fonts'
 import { FOOTER_COLOR_FIELDS, normalizeFooterSettings, safeFooterLink, type FooterSettings, type FooterBusinessInfo } from '@/lib/footer-settings'
 import styles from './footer-design.module.css'
+import { PrivacySettingsButton } from '@/components/privacy-controls'
+import { LEGAL_LINKS } from '@/lib/legal-details'
 
 export function FooterDesign({ settings, business, preview = false }: {
   settings?: Partial<FooterSettings> | null
@@ -79,6 +81,10 @@ export function FooterDesign({ settings, business, preview = false }: {
           <div className={styles.contact}><span className={styles.icon}><Icon name="clock" className="h-4 w-4" /></span><p className={styles.hours}>{business?.business_hours}</p></div>
         </div>}
       </div>
+      <nav className={styles.legalLinks} aria-label="Información legal">
+        {LEGAL_LINKS.map(link => <a key={link.href} {...linkProps} className={styles.link} href={link.href}>{link.label}</a>)}
+        {!preview && <PrivacySettingsButton className={styles.link} />}
+      </nav>
       <div className={styles.bottom}>
         <p>© {new Date().getFullYear()} {name}{footer.copyright_text ? `. ${footer.copyright_text}` : ''}</p>
         {!preview && <a className={`${styles.link} ${styles.topLink}`} href="#" onClick={event => { event.preventDefault(); window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }) }}>Volver arriba <span aria-hidden="true">↑</span></a>}

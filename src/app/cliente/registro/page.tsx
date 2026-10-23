@@ -91,6 +91,7 @@ export default function CustomerRegisterPage() {
           <p className="text-sm text-gray-600 mb-6">Solicitá acceso para realizar pedidos como comercio.</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            <p className="rounded-xl border border-[#e3d7c4] bg-[#f8f3e9] p-3 text-xs leading-6 text-[#706556]">Usamos los datos requeridos para revisar tu solicitud de acceso y atender pedidos del comercio. El correo es opcional. Consultá quién es responsable y cómo ejercer tus derechos en la <Link href="/privacidad" className="font-semibold underline">política de privacidad</Link>, y cómo funciona el servicio en las <Link href="/terminos" className="font-semibold underline">condiciones de uso</Link>. Las estadísticas son opcionales y se eligen por separado.</p>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nombre</label>
               <input

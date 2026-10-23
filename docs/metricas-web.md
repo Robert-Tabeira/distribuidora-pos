@@ -3,10 +3,11 @@
 ## Activación
 
 1. En Supabase → SQL Editor, ejecutar el archivo completo `supabase/migrations/202610220001_site_analytics.sql`.
-2. Publicar estos cambios en Vercel. Se usan las variables de Supabase que la aplicación ya tiene; no hay claves adicionales que configurar.
-3. Entrar en `/admin` → **Métricas Web**, o abrir `/admin/metricas`.
-4. Confirmar el PIN del administrador. La función comprueba el rol en la base de datos y reutiliza `verify_pin_secure`, con el bloqueo de intentos que ya utiliza el login.
-5. El acceso al informe dura cuatro horas en esta pestaña. «Bloquear métricas» lo revoca; cerrar sesión desde `/admin` también lo revoca.
+2. Ejecutar también `supabase/migrations/202610230001_analytics_consent.sql`. Completar la información y revisión indicadas en `docs/paginas-legales.md`; mientras el contenido legal esté en borrador, la recopilación opcional permanece apagada.
+3. Publicar estos cambios en Vercel. Se usan las variables de Supabase que la aplicación ya tiene; no hay claves adicionales que configurar.
+4. Entrar en `/admin` → **Métricas Web**, o abrir `/admin/metricas`.
+5. Confirmar el PIN del administrador. La función comprueba el rol en la base de datos y reutiliza `verify_pin_secure`, con el bloqueo de intentos que ya utiliza el login.
+6. El acceso al informe dura cuatro horas en esta pestaña. «Bloquear métricas» lo revoca; cerrar sesión desde `/admin` también lo revoca.
 
 La migración crea tablas propias, sin modificar los datos existentes del catálogo. Los reportes se consultan mediante una sesión validada en la base de datos; las tablas de métricas no tienen lectura directa para `anon` ni `authenticated`.
 
@@ -32,6 +33,7 @@ Los períodos de 7, 30 y 90 días incluyen el día actual y usan `America/Montev
 ## Datos reales y exclusiones
 
 - El registro comienza al ejecutar la migración y publicar el código. No se recuperan visitas previas y no se insertan datos de demostración.
+- Solo se recopilan eventos tras aceptar estadísticas con una versión vigente del aviso. La versión y fecha de aceptación se incorporan a los nuevos eventos.
 - No se recopilan eventos desde un navegador con `employee` en localStorage, desarrollo local, robots identificables, WebDriver, Do Not Track o Global Privacy Control.
 - Solo se mide la landing y el catálogo. No se mide el login ni las pantallas internas o de cuenta.
 - No se guardan IP, teléfono, nombre de cliente, contenido de mensajes o notas de compra. Se omiten términos de búsqueda con apariencia de email, teléfono o URL.
@@ -43,7 +45,7 @@ Los períodos de 7, 30 y 90 días incluyen el día actual y usan `America/Montev
 
 El panel incluye evolución diaria, hasta 20 productos, búsquedas y categorías, dispositivos, hasta 10 orígenes y acciones de WhatsApp. Permite exportar CSV para Excel e imprimir/guardar como PDF.
 
-Para recorrer la web y generar actividad de demostración real, usar la versión publicada desde un celular u otro navegador sin sesión de empleado. Después actualizar el panel. No usar una ventana que bloquee todo el seguimiento si se espera ver esos eventos.
+Para recorrer la web y generar actividad de demostración real, usar la versión publicada desde un celular u otro navegador sin sesión de empleado, con las páginas legales completas y estadísticas aceptadas. Después actualizar el panel. No usar una ventana que bloquee todo el seguimiento si se espera ver esos eventos.
 
 El CSV contiene los datos agregados del período y los rankings indicados; no es una exportación de todos los eventos individuales.
 

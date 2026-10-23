@@ -8,6 +8,7 @@ import { Icon } from '@/components/ui/icon'
 import { analyticsCsv, DEVICE_LABELS, type AnalyticsReport } from '@/lib/analytics-report'
 import { ANALYTICS_ACCESS_KEY, clearAnalyticsAccess, readAnalyticsAccess } from '@/lib/analytics-admin'
 import styles from './metrics.module.css'
+import { LEGAL_READY } from '@/lib/legal-details'
 
 const number = (value: number) => new Intl.NumberFormat('es-UY', { maximumFractionDigits: 1 }).format(value)
 function date(value: string, time = false) {
@@ -116,6 +117,7 @@ export default function MetricsPage() {
       <div><p className="mb-2 text-[11px] font-bold uppercase tracking-[.2em] text-[#71764e]">Los Primos · Actividad del sitio</p><h1 className={`${styles.heading} text-3xl sm:text-4xl`}>Métricas de la web</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-[#776c5d]">Conocé qué buscan, qué productos miran y cuándo se acercan a consultar.</p></div>
       {token && <button type="button" onClick={() => { setToken(''); setReport(null); void clearAnalyticsAccess(token) }} className={`${styles.button} ${styles.screenControls}`}>Bloquear métricas</button>}
     </header>
+    {!LEGAL_READY && <p className={`${styles.notice} mb-6`}>Las estadísticas nuevas están pausadas hasta completar y revisar la información de privacidad del negocio. Los registros anteriores pueden seguir visibles; no se consideran autorizados de forma retroactiva.</p>}
 
     {!token ? <section className={`${styles.card} max-w-lg`}>
       <h2 className={`${styles.heading} mb-2 text-xl`}>Confirmá tu acceso</h2><p className="mb-5 text-sm leading-6 text-[#776c5d]">{admin.name}, ingresá tu PIN de administrador para ver los reportes. El acceso dura hasta cuatro horas en esta pestaña.</p>
@@ -167,7 +169,7 @@ export default function MetricsPage() {
         <Ranking title="Clics hacia WhatsApp" rows={[{label:'Consulta de precios',value:summary.inquiry_clicks},{label:'Lista de compras',value:summary.cart_clicks},{label:'Contacto directo',value:summary.contact_clicks}]} />
       </div>
       <section className={styles.card}><h2 className={`${styles.heading} mb-4 text-xl`}>Páginas visitadas</h2><div className={styles.tableWrap}><table className={styles.table}><thead><tr><th>Página</th><th>Vistas</th><th>Visitas</th></tr></thead><tbody>{report.pages.map(row=><tr key={row.path}><td>{row.path === '/landing' ? 'Landing' : 'Catálogo'}</td><td>{number(row.views)}</td><td>{number(row.visits)}</td></tr>)}</tbody></table></div><p className={`${styles.muted} mt-4`}>{number(summary.catalog_visits)} visitas tuvieron actividad en el catálogo. {number(summary.cart_adds)} productos fueron agregados a listas de compras.</p></section>
-      <p className={`${styles.muted} pb-4`}>Las métricas son aproximadas y empiezan al activar el registro. Se excluyen sesiones de empleados, desarrollo local, robots identificables y navegadores que piden no ser rastreados. Un mismo navegador puede generar varias visitas; una persona con varios dispositivos puede contarse varias veces. “Directo” también incluye orígenes que el navegador no comunica. Los clics a WhatsApp no confirman mensajes enviados ni ventas.</p>
+      <p className={`${styles.muted} pb-4`}>Las métricas son aproximadas y solo se recopilan con estadísticas autorizadas. Se excluyen sesiones de empleados, desarrollo local, robots identificables y navegadores que piden no ser rastreados. Un mismo navegador puede generar varias visitas; una persona con varios dispositivos puede contarse varias veces. “Directo” también incluye orígenes que el navegador no comunica. Los clics a WhatsApp no confirman mensajes enviados ni ventas.</p>
     </div>}
   </div></main>
 }

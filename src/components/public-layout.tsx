@@ -3,6 +3,7 @@ import AnnouncementBar from '@/components/announcement-bar'
 import PopupDisplay from '@/components/popup-display'
 import { PublicFooter } from '@/components/public-footer'
 import { PublicAnalytics } from '@/components/public-analytics'
+import { PrivacyControls } from '@/components/privacy-controls'
 
 // Envoltorio para las páginas PÚBLICAS del sitio (landing, catálogo, etc.)
 // No usar esto en pantallas internas (admin, login, caja, mostrador, productos),
@@ -16,6 +17,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
       {children}
       <PublicFooter />
       <PopupDisplay />
+      <PrivacyControls />
     </>
   )
 }

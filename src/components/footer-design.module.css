@@ -28,7 +28,9 @@
 .navLink { display: inline-flex; min-height: 44px; align-items: center; gap: 10px; }
 .navArrow { color: var(--footer-accent_color); }
 .hours { white-space: pre-line; overflow-wrap: anywhere; }
-.bottom { border-top: 1px solid var(--footer-border_color); margin-top: 40px; padding-top: 22px; display: flex; flex-direction: column; gap: 12px; font-size: .85em; }
+.legalLinks { display: flex; flex-wrap: wrap; gap: 8px 24px; border-top: 1px solid var(--footer-border_color); margin-top: 40px; padding-top: 18px; font-size: .9em; }
+.legalLinks > * { display: inline-flex; align-items: center; min-height: 40px; text-align: left; }
+.bottom { border-top: 1px solid var(--footer-border_color); margin-top: 18px; padding-top: 22px; display: flex; flex-direction: column; gap: 12px; font-size: .85em; }
 .topLink { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; align-self: flex-start; }
 .cta { background: var(--footer-cta_background); color: var(--footer-cta_text_color); padding: 24px; margin-bottom: 40px; border-radius: 24px 8px 24px 8px; display: flex; flex-direction: column; gap: 22px; }
 .ctaTitle { color: inherit; font-family: var(--footer-heading-font); font-weight: var(--footer-heading-weight); font-size: 24px; line-height: 1.3; margin-bottom: 6px; }

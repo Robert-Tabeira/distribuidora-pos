@@ -1,8 +1,10 @@
 'use client'
 
+import { analyticsConsentGranted, readPrivacyPreferences } from '@/lib/privacy-preferences'
+
 export type SiteEventName = 'page_view' | 'product_view' | 'search' | 'category_select' | 'inquiry_add' | 'cart_add' | 'whatsapp_inquiry' | 'whatsapp_cart' | 'whatsapp_contact'
 type EventDetails = { product_id?: string; category_id?: string; search_term?: string; result_count?: number; item_count?: number }
-type QueuedEvent = EventDetails & { id: string; visitor_id: string; session_id: string; event_name: SiteEventName; path: string; device: string; source: string; retries: number }
+type QueuedEvent = EventDetails & { id: string; visitor_id: string; session_id: string; event_name: SiteEventName; path: string; device: string; source: string; consent_version: string; consent_at: string; retries: number }
 type BrowserSession = { visitor: string; session: string; lastActivity: number; source: string; device: string }
 const STORAGE_KEY = 'los_primos_analytics'
 let memorySession: BrowserSession | null = null
@@ -10,9 +12,11 @@ let queue: QueuedEvent[] = []
 let timer: ReturnType<typeof setTimeout> | undefined
 let sending = false
 let unavailable = false
+let activeRequest: AbortController | null = null
 const recentEvents = new Map<string, number>()
 
 function excluded() {
+  if (!analyticsConsentGranted()) return true
   if (typeof window === 'undefined' || !['/', '/landing', '/catalogo'].includes(window.location.pathname)) return true
   if (['localhost', '127.0.0.1', '::1', '[::1]'].includes(window.location.hostname)) return true
   if (navigator.webdriver || /bot|spider|crawler|headless|lighthouse|pagespeed/i.test(navigator.userAgent)) return true
@@ -60,7 +64,8 @@ export function trackSiteEvent(eventName: SiteEventName, details: EventDetails =
     recentEvents.set(key, now)
     if (recentEvents.size > 100) recentEvents.delete(recentEvents.keys().next().value as string)
     const browser = session()
-    queue.push({ ...details, id: crypto.randomUUID(), visitor_id: browser.visitor, session_id: browser.session, event_name: eventName, path, source: browser.source, device: browser.device, retries: 0 })
+    const consent = readPrivacyPreferences()!
+    queue.push({ ...details, id: crypto.randomUUID(), visitor_id: browser.visitor, session_id: browser.session, event_name: eventName, path, source: browser.source, device: browser.device, consent_version: consent.version, consent_at: consent.updatedAt, retries: 0 })
     if (queue.length > 40) queue.shift()
     if (eventName.startsWith('whatsapp_')) void flushSiteAnalytics()
     else if (!timer) timer = setTimeout(() => void flushSiteAnalytics(), 600)
@@ -70,15 +75,18 @@ export function trackSiteEvent(eventName: SiteEventName, details: EventDetails =
 export async function flushSiteAnalytics() {
   clearTimeout(timer)
   timer = undefined
+  if (!analyticsConsentGranted()) { resetSiteAnalytics(); return }
   if (sending || !queue.length || unavailable) return
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!url || !key) return
   sending = true
+  const controller = new AbortController()
+  activeRequest = controller
   const batch = queue.splice(0, 15)
   try {
     const response = await fetch(`${url}/rest/v1/rpc/record_site_events`, {
-      method: 'POST', keepalive: true,
+      method: 'POST', keepalive: true, signal: controller.signal,
       headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ p_events: batch.map(({ retries, ...event }) => event) })
     })
@@ -87,9 +95,20 @@ export async function flushSiteAnalytics() {
       else throw new Error('Metrics temporarily unavailable')
     }
   } catch {
-    queue = [...batch.filter(event => event.retries < 1).map(event => ({ ...event, retries: event.retries + 1 })), ...queue].slice(0, 40)
+    if (!controller.signal.aborted && analyticsConsentGranted()) queue = [...batch.filter(event => event.retries < 1).map(event => ({ ...event, retries: event.retries + 1 })), ...queue].slice(0, 40)
   } finally {
     sending = false
-    if (queue.length && !unavailable) timer = setTimeout(() => void flushSiteAnalytics(), 1500)
+    if (activeRequest === controller) activeRequest = null
+    if (queue.length && !unavailable && analyticsConsentGranted()) timer = setTimeout(() => void flushSiteAnalytics(), 1500)
   }
+}
+
+export function resetSiteAnalytics() {
+  clearTimeout(timer)
+  timer = undefined
+  queue = []
+  memorySession = null
+  recentEvents.clear()
+  activeRequest?.abort()
+  try { localStorage.removeItem(STORAGE_KEY) } catch { /* Storage can be blocked. */ }
 }
