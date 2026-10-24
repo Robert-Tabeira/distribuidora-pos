@@ -1,4 +1,4 @@
-import { LegalPage, LegalResponsibleDetails, legalMetadata } from '@/components/legal-page'
+import { LegalPage, legalMetadata } from '@/components/legal-page'
 import { LEGAL_DETAILS } from '@/lib/legal-details'
 import { PrivacySettingsButton } from '@/components/privacy-controls'
 import styles from '@/components/legal-page.module.css'
@@ -6,28 +6,24 @@ import styles from '@/components/legal-page.module.css'
 export const metadata = legalMetadata('Política de privacidad')
 
 export default function PrivacyPage() {
-  return <LegalPage title="Política de privacidad" introduction="Cómo usamos la información para guardar tus listas y atender consultas y pedidos.">
-    <h2>1. Identificación y contacto</h2>
-    <LegalResponsibleDetails />
-    <h2>2. Datos y finalidades</h2>
+  return <LegalPage title="Política de privacidad" introduction="Información sobre los datos utilizados en los servicios de Los Primos.">
+    <p>Para utilizar las funciones de cuenta y listas guardadas de {LEGAL_DETAILS.tradingName}, nombre comercial de {LEGAL_DETAILS.legalName}, se solicitan nombre, comercio, teléfono y datos de acceso. El correo es opcional y permite recuperar el acceso. El catálogo puede consultarse sin registrarse.</p>
+    <p>El tratamiento de los datos personales está sujeto a la Ley Nº 18.331 de la República Oriental del Uruguay y sus decretos reglamentarios, incluidas las obligaciones de seguridad y confidencialidad de la información.</p>
+    <h2>Finalidad del tratamiento de los datos</h2>
+    <p>La información se utiliza para las siguientes finalidades:</p>
     <ul>
-      <li><strong>Cuenta:</strong> nombre, comercio, teléfono, datos de acceso y correo opcional, para gestionar el acceso, asociarte listas guardadas y atender consultas y pedidos. El correo también permite recuperar el acceso.</li>
-      <li><strong>Listas:</strong> productos, cantidades y notas que elegís guardar o comunicar al negocio por WhatsApp.</li>
+      <li>Gestionar el acceso a la cuenta y guardar las listas de productos, cantidades y notas de cada usuario.</li>
+      <li>Atender consultas de precios y solicitudes de pedido comunicadas por WhatsApp.</li>
+      <li>Facilitar el funcionamiento del servicio de pedidos y la atención en el local.</li>
     </ul>
-    <p>El negocio utiliza estos datos para el funcionamiento de las cuentas y listas, la gestión de consultas y pedidos, y la atención en su local en Uruguay.</p>
-    <p>Los datos requeridos permiten gestionar la cuenta y los pedidos; sin ellos puede no ser posible utilizar esas funciones. El catálogo público sigue disponible. La web no procesa pagos ni emite facturas y no pide datos de tarjeta ni credenciales bancarias.</p>
-    <p>La función de estadísticas internas de navegación está deshabilitada.</p>
-    <h2 id="cookies">3. Cookies, almacenamiento y preferencias</h2>
-    <p>Usamos almacenamiento del navegador para las listas, el acceso a tu cuenta y tus preferencias. Las listas locales permanecen hasta vaciarlas o borrar ese almacenamiento; el acceso local, hasta cerrar sesión o borrarlo. Los avisos configurados para mostrarse una vez por pestaña se recuerdan durante esa sesión.</p>
-    <p>El mapa integrado de Google es opcional. Podés permitirlo, mantenerlo apagado o cambiar tu elección desde «Configurar privacidad», sin perder el acceso al catálogo, la cuenta o las listas.</p>
-    <p>La elección se recuerda hasta 180 días en este navegador. Al retirar el permiso se cierra el mapa integrado. Borrar el almacenamiento puede vaciar listas y cerrar el acceso local.</p>
+    <p>Los precios definitivos, la facturación y los cobros se gestionan directamente con el negocio fuera de esta web.</p>
+    <p>La información puede ser tratada por el personal autorizado y los servicios de alojamiento, almacenamiento y correo que dan soporte a estas funciones. El alojamiento técnico puede realizarse fuera de Uruguay. WhatsApp recibe la información que decidís comunicar mediante ese servicio.</p>
+    {LEGAL_DETAILS.internationalTransfers && <p>{LEGAL_DETAILS.internationalTransfers}</p>}
+    {LEGAL_DETAILS.retentionDetails && <p>{LEGAL_DETAILS.retentionDetails}</p>}
+    <h2>Contacto y derechos</h2>
+    <p>Podés solicitar acceso, rectificación, actualización o supresión de tus datos mediante el contacto de privacidad: {LEGAL_DETAILS.privacyContactHref ? <a href={LEGAL_DETAILS.privacyContactHref}>{LEGAL_DETAILS.privacyContact}</a> : LEGAL_DETAILS.privacyContact} Domicilio: {LEGAL_DETAILS.registeredAddress}.</p>
+    <h2 id="cookies">Almacenamiento y preferencias</h2>
+    <p>El navegador recuerda tus listas y el acceso hasta que los elimines o cierres sesión, según corresponda, y tus preferencias por hasta 180 días. Borrar el almacenamiento puede eliminar listas locales. El mapa integrado de Google se carga únicamente si lo permitís; podés cambiar esa elección desde «Configurar privacidad».</p>
     <PrivacySettingsButton className={styles.preferences} />
-    <h2>4. Servicios que intervienen</h2>
-    <p>La información puede ser tratada por el personal autorizado del negocio y los servicios de alojamiento, almacenamiento y correo necesarios para estas funciones. Estos servicios pueden procesar datos técnicos de conexión. WhatsApp recibe la información que decidís comunicar; el mapa de Google se conecta con ese servicio si lo permitís. Los enlaces externos y esos servicios tienen sus propias políticas.</p>
-    <p>El alojamiento técnico puede realizarse en servidores fuera de Uruguay para prestar este mismo servicio. {LEGAL_DETAILS.internationalTransfers || <span className={styles.pending}>La ubicación y las condiciones del alojamiento están pendientes de verificación.</span>}</p>
-    <h2>5. Conservación</h2>
-    <p>Cuentas y listas guardadas en servidores: {LEGAL_DETAILS.retentionDetails || <span className={styles.pending}>plazos de conservación y eliminación pendientes de revisar por el negocio.</span>}</p>
-    <h2>6. Derechos y consultas</h2>
-    <p>Podés solicitar acceso, rectificación, actualización o supresión de tus datos mediante el contacto indicado al inicio o presentando tu solicitud en el domicilio comercial indicado, conforme a la Ley 18.331. También podés acudir a la <a href="https://www.gub.uy/unidad-reguladora-control-datos-personales/" target="_blank" rel="noopener noreferrer">Unidad Reguladora y de Control de Datos Personales</a>. La fecha de esta política figura al comienzo.</p>
   </LegalPage>
 }

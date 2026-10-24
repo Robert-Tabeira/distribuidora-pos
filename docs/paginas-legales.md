@@ -3,8 +3,8 @@
 ## Entregado
 
 - Dos páginas principales: `/privacidad` y `/terminos` (Términos de uso), con textos breves sobre el funcionamiento real del sitio.
-- `/privacidad` reúne datos, finalidades, almacenamiento, mapa opcional, servicios que intervienen, conservación, derechos y contacto. Indica que las estadísticas internas están deshabilitadas. La sección de almacenamiento está en `/privacidad#cookies`.
-- `/terminos` describe catálogo, listas, cuentas y consultas por WhatsApp; la cotización definitiva, facturación y cobros quedan fuera de la web.
+- `/privacidad` adopta el formato breve del ejemplo aportado por el usuario: presentación, referencia a la Ley 18.331, finalidades, servicios de soporte, contacto y un apartado breve de almacenamiento y mapa opcional en `/privacidad#cookies`. Las estadísticas internas siguen deshabilitadas; no se ofrecen como finalidad ni permiso en el documento.
+- `/terminos` utiliza el formato numerado del ejemplo aportado: uso, registro, listas y WhatsApp, confirmación de pedidos y precios, coordinación de entrega/retiro, datos personales, contenidos, normativa y domicilio. La cotización definitiva, facturación y cobros quedan fuera de la web.
 - La ruta anterior `/cookies` redirige permanentemente a `/privacidad#cookies` para conservar enlaces existentes; ya no es una tercera página de contenido ni figura en la navegación legal.
 - Enlaces permanentes en el footer y aviso informativo en el formulario de registro.
 - Preferencias para permitir el mapa externo o mantenerlo apagado, con cambio posterior desde el footer. La opción de estadísticas está oculta y bloqueada por configuración.
@@ -13,7 +13,7 @@
 
 Editar `src/lib/legal-details.ts` con información confirmada por la dueña:
 
-1. Razón social/nombre del responsable, domicilio comercial que corresponda y un medio de contacto para privacidad. Están cargados Rusterson Sociedad Anónima, Ruta Interbalnearia Km 47 y Calle B, y atención presencial en ese domicilio. El correo del negocio no es un requisito de esta configuración. Los documentos de este proyecto no solicitan ni muestran RUT. Este ajuste no evalúa otras obligaciones comerciales que puedan corresponder.
+1. Razón social/nombre del responsable, domicilio comercial que corresponda y un medio de contacto para privacidad. Están cargados Rusterson Sociedad Anónima, Ruta Interbalnearia Km 47 y Calle B, Las Toscas, Canelones, República Oriental del Uruguay, y atención presencial en ese domicilio. La dirección se comparte entre ambas páginas legales. El correo del negocio no es un requisito de esta configuración. Los documentos de este proyecto no solicitan ni muestran RUT. Este ajuste no evalúa otras obligaciones comerciales que puedan corresponder.
 2. Plazos reales de conservación de cuentas y listas, junto con un procedimiento de eliminación que esté aplicado. Si existen registros de estadísticas anteriores al bloqueo, revisar también su conservación y eventual eliminación; desactivar la función no los borra.
 3. Confirmar internamente destinatarios, regiones/países y condiciones de transferencia de los proveedores contratados; no se infieren a partir del dominio. El aviso público describe clases de destinatarios por su función, sin publicar marcas de alojamiento o base de datos ni el inventario técnico. Completar `internationalTransfers` con la información confirmada sobre el tratamiento fuera de Uruguay, evitando detalles de infraestructura innecesarios.
 4. Revisar que `/terminos` describa el alcance real: catálogo, listas de pedido, listas de consulta de precios y envío por WhatsApp. La cotización definitiva, la facturación, los cobros y la coordinación de entrega o retiro se gestionan fuera de la web.
@@ -46,6 +46,10 @@ La mención a servidores fuera de Uruguay describe alojamiento o procesamiento t
 Estos cambios simplifican la información publicada; no eliminan campos de las cuentas ni datos existentes. El registro mantiene el correo opcional. Las preferencias ya no ofrecen activar estadísticas.
 
 La redacción se limita a describir las funciones disponibles. No agrega garantías absolutas de seguridad, plazos de atención, promesas de disponibilidad, condiciones de venta o cláusulas generales de exención de responsabilidad. Los borradores siguen sujetos a revisión del negocio; acortar los documentos no modifica las obligaciones que puedan corresponder.
+
+La adaptación del ejemplo no incorpora comunicaciones promocionales ni una declaración de ausencia total de prestadores externos. Tampoco reproduce garantías de seguridad absoluta ni la exención general de responsabilidad del modelo. La identidad, domicilio y contacto figuran en párrafos en lugar de una ficha extensa. Los detalles de conservación y transferencias se muestran cuando se completan `retentionDetails` e `internationalTransfers`; mientras sigan pendientes no se inventan plazos ni regiones, y `LEGAL_READY` sigue bloqueando la publicación como versión definitiva.
+
+Los términos se adaptan al servicio de listas y comunicación por WhatsApp. No se copian los medios de pago, señas, reservas, plazos de retiro o condiciones de devoluciones del comercio del ejemplo; tampoco la renuncia de jurisdicción ni las exenciones generales de responsabilidad. La coordinación de una operación con el local no implica que se facture o cobre en la web. Los documentos siguen como borradores para revisión del negocio.
 
 ## Publicación y bloqueo de estadísticas
 

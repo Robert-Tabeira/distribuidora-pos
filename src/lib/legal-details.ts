@@ -3,7 +3,7 @@
 export const LEGAL_DETAILS = {
   tradingName: 'Los Primos',
   legalName: 'Rusterson Sociedad Anónima',
-  registeredAddress: 'Ruta Interbalnearia Km 47 y Calle B',
+  registeredAddress: 'Ruta Interbalnearia Km 47 y Calle B, Las Toscas, Canelones, República Oriental del Uruguay',
   privacyContact: 'Atención presencial en el local, en el domicilio indicado.',
   privacyContactHref: '', // Optional: tel: link or WhatsApp URL for the chosen channel.
   retentionDetails: '',
