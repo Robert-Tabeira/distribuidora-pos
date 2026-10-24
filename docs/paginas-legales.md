@@ -12,10 +12,10 @@
 
 Editar `src/lib/legal-details.ts` con información confirmada por la dueña:
 
-1. Razón social/nombre del responsable, domicilio comercial que corresponda y correo de contacto para privacidad. Se pueden completar directamente en el archivo, sin enviarlos por el chat. El RUT es opcional en estos documentos: solo se muestra si se completa y no condiciona la habilitación de estadísticas o mapas. Este ajuste no evalúa otras obligaciones comerciales que puedan corresponder.
+1. Razón social/nombre del responsable, domicilio comercial que corresponda y correo de contacto para privacidad. Se pueden completar directamente en el archivo, sin enviarlos por el chat. Los documentos de este proyecto no solicitan ni muestran RUT. Este ajuste no evalúa otras obligaciones comerciales que puedan corresponder.
 2. Plazos reales de conservación de cuentas, listas y eventos, junto con un procedimiento de eliminación que esté aplicado. El panel de 90 días no es un mecanismo de eliminación.
-3. Destinatarios, regiones/países y condiciones de transferencia de los proveedores contratados. Confirmar las regiones de Supabase y Vercel y el proveedor de correo; no se infieren a partir del dominio.
-4. Revisar las condiciones de pedidos, pagos, entregas y atención de reclamos de `/terminos` contra la operación real del local.
+3. Confirmar internamente destinatarios, regiones/países y condiciones de transferencia de los proveedores contratados; no se infieren a partir del dominio. El aviso público describe clases de destinatarios por su función, sin publicar marcas de alojamiento o base de datos ni el inventario técnico. Completar `internationalTransfers` con la información confirmada sobre el tratamiento fuera de Uruguay, evitando detalles de infraestructura innecesarios.
+4. Revisar que `/terminos` describa el alcance real: catálogo, listas de pedido, listas de consulta de precios y envío por WhatsApp. La cotización definitiva, la facturación, los cobros y la coordinación de entrega o retiro se gestionan fuera de la web.
 5. Revisar permisos de acceso a datos de clientes y las obligaciones de inscripción y documentación del negocio ante la URCDP con su asesor.
 6. Tras la revisión y completar los campos, cambiar `reviewed` a `true`. Este indicador es un control editorial del proyecto, no una certificación de cumplimiento legal.
 
@@ -23,10 +23,17 @@ Sin completar los datos requeridos y la revisión, las páginas indican **Docume
 
 ## Finalidades confirmadas por el negocio
 
+- La web prepara listas y facilita su envío por WhatsApp. No emite facturas ni procesa pagos; usar el catálogo o enviar listas no requiere datos de tarjeta ni credenciales bancarias. La cotización definitiva se confirma con el negocio fuera del sitio.
 - Estadísticas de uso interno para conocer los productos y categorías más buscados, las búsquedas sin resultados y el uso del catálogo, listas y enlaces de WhatsApp. Se utilizan para mejorar la navegación y la experiencia del usuario, con permiso previo y sin publicidad personalizada.
 - Datos de cuenta para gestionar el acceso, asociar las listas guardadas a cada usuario y permitir recuperarlas y reutilizarlas. Datos de contacto y contenido de listas para atender consultas y gestionar pedidos.
 - La autorización de estadísticas no es requisito para crear una cuenta, guardar listas ni gestionar pedidos. Los eventos de métricas no incluyen los datos identificativos de la cuenta ni el contenido de sus listas.
 - Detectar fallos técnicos es un objetivo del negocio, pero el panel actual no captura errores automáticamente. Los documentos no prometen esa función. Si se incorpora monitoreo de errores, documentar primero qué recoge, su proveedor, permisos y conservación.
+
+## Información pública reducida
+
+La política conserva las finalidades, datos utilizados, clases de destinatarios, información sobre transferencias internacionales, conservación, identidad y domicilio del responsable, contacto y derechos. Se omiten RUT, marcas de infraestructura y claves técnicas de almacenamiento. WhatsApp y Google Maps se identifican donde intervienen directamente en la elección de la persona. El artículo 13 de la Ley 18.331 permite informar destinatarios o clases de destinatarios; describir solo las finalidades no sustituye los demás apartados de información previa.
+
+Estos cambios simplifican la información publicada; no eliminan campos de las cuentas ni datos existentes. El registro mantiene el correo opcional y la elección de métricas por separado.
 
 ## Activación técnica
 

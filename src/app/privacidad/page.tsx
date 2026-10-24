@@ -8,11 +8,12 @@ export const metadata = legalMetadata('Política de privacidad')
 
 export default function PrivacyPage() {
   return <LegalPage title="Política de privacidad" introduction="Usamos la información para mejorar el catálogo y la navegación, guardar tus listas y gestionar tus consultas y pedidos. Acá explicamos qué datos intervienen y qué podés elegir.">
+    <p>La web permite preparar listas de pedido y consultas de precios para enviarlas por WhatsApp. La cotización definitiva, la facturación y los cobros se gestionan directamente con el negocio fuera de esta web. Para utilizar estas funciones no te pedimos datos de tarjeta ni credenciales bancarias.</p>
     <h2>1. Responsable del sitio y de los datos</h2><LegalResponsibleDetails />
     <h2>2. Información que se utiliza</h2>
     <ul>
       <li><strong>Navegación y estadísticas opcionales:</strong> páginas visitadas, productos abiertos, términos de búsqueda, filtros de categorías, acciones de agregar a las listas y clics hacia WhatsApp. Si aceptás las estadísticas se genera un identificador del navegador y una sesión de navegación.</li>
-      <li><strong>Cuenta de comercio, cuando está habilitada:</strong> nombre de la persona, nombre del comercio, teléfono, correo opcional, código de acceso tratado mediante una huella y estado de aprobación de la solicitud.</li>
+      <li><strong>Cuenta de comercio, cuando está habilitada:</strong> nombre de la persona, nombre del comercio, teléfono, correo opcional, datos de acceso y estado de aprobación de la solicitud.</li>
       <li><strong>Listas y pedidos:</strong> productos, cantidades, presentaciones y notas que ingresás. Las listas pueden permanecer en tu navegador o guardarse en tu cuenta si utilizás esa función.</li>
       <li><strong>Infraestructura:</strong> los proveedores de alojamiento, base de datos y servicios externos pueden procesar información técnica de las conexiones para prestar sus servicios.</li>
     </ul>
@@ -27,18 +28,18 @@ export default function PrivacyPage() {
     <p>Los datos de la cuenta permiten gestionar el acceso de cada usuario y asociarle sus listas de pedido guardadas para que pueda recuperarlas y volver a utilizarlas. Los productos, cantidades, presentaciones y notas se utilizan para organizar las listas, atender consultas y gestionar correctamente los pedidos que comuniques al negocio.</p>
     <p>El nombre y los datos de contacto se utilizan para identificar la cuenta y comunicarnos sobre solicitudes y pedidos. El correo es opcional y, si lo proporcionás, también permite recuperar el acceso. No usamos los datos de la cuenta ni el contenido de las listas para publicidad personalizada ni como contenido de las estadísticas de navegación.</p>
     <p>Los datos obligatorios y opcionales se indican en los formularios. Sin los datos requeridos puede no ser posible crear una cuenta o tramitar una solicitud; el catálogo público sigue disponible. El uso de la cuenta y las listas no requiere aceptar las estadísticas opcionales.</p>
-    <h2>4. Proveedores y servicios externos</h2>
+    <h2>4. Quiénes pueden tratar la información</h2>
     <ul>
-      <li><strong>Vercel:</strong> alojamiento y entrega de la web y optimización de imágenes.</li>
-      <li><strong>Supabase:</strong> base de datos, archivos y funciones utilizadas por el sitio.</li>
-      <li><strong>WhatsApp:</strong> cuando abrís un enlace para consultar o pedir productos. El enlace puede incluir la lista y, según la función, nombre del comercio y notas. El servicio aplica sus propias condiciones; abrirlo no confirma el envío del mensaje ni una compra.</li>
-      <li><strong>Google Maps:</strong> el mapa integrado se carga solo si permitís mapas externos. También podés abrir por decisión propia un enlace externo para ver la ubicación.</li>
-      <li><strong>Correo electrónico:</strong> si se habilita la recuperación por correo, se utiliza el proveedor configurado por el negocio para enviar el mensaje de recuperación.</li>
+      <li><strong>El negocio:</strong> las personas autorizadas para gestionar cuentas, consultas y pedidos, y consultar los informes internos de uso.</li>
+      <li><strong>Servicios de alojamiento y almacenamiento:</strong> permiten que la web funcione y que se guarden cuentas, listas, archivos y estadísticas autorizadas.</li>
+      <li><strong>Servicios de correo:</strong> permiten enviar mensajes de recuperación de acceso cuando utilizás esa función.</li>
+      <li><strong>Mensajería que elegís utilizar:</strong> al abrir WhatsApp, el enlace puede incluir tu lista y, según la función, nombre del comercio y notas. Podés revisar el texto antes de enviarlo. El servicio aplica sus propias condiciones; abrirlo no confirma el envío ni una compra.</li>
+      <li><strong>Mapas externos:</strong> el mapa integrado de Google se carga solo si lo permitís. También podés abrir por decisión propia un enlace externo para ver la ubicación.</li>
     </ul>
-    <p>Estos servicios pueden procesar datos fuera de Uruguay. Países, prestadores contratados y garantías aplicables: {LEGAL_DETAILS.internationalTransfers || <strong className={styles.pending}>pendientes de confirmar por el responsable antes de cerrar esta política.</strong>}</p>
+    <p>La información se utiliza para los fines descritos y los servicios necesarios para prestarlos. Información sobre el tratamiento de datos fuera de Uruguay: {LEGAL_DETAILS.internationalTransfers || <strong className={styles.pending}>pendiente de confirmar por el responsable antes de cerrar esta política.</strong>}</p>
     <h2>5. Conservación</h2>
     <p>La preferencia de privacidad se recuerda hasta 180 días en este navegador. Las listas y el acceso local permanecen según lo indicado en la <Link href="/cookies">información de almacenamiento</Link>.</p>
-    <p>Plazos de conservación y eliminación de cuentas, listas guardadas y eventos de estadísticas en la base de datos: {LEGAL_DETAILS.retentionDetails || <strong className={styles.pending}>pendientes de definir y aplicar por el responsable. La versión actual del panel permite consultar hasta 90 días, pero ese límite no elimina automáticamente los registros anteriores.</strong>}</p>
+    <p>Plazos de conservación y eliminación de cuentas, listas guardadas y estadísticas: {LEGAL_DETAILS.retentionDetails || <strong className={styles.pending}>pendientes de definir y aplicar por el responsable antes de cerrar esta política.</strong>}</p>
     <h2>6. Tus derechos y consultas</h2>
     <p>Podés solicitar acceso, rectificación, actualización o supresión de tus datos, y consultar el uso que se hace de ellos, conforme a la normativa aplicable. Utilizá el contacto de privacidad indicado al inicio. Para tramitar la solicitud puede ser necesario verificar de manera proporcionada tu identidad.</p>
     <p>Podés retirar el permiso para estadísticas o mapas desde «Configurar privacidad». Se detendrá la recopilación futura de estadísticas y se eliminará el identificador local de métricas; retirar el permiso no borra automáticamente los datos que ya se hubieran registrado. Para consultar su supresión, contactá al responsable.</p>

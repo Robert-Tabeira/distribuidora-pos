@@ -3,7 +3,6 @@
 export const LEGAL_DETAILS = {
   tradingName: 'Los Primos',
   legalName: '',
-  taxId: '', // Optional in these documents; does not gate analytics or maps.
   registeredAddress: '',
   privacyEmail: '',
   retentionDetails: '',

@@ -25,7 +25,6 @@ export function LegalResponsibleDetails() {
   return <dl className={styles.details}>
     <dt>Nombre comercial</dt><dd>{LEGAL_DETAILS.tradingName}</dd>
     <dt>Responsable / razón social</dt><dd>{LEGAL_DETAILS.legalName || <span className={styles.pending}>Pendiente de confirmar por el negocio</span>}</dd>
-    {LEGAL_DETAILS.taxId && <><dt>RUT</dt><dd>{LEGAL_DETAILS.taxId}</dd></>}
     <dt>Domicilio del responsable</dt><dd>{LEGAL_DETAILS.registeredAddress || <span className={styles.pending}>Pendiente de confirmar</span>}</dd>
     <dt>Contacto de privacidad</dt><dd>{LEGAL_DETAILS.privacyEmail ? <a href={`mailto:${LEGAL_DETAILS.privacyEmail}`}>{LEGAL_DETAILS.privacyEmail}</a> : <span className={styles.pending}>Correo pendiente de confirmar</span>}</dd>
   </dl>
