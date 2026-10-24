@@ -27,6 +27,10 @@ interface CategoryExt extends Category {
   show_in_catalog: boolean
 }
 
+type OrderAccess =
+  | { status: 'anonymous' | 'pending' | 'rejected' | 'not_business' | 'check_failed' }
+  | { status: 'approved'; customer: { id: string; name: string; business_name: string } }
+
 // Normaliza texto para comparar sin importar tildes/diacríticos
 // ("azucar" debe coincidir con "azúcar")
 function normalizeText(text: string) {
@@ -67,6 +71,8 @@ export default function CatalogPage() {
   const [businessPhone, setBusinessPhone] = useState('')
   const [cartMessage, setCartMessage] = useState('')
   const [savingList, setSavingList] = useState(false)
+  const [sendingOrder, setSendingOrder] = useState(false)
+  const [orderAccess, setOrderAccess] = useState<OrderAccess>({ status: 'anonymous' })
   const [selectedProductUnit, setSelectedProductUnit] = useState('unidad')
   const [productNotes, setProductNotes] = useState('')
   const [customerOrderingEnabled, setCustomerOrderingEnabled] = useState(false)
@@ -156,6 +162,22 @@ export default function CatalogPage() {
   }, [selectedCategories, urlStateReady])
 
   useEffect(() => {
+    if (!customerOrderingEnabled) return
+    let active = true
+    let request = 0
+    const sync = async () => {
+      const currentRequest = ++request
+      const access = await getOrderAccess()
+      if (active && currentRequest === request) setOrderAccess(access)
+    }
+    const storage = (event: StorageEvent) => { if (event.key === 'customer' || event.key === null) void sync() }
+    void sync()
+    window.addEventListener('focus', sync)
+    window.addEventListener('storage', storage)
+    return () => { active = false; window.removeEventListener('focus', sync); window.removeEventListener('storage', storage) }
+  }, [customerOrderingEnabled, showCart])
+
+  useEffect(() => {
     function syncFromBrowserUrl() {
       const params = new URLSearchParams(window.location.search)
       setSelectedCategories(params.getAll('categoria'))
@@ -205,35 +227,32 @@ export default function CatalogPage() {
   }
 
   function loadCart() {
-    const saved = localStorage.getItem('los_primos_cart')
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        if (Array.isArray(parsed)) setCartItems(parsed.map((item, index) => ({
-          itemId: item.itemId || `${item.productId}-${item.unit || 'unidad'}-${index}`,
-          productId: item.productId,
-          quantity: Number(item.quantity) || 1,
-          unit: item.unit || 'unidad',
-          notes: item.notes || ''
-        })))
-      } catch { localStorage.removeItem('los_primos_cart') }
-    }
+    try {
+      const saved = localStorage.getItem('los_primos_cart')
+      if (!saved) return
+      const parsed = JSON.parse(saved)
+      if (Array.isArray(parsed)) setCartItems(parsed.filter(item => item && typeof item.productId === 'string').map((item, index) => ({
+        itemId: item.itemId || `${item.productId}-${item.unit || 'unidad'}-${index}`,
+        productId: item.productId,
+        quantity: Number(item.quantity) || 1,
+        unit: item.unit || 'unidad',
+        notes: item.notes || ''
+      })))
+    } catch { /* The cart can still work in memory when storage is unavailable. */ }
   }
 
   function loadPriceInquiry() {
-    const saved = localStorage.getItem('los_primos_price_inquiry')
-    if (!saved) return
     try {
+      const saved = localStorage.getItem('los_primos_price_inquiry')
+      if (!saved) return
       const parsed: unknown = JSON.parse(saved)
       if (Array.isArray(parsed)) setPriceInquiryProductIds(parsed.filter((id): id is string => typeof id === 'string'))
-    } catch {
-      localStorage.removeItem('los_primos_price_inquiry')
-    }
+    } catch { /* Continue without a saved inquiry. */ }
   }
 
   function savePriceInquiry(productIds: string[]) {
     const uniqueIds = [...new Set(productIds)]
-    localStorage.setItem('los_primos_price_inquiry', JSON.stringify(uniqueIds))
+    try { localStorage.setItem('los_primos_price_inquiry', JSON.stringify(uniqueIds)) } catch { /* Keep this page usable with blocked storage. */ }
     setPriceInquiryProductIds(uniqueIds)
   }
 
@@ -269,7 +288,7 @@ export default function CatalogPage() {
   }
 
   function saveCart(items: typeof cartItems) {
-    localStorage.setItem('los_primos_cart', JSON.stringify(items))
+    try { localStorage.setItem('los_primos_cart', JSON.stringify(items)) } catch { /* A guest can still order using the current page. */ }
     setCartItems(items)
   }
 
@@ -285,34 +304,38 @@ export default function CatalogPage() {
     }
   }
 
-  async function getOrderAccess() {
-    const customer = getCustomerSession()
-    if (!customer) return { status: 'anonymous' }
-    const { data, error } = await supabase.from('customers').select('approval_status').eq('id', customer.id).single()
-    if (error) return { status: 'check_failed' }
-    return { status: data?.approval_status || 'pending' }
+  async function getOrderAccess(): Promise<OrderAccess> {
+    let customer: ReturnType<typeof getCustomerSession>
+    try { customer = getCustomerSession() } catch { return { status: 'anonymous' } }
+    if (!customer?.id) return { status: 'anonymous' }
+    try {
+      const { data, error } = await supabase.from('customers').select('id,name,business_name,approval_status').eq('id', customer.id).single()
+      if (error || !data) return { status: 'check_failed' }
+      if (data.approval_status !== 'approved') return { status: data.approval_status === 'rejected' ? 'rejected' : 'pending' }
+      if (!data.business_name?.trim()) return { status: 'not_business' }
+      return { status: 'approved', customer: { id: data.id, name: data.name, business_name: data.business_name } }
+    } catch {
+      return { status: 'check_failed' }
+    }
   }
 
   function showAccessMessage(status: string) {
     setCartMessage(status === 'anonymous'
-      ? 'Para realizar pedidos, necesitás registrarte como comercio y esperar la aprobación.'
+      ? 'Para guardar listas necesitás registrarte como empresa y tener el acceso aprobado. Podés enviar tu pedido sin registro para retirar en mostrador.'
       : status === 'rejected'
-        ? 'La solicitud de este comercio no fue aprobada. Comunicate con Distribuidora Los Primos si necesitás más información.'
+        ? 'La cuenta de empresa no está aprobada para guardar listas. Podés preparar un pedido para retirar en mostrador.'
         : status === 'check_failed'
-          ? 'No pudimos verificar el acceso. Intentá de nuevo más tarde.'
-          : 'La solicitud del comercio está pendiente de revisión. La aprobación puede demorar hasta 24 horas.')
+          ? 'No pudimos verificar el acceso de tu empresa. Intentá de nuevo antes de enviar el pedido o guardar la lista.'
+          : status === 'not_business'
+            ? 'Las listas guardadas están disponibles solamente para empresas aprobadas. Podés enviar tu pedido para retirar en mostrador.'
+            : 'La cuenta de empresa está pendiente de revisión. Mientras tanto, podés preparar un pedido para retirar en mostrador.')
     setShowCart(true)
   }
 
-  async function handleAddToCart() {
-    const access = await getOrderAccess()
-    if (access.status !== 'approved') {
-      closeProductDetail()
-      showAccessMessage(access.status)
-      return
-    }
-    if (selectedProduct) addToCart(selectedProduct.id, selectedProductUnit, productNotes.trim())
-    setCartMessage('Agregado a tu lista de compras')
+  function handleAddToCart() {
+    if (!customerOrderingEnabled || !selectedProduct) return
+    addToCart(selectedProduct.id, selectedProductUnit, productNotes.trim())
+    setCartMessage('Producto agregado a tu pedido.')
     closeProductDetail()
     setShowCart(true)
   }
@@ -337,42 +360,54 @@ export default function CatalogPage() {
   })
 
   async function saveShoppingList() {
-    const access = await getOrderAccess()
-    if (access.status !== 'approved') {
-      showAccessMessage(access.status)
-      return
-    }
-    const customer = getCustomerSession()!
+    if (!customerOrderingEnabled || !cartProducts.length || savingList) return
     setSavingList(true)
     setCartMessage('')
-    const { error } = await supabase.from('customer_shopping_lists').insert({
-      customer_id: customer.id,
-      items: cartProducts.map(({ product, quantity, unit, notes }) => ({ product_id: product.id, product_name: product.name, quantity, unit, notes }))
-    })
-    setSavingList(false)
-    setCartMessage(error ? 'No pudimos guardar la lista. Revisá la configuración de la base de datos.' : 'Lista guardada en tu cuenta.')
+    try {
+      const access = await getOrderAccess()
+      setOrderAccess(access)
+      if (access.status !== 'approved') { showAccessMessage(access.status); return }
+      const { error } = await supabase.from('customer_shopping_lists').insert({
+        customer_id: access.customer.id,
+        items: cartProducts.map(({ product, quantity, unit, notes }) => ({ product_id: product.id, product_name: product.name, quantity, unit, notes }))
+      })
+      if (error) throw error
+      setCartMessage('Lista guardada en tu cuenta de empresa.')
+    } catch {
+      setCartMessage('No pudimos guardar la lista. Intentá de nuevo más tarde.')
+    } finally { setSavingList(false) }
   }
 
   function sendCartToWhatsApp() {
+    if (!customerOrderingEnabled || sendingOrder) return
     if (!cartProducts.length || !businessPhone) {
       setCartMessage('Agregá productos y verificá que el negocio tenga un teléfono de WhatsApp configurado.')
       return
     }
     const popup = window.open('about:blank', '_blank')
+    setSendingOrder(true)
+    setCartMessage('')
     void (async () => {
-      const access = await getOrderAccess()
-      if (access.status !== 'approved') {
+      try {
+        const access = await getOrderAccess()
+        setOrderAccess(access)
+        if (access.status === 'check_failed') {
+          popup?.close()
+          showAccessMessage(access.status)
+          return
+        }
+        const lines = cartProducts.map(({ product, quantity, unit, notes }) => `• ${quantity} ${unit === 'caja' ? (quantity === 1 ? 'caja' : 'cajas') : unit === 'funda' ? (quantity === 1 ? 'funda' : 'fundas') : unit === 'unidad' ? (quantity === 1 ? 'unidad' : 'unidades') : unit} de ${product.name}${notes ? `\n  Nota: ${notes}` : ''}`)
+        const message = access.status === 'approved'
+          ? `Hola, quiero hacer este pedido a nombre de ${access.customer.name}, del comercio ${access.customer.business_name}:\n\n${lines.join('\n')}`
+          : `Hola, quiero hacer este pedido para retirar en mostrador:\n\n${lines.join('\n')}\n\nModalidad: RETIRO EN MOSTRADOR (sin envío).\nQuedo a la espera de confirmación para coordinar el retiro.`
+        const url = `https://wa.me/${businessPhone}?text=${encodeURIComponent(message)}`
+        trackSiteEvent('whatsapp_cart', { item_count: cartProducts.length })
+        if (popup) popup.location.href = url
+        else window.location.href = url
+      } catch {
         popup?.close()
-        showAccessMessage(access.status)
-        return
-      }
-      const customer = getCustomerSession()
-      const lines = cartProducts.map(({ product, quantity, unit, notes }) => `• ${quantity} ${unit === 'caja' ? (quantity === 1 ? 'caja' : 'cajas') : unit === 'funda' ? (quantity === 1 ? 'funda' : 'fundas') : unit === 'unidad' ? (quantity === 1 ? 'unidad' : 'unidades') : unit} de ${product.name}${notes ? `\n  Nota: ${notes}` : ''}`)
-      const message = `Hola, quiero hacer este pedido a nombre de ${customer?.name || ''}${customer?.business_name ? `, del comercio ${customer.business_name}` : ''}:\n\n${lines.join('\n')}`
-      const url = `https://wa.me/${businessPhone}?text=${encodeURIComponent(message)}`
-      trackSiteEvent('whatsapp_cart', { item_count: cartProducts.length })
-      if (popup) popup.location.href = url
-      else window.location.href = url
+        setCartMessage('No pudimos abrir WhatsApp. Intentá de nuevo.')
+      } finally { setSendingOrder(false) }
     })()
   }
 
@@ -592,7 +627,7 @@ export default function CatalogPage() {
           <div><p className={styles.eyebrow}>Los Primos · Por mayor y menor</p><h1 className={styles.title}>Nuestro catálogo</h1><p className={styles.introText}>Encontrá lo que necesitás, armá tu consulta y preguntanos los precios por WhatsApp.</p></div>
           <div className={styles.actions}>
             <button type="button" onClick={() => setShowPriceInquiry(true)} className={styles.primaryButton}><Icon name="document" className="h-4 w-4 shrink-0" />Consulta de precios<span className={styles.count}>{priceInquiryProductIds.length}</span></button>
-            {customerOrderingEnabled && <button type="button" onClick={() => setShowCart(true)} className={styles.secondaryButton}><Icon name="cart" className="h-4 w-4 shrink-0" />Mi lista ({cartTotal})</button>}
+            {customerOrderingEnabled && <button type="button" onClick={() => setShowCart(true)} className={styles.secondaryButton}><Icon name="cart" className="h-4 w-4 shrink-0" />Mi pedido ({cartTotal})</button>}
           </div>
         </header>
         <div className={styles.layout}>
@@ -969,7 +1004,7 @@ export default function CatalogPage() {
                 {priceInquiryProductIds.includes(selectedProduct.id) ? 'Ver mi consulta de precios' : 'Agregar a consulta de precios'}
               </button>
               {customerOrderingEnabled && <button onClick={handleAddToCart} className={`${styles.secondaryButton} mt-2 w-full`}>
-                Agregar a la lista de compras
+                Agregar al pedido
               </button>}
             </div>
           </div>
@@ -979,14 +1014,18 @@ export default function CatalogPage() {
       {customerOrderingEnabled && showCart && (
         <div className="fixed inset-0 z-[60] bg-black/60 flex items-end sm:items-center justify-center sm:p-4" onClick={() => setShowCart(false)}>
           <section className="bg-white w-full sm:max-w-xl rounded-t-3xl sm:rounded-3xl max-h-[90vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="p-5 border-b flex items-center justify-between"><div><h2 className={styles.modalTitle}>Mi lista de compras</h2><p className="text-sm text-[#817565]">{cartTotal} producto{cartTotal !== 1 ? 's' : ''}</p></div><button onClick={() => setShowCart(false)} className="text-2xl text-[#817565]" aria-label="Cerrar">×</button></div>
+            <div className="p-5 border-b flex items-center justify-between"><div><h2 className={styles.modalTitle}>Mi pedido</h2><p className="text-sm text-[#817565]">{cartTotal} producto{cartTotal !== 1 ? 's' : ''}</p></div><button onClick={() => setShowCart(false)} className="text-2xl text-[#817565]" aria-label="Cerrar">×</button></div>
             <div className="p-5 overflow-y-auto flex-1">
+              {orderAccess.status !== 'approved' && <div className="mb-4 rounded-2xl border border-[#d6c9aa] bg-[#f7f2e6] p-4 text-[#514738]">
+                <div className="flex items-start gap-3"><Icon name="store" className="mt-0.5 h-5 w-5 shrink-0 text-[#686f43]" /><div><h3 className="font-bold">Solo retiro en mostrador</h3><p className="mt-1 text-sm leading-6">Podés hacer tu pedido sin registrarte. Sin una cuenta de empresa aprobada, solamente podés retirarlo en el local; no incluye envío.</p><p className="mt-2 text-xs leading-5 text-[#817565]">Guardar listas en una cuenta está disponible únicamente para empresas aprobadas. Este carrito se conserva en tu navegador.</p></div></div>
+              </div>}
               {cartProducts.length === 0 ? <p className="text-center text-[#817565] py-10">Todavía no agregaste productos.</p> : <ul className="divide-y">{cartProducts.map(({ itemId, product, quantity, unit, notes }) => <li key={itemId} className="py-3"><div className="flex items-center gap-3"><div className="flex-1 min-w-0"><p className="font-semibold">{product.name}</p><p className="text-xs text-[#817565] capitalize">Por {unit}</p></div><div className="flex items-center gap-2"><button onClick={() => updateCartQuantity(itemId, quantity - 1)} className="w-8 h-8 rounded-lg border">−</button><span className="w-6 text-center">{quantity}</span><button onClick={() => updateCartQuantity(itemId, quantity + 1)} className="w-8 h-8 rounded-lg border">+</button></div><button onClick={() => removeFromCart(itemId)} className="text-red-600 text-sm ml-2">Quitar</button></div>{notes && <p className="text-sm text-[#706556] mt-2">Nota: {notes}</p>}</li>)}</ul>}
-              {cartMessage && <div className="mt-4 text-sm text-[#575b36] bg-[#eeeedf] border border-[#d9dcc0] rounded-xl p-3"><p>{cartMessage}</p>{cartMessage.includes('registrarte') && <p className="mt-2"><Link href="/cliente/registro" className="font-bold underline">Solicitar acceso</Link>{' · '}<Link href="/cliente/login" className="font-bold underline">Iniciar sesión</Link></p>}{cartMessage.includes('pendiente') && <p className="mt-2"><Link href="/cliente/login" className="font-bold underline">Consultar estado</Link></p>}</div>}
+              {cartMessage && <div role="status" className="mt-4 text-sm text-[#575b36] bg-[#eeeedf] border border-[#d9dcc0] rounded-xl p-3"><p>{cartMessage}</p>{cartMessage.includes('registrarte') && <p className="mt-2"><Link href="/cliente/registro" className="font-bold underline">Solicitar acceso</Link>{' · '}<Link href="/cliente/login" className="font-bold underline">Iniciar sesión</Link></p>}{cartMessage.includes('pendiente') && <p className="mt-2"><Link href="/cliente/login" className="font-bold underline">Consultar estado</Link></p>}</div>}
             </div>
             <div className="p-5 border-t space-y-2">
-              <button onClick={saveShoppingList} disabled={!cartProducts.length || savingList} className="w-full py-3 rounded-xl border border-[#73794e] text-[#575b36] font-bold disabled:opacity-50">{savingList ? 'Guardando…' : 'Guardar lista en mi cuenta'}</button>
-              <button onClick={sendCartToWhatsApp} disabled={!cartProducts.length} className="w-full py-3 rounded-xl bg-green-600 text-white font-bold disabled:opacity-50">Enviar por WhatsApp</button>
+              {orderAccess.status === 'approved' && <button onClick={saveShoppingList} disabled={!cartProducts.length || savingList || sendingOrder} className="w-full py-3 rounded-xl border border-[#73794e] text-[#575b36] font-bold disabled:opacity-50">{savingList ? 'Guardando…' : 'Guardar lista en mi cuenta de empresa'}</button>}
+              <button onClick={sendCartToWhatsApp} disabled={!cartProducts.length || sendingOrder || savingList} className="w-full py-3 rounded-xl bg-green-600 text-white font-bold disabled:opacity-50">{sendingOrder ? 'Abriendo WhatsApp…' : orderAccess.status === 'approved' ? 'Enviar pedido por WhatsApp' : 'Pedir para retirar en mostrador'}</button>
+              {orderAccess.status !== 'approved' && <p className="text-center text-xs leading-5 text-[#817565]">Coordiná la confirmación y el horario de retiro con el local por WhatsApp.</p>}
             </div>
           </section>
         </div>

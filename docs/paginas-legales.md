@@ -32,6 +32,7 @@ El correo opcional de las cuentas de clientes para recuperar el acceso es una fu
 ## Finalidades confirmadas por el negocio
 
 - La web prepara listas y facilita su envío por WhatsApp. No emite facturas ni procesa pagos; usar el catálogo o enviar listas no requiere datos de tarjeta ni credenciales bancarias. La cotización definitiva se confirma con el negocio fuera del sitio.
+- Los visitantes pueden preparar pedidos sin registro únicamente para retirar en mostrador, cuando el interruptor de pedidos está activo. El carrito y el mensaje de WhatsApp indican esa modalidad. Las listas guardadas en una cuenta se reservan para empresas aprobadas. Ver `docs/pedidos-retiro-sin-registro.md`.
 - Estadísticas internas de navegación deshabilitadas por decisión del negocio. El código anterior se conserva inactivo; no se solicita autorización para habilitarlo en la interfaz actual.
 - Datos de cuenta para gestionar el acceso, asociar las listas guardadas a cada usuario y permitir recuperarlas y reutilizarlas. Datos de contacto y contenido de listas para atender consultas y gestionar pedidos.
 - El negocio confirmó que utiliza los datos para el funcionamiento del servicio de cuentas y listas, gestión de consultas y pedidos y atención en el local en Uruguay. Esta finalidad local no confirma la ubicación física de servidores ni las condiciones de los prestadores.

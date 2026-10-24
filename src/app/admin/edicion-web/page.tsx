@@ -2467,7 +2467,7 @@ export default function WebsiteEditionPage() {
 
             <div className="mt-8 pt-6 border-t border-gray-200">
               <h4 className="font-bold text-lg mb-2">Pedidos desde el catálogo</h4>
-              <p className="text-sm text-text-muted mb-4">Al desactivarlo, se ocultan el carrito, el envío por WhatsApp y las opciones para clientes. Los productos siguen visibles en el catálogo.</p>
+              <p className="text-sm text-text-muted mb-4">Habilita pedidos sin registro para retirar en mostrador y funciones de cuenta para empresas aprobadas, incluidas las listas guardadas. Al desactivarlo se ocultan el carrito de pedidos y las cuentas; el catálogo y la consulta de precios siguen disponibles.</p>
               <label className="flex items-start gap-3 cursor-pointer rounded-xl border border-border p-4">
                 <input
                   type="checkbox"

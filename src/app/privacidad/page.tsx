@@ -7,7 +7,7 @@ export const metadata = legalMetadata('Política de privacidad')
 
 export default function PrivacyPage() {
   return <LegalPage title="Política de privacidad" introduction="Información sobre los datos utilizados en los servicios de Los Primos.">
-    <p>Para utilizar las funciones de cuenta y listas guardadas de {LEGAL_DETAILS.tradingName}, nombre comercial de {LEGAL_DETAILS.legalName}, se solicitan nombre, comercio, teléfono y datos de acceso. El correo es opcional y permite recuperar el acceso. El catálogo puede consultarse sin registrarse.</p>
+    <p>Para utilizar las funciones de cuenta y listas guardadas de {LEGAL_DETAILS.tradingName}, nombre comercial de {LEGAL_DETAILS.legalName}, se solicitan nombre, comercio, teléfono y datos de acceso. El correo es opcional y permite recuperar el acceso. El catálogo y los pedidos para retirar en mostrador pueden utilizarse sin registro. Las listas guardadas en una cuenta están disponibles solamente para empresas aprobadas.</p>
     <p>El tratamiento de los datos personales está sujeto a la Ley Nº 18.331 de la República Oriental del Uruguay y sus decretos reglamentarios, incluidas las obligaciones de seguridad y confidencialidad de la información.</p>
     <h2>Finalidad del tratamiento de los datos</h2>
     <p>La información se utiliza para las siguientes finalidades:</p>
