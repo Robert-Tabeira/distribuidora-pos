@@ -2,8 +2,8 @@
 // these documents as final. Empty values are intentionally marked as pending.
 export const LEGAL_DETAILS = {
   tradingName: 'Los Primos',
-  legalName: '',
-  registeredAddress: '',
+  legalName: 'Rusterson Sociedad Anónima',
+  registeredAddress: 'Ruta Interbalnearia Km 47 y Calle B',
   privacyEmail: '',
   retentionDetails: '',
   internationalTransfers: '',
