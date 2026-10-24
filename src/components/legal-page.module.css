@@ -8,6 +8,7 @@
 .article { border: 1px solid #e3d7c4; border-radius: 24px; background: #fffdf8; padding: 24px 20px; font-size: 14px; line-height: 1.9; box-shadow: 0 5px 24px rgb(63 47 27 / 3%); overflow-wrap: anywhere; }
 .article h2 { font-family: 'Lora', Georgia, serif; font-weight: 700; font-size: 22px; line-height: 1.45; color: #30261d; margin: 32px 0 12px; }
 .article h2:first-child { margin-top: 0; }
+.article h3 { font-weight: 700; font-size: 17px; line-height: 1.5; color: #565f36; margin: 24px 0 10px; }
 .article p { margin: 12px 0; }
 .article ul { list-style: disc; padding-left: 22px; margin: 12px 0; }
 .article li { padding-left: 4px; margin: 6px 0; }

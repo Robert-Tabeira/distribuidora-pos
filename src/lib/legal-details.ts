@@ -3,7 +3,7 @@
 export const LEGAL_DETAILS = {
   tradingName: 'Los Primos',
   legalName: '',
-  taxId: '',
+  taxId: '', // Optional in these documents; does not gate analytics or maps.
   registeredAddress: '',
   privacyEmail: '',
   retentionDetails: '',
@@ -13,7 +13,7 @@ export const LEGAL_DETAILS = {
 
 export const LEGAL_VERSION = '2026-10-23'
 export const LEGAL_DATE_LABEL = '23 de octubre de 2026'
-export const LEGAL_READY = Boolean(LEGAL_DETAILS.legalName && LEGAL_DETAILS.taxId && LEGAL_DETAILS.registeredAddress && LEGAL_DETAILS.privacyEmail && LEGAL_DETAILS.retentionDetails && LEGAL_DETAILS.internationalTransfers && LEGAL_DETAILS.reviewed)
+export const LEGAL_READY = Boolean(LEGAL_DETAILS.legalName && LEGAL_DETAILS.registeredAddress && LEGAL_DETAILS.privacyEmail && LEGAL_DETAILS.retentionDetails && LEGAL_DETAILS.internationalTransfers && LEGAL_DETAILS.reviewed)
 
 export const LEGAL_LINKS = [
   { href: '/privacidad', label: 'Privacidad' },

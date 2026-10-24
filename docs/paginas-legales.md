@@ -12,14 +12,21 @@
 
 Editar `src/lib/legal-details.ts` con información confirmada por la dueña:
 
-1. Razón social/nombre del responsable, RUT, domicilio y correo de privacidad.
+1. Razón social/nombre del responsable, domicilio comercial que corresponda y correo de contacto para privacidad. Se pueden completar directamente en el archivo, sin enviarlos por el chat. El RUT es opcional en estos documentos: solo se muestra si se completa y no condiciona la habilitación de estadísticas o mapas. Este ajuste no evalúa otras obligaciones comerciales que puedan corresponder.
 2. Plazos reales de conservación de cuentas, listas y eventos, junto con un procedimiento de eliminación que esté aplicado. El panel de 90 días no es un mecanismo de eliminación.
 3. Destinatarios, regiones/países y condiciones de transferencia de los proveedores contratados. Confirmar las regiones de Supabase y Vercel y el proveedor de correo; no se infieren a partir del dominio.
 4. Revisar las condiciones de pedidos, pagos, entregas y atención de reclamos de `/terminos` contra la operación real del local.
 5. Revisar permisos de acceso a datos de clientes y las obligaciones de inscripción y documentación del negocio ante la URCDP con su asesor.
 6. Tras la revisión y completar los campos, cambiar `reviewed` a `true`. Este indicador es un control editorial del proyecto, no una certificación de cumplimiento legal.
 
-Sin esos datos, las páginas indican **Documento en preparación**, no se indexan y las estadísticas y mapas integrados opcionales permanecen apagados. El catálogo, listas, acceso y enlaces externos continúan disponibles.
+Sin completar los datos requeridos y la revisión, las páginas indican **Documento en preparación**, no se indexan y las estadísticas y mapas integrados opcionales permanecen apagados. El catálogo, listas, acceso y enlaces externos continúan disponibles.
+
+## Finalidades confirmadas por el negocio
+
+- Estadísticas de uso interno para conocer los productos y categorías más buscados, las búsquedas sin resultados y el uso del catálogo, listas y enlaces de WhatsApp. Se utilizan para mejorar la navegación y la experiencia del usuario, con permiso previo y sin publicidad personalizada.
+- Datos de cuenta para gestionar el acceso, asociar las listas guardadas a cada usuario y permitir recuperarlas y reutilizarlas. Datos de contacto y contenido de listas para atender consultas y gestionar pedidos.
+- La autorización de estadísticas no es requisito para crear una cuenta, guardar listas ni gestionar pedidos. Los eventos de métricas no incluyen los datos identificativos de la cuenta ni el contenido de sus listas.
+- Detectar fallos técnicos es un objetivo del negocio, pero el panel actual no captura errores automáticamente. Los documentos no prometen esa función. Si se incorpora monitoreo de errores, documentar primero qué recoge, su proveedor, permisos y conservación.
 
 ## Activación técnica
 

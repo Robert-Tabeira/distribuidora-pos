@@ -13,10 +13,14 @@ La migración crea tablas propias, sin modificar los datos existentes del catál
 
 ## Qué mide
 
+Las estadísticas son de uso interno: permiten conocer el interés por productos, identificar búsquedas sin resultados y mejorar la navegación y la experiencia del usuario. La gestión de cuentas, listas guardadas y pedidos funciona independientemente de aceptar estas estadísticas. No se utiliza esta información para publicidad personalizada.
+
+El panel actual no registra automáticamente errores técnicos ni graba sesiones de navegación. Esa función requeriría una implementación y documentación específicas.
+
 | Métrica | Interpretación |
 | --- | --- |
 | Visitas | Sesiones con actividad. La sesión se renueva tras 30 minutos sin eventos. |
-| Visitantes estimados | Identificadores anónimos de navegadores, guardados en almacenamiento local. No equivalen a personas. |
+| Visitantes estimados | Identificadores de navegadores, guardados en almacenamiento local. No equivalen a personas ni hacen que el registro sea completamente anónimo. |
 | Páginas vistas | Aperturas de `/landing` y `/catalogo`, sin guardar los parámetros de la URL. |
 | Productos abiertos | Aperturas del detalle, tanto al pulsar una tarjeta como mediante un enlace directo. |
 | Búsquedas | Términos con al menos dos caracteres, tras un segundo sin cambios; incluye el número de resultados visibles con los filtros aplicados. |

@@ -7,7 +7,7 @@ import styles from '@/components/legal-page.module.css'
 export const metadata = legalMetadata('Política de privacidad')
 
 export default function PrivacyPage() {
-  return <LegalPage title="Política de privacidad" introduction="Cómo se utiliza la información al navegar, solicitar acceso como comercio y consultar productos en Los Primos.">
+  return <LegalPage title="Política de privacidad" introduction="Usamos la información para mejorar el catálogo y la navegación, guardar tus listas y gestionar tus consultas y pedidos. Acá explicamos qué datos intervienen y qué podés elegir.">
     <h2>1. Responsable del sitio y de los datos</h2><LegalResponsibleDetails />
     <h2>2. Información que se utiliza</h2>
     <ul>
@@ -18,10 +18,15 @@ export default function PrivacyPage() {
     </ul>
     <p>El registro de estadísticas de la aplicación no incluye nombres de clientes, teléfonos, correos ni el contenido de mensajes o notas de compra. Se aplican filtros para omitir búsquedas con apariencia de teléfono, correo o URL. No ingreses datos personales o sensibles en el buscador.</p>
     <h2>3. Finalidades y elección</h2>
-    <p>La información de cuenta y listas se utiliza para gestionar solicitudes de acceso, atender consultas, preparar pedidos y facilitar las funciones que solicitás. Los datos obligatorios y opcionales se indican en los formularios. Sin los datos requeridos puede no ser posible crear una cuenta o tramitar una solicitud; el catálogo público sigue disponible.</p>
-    <p>Las estadísticas se utilizan para conocer el funcionamiento del sitio y el interés por productos y categorías. Son opcionales y solo se activan si las aceptás. No se utilizan en esta implementación para publicidad personalizada. Rechazarlas no impide navegar ni consultar productos.</p>
+    <h3>Estadísticas para mejorar la experiencia</h3>
+    <p>Las estadísticas son de uso interno del negocio. Permiten saber qué productos y categorías generan más interés, qué busca la gente, qué búsquedas no encuentran resultados y cómo se utilizan las listas y los accesos a WhatsApp. Con esa información buscamos mejorar el catálogo, detectar dificultades de navegación y facilitar el uso de la página.</p>
+    <p>Estas estadísticas son opcionales y solo se activan si las aceptás. No se utilizan para publicidad personalizada. Rechazarlas no impide navegar, crear una cuenta ni consultar o pedir productos. El panel actual registra las acciones indicadas; no recopila automáticamente errores técnicos ni grabaciones de pantalla.</p>
     <p>Los identificadores de estadísticas permiten vincular acciones de un mismo navegador. Por ese motivo no describimos este registro como completamente anónimo, aunque los informes internos muestren datos agregados.</p>
     <PrivacySettingsButton className={styles.preferences} />
+    <h3>Cuenta, listas guardadas y gestión de pedidos</h3>
+    <p>Los datos de la cuenta permiten gestionar el acceso de cada usuario y asociarle sus listas de pedido guardadas para que pueda recuperarlas y volver a utilizarlas. Los productos, cantidades, presentaciones y notas se utilizan para organizar las listas, atender consultas y gestionar correctamente los pedidos que comuniques al negocio.</p>
+    <p>El nombre y los datos de contacto se utilizan para identificar la cuenta y comunicarnos sobre solicitudes y pedidos. El correo es opcional y, si lo proporcionás, también permite recuperar el acceso. No usamos los datos de la cuenta ni el contenido de las listas para publicidad personalizada ni como contenido de las estadísticas de navegación.</p>
+    <p>Los datos obligatorios y opcionales se indican en los formularios. Sin los datos requeridos puede no ser posible crear una cuenta o tramitar una solicitud; el catálogo público sigue disponible. El uso de la cuenta y las listas no requiere aceptar las estadísticas opcionales.</p>
     <h2>4. Proveedores y servicios externos</h2>
     <ul>
       <li><strong>Vercel:</strong> alojamiento y entrega de la web y optimización de imágenes.</li>
