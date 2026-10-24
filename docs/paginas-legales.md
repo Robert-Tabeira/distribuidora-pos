@@ -13,7 +13,7 @@
 
 Editar `src/lib/legal-details.ts` con información confirmada por la dueña:
 
-1. Razón social/nombre del responsable, domicilio comercial que corresponda y correo de contacto para privacidad. Se pueden completar directamente en el archivo, sin enviarlos por el chat. Los documentos de este proyecto no solicitan ni muestran RUT. Este ajuste no evalúa otras obligaciones comerciales que puedan corresponder.
+1. Razón social/nombre del responsable, domicilio comercial que corresponda y un medio de contacto para privacidad. Están cargados Rusterson Sociedad Anónima, Ruta Interbalnearia Km 47 y Calle B, y atención presencial en ese domicilio. El correo del negocio no es un requisito de esta configuración. Los documentos de este proyecto no solicitan ni muestran RUT. Este ajuste no evalúa otras obligaciones comerciales que puedan corresponder.
 2. Plazos reales de conservación de cuentas y listas, junto con un procedimiento de eliminación que esté aplicado. Si existen registros de estadísticas anteriores al bloqueo, revisar también su conservación y eventual eliminación; desactivar la función no los borra.
 3. Confirmar internamente destinatarios, regiones/países y condiciones de transferencia de los proveedores contratados; no se infieren a partir del dominio. El aviso público describe clases de destinatarios por su función, sin publicar marcas de alojamiento o base de datos ni el inventario técnico. Completar `internationalTransfers` con la información confirmada sobre el tratamiento fuera de Uruguay, evitando detalles de infraestructura innecesarios.
 4. Revisar que `/terminos` describa el alcance real: catálogo, listas de pedido, listas de consulta de precios y envío por WhatsApp. La cotización definitiva, la facturación, los cobros y la coordinación de entrega o retiro se gestionan fuera de la web.
@@ -21,6 +21,12 @@ Editar `src/lib/legal-details.ts` con información confirmada por la dueña:
 6. Tras la revisión y completar los campos, cambiar `reviewed` a `true`. Este indicador es un control editorial del proyecto, no una certificación de cumplimiento legal.
 
 Sin completar los datos requeridos y la revisión, las páginas indican **Borrador para revisión del negocio**, no se indexan y el mapa integrado permanece apagado. Las estadísticas están deshabilitadas de forma independiente: completar la revisión no las reactiva. El catálogo, listas, acceso y enlaces externos continúan disponibles.
+
+## Contacto de privacidad sin correo
+
+`privacyContact` contiene el medio de contacto que se muestra en ambos documentos. Actualmente indica atención presencial en el local, utilizando el domicilio confirmado por el negocio. `privacyContactHref` es opcional: puede configurarse con un enlace `tel:` o de WhatsApp si se confirma ese canal y su número. No se inventó ni se publicó un teléfono sin confirmar.
+
+El correo opcional de las cuentas de clientes para recuperar el acceso es una función distinta y se mantiene. La revisión pendiente del negocio incluye confirmar cómo recibe y tramita las solicitudes presenciales. Los formularios de ejercicio de derechos de la [URCDP](https://www.gub.uy/unidad-reguladora-control-datos-personales/tramites-y-servicios/formularios) contemplan su presentación ante la empresa.
 
 ## Finalidades confirmadas por el negocio
 

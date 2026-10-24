@@ -27,6 +27,6 @@ export default function PrivacyPage() {
     <h2>5. Conservación</h2>
     <p>Cuentas y listas guardadas en servidores: {LEGAL_DETAILS.retentionDetails || <span className={styles.pending}>plazos de conservación y eliminación pendientes de revisar por el negocio.</span>}</p>
     <h2>6. Derechos y consultas</h2>
-    <p>Podés solicitar acceso, rectificación, actualización o supresión de tus datos mediante el contacto indicado al inicio, conforme a la Ley 18.331. También podés acudir a la <a href="https://www.gub.uy/unidad-reguladora-control-datos-personales/" target="_blank" rel="noopener noreferrer">Unidad Reguladora y de Control de Datos Personales</a>. La fecha de esta política figura al comienzo.</p>
+    <p>Podés solicitar acceso, rectificación, actualización o supresión de tus datos mediante el contacto indicado al inicio o presentando tu solicitud en el domicilio comercial indicado, conforme a la Ley 18.331. También podés acudir a la <a href="https://www.gub.uy/unidad-reguladora-control-datos-personales/" target="_blank" rel="noopener noreferrer">Unidad Reguladora y de Control de Datos Personales</a>. La fecha de esta política figura al comienzo.</p>
   </LegalPage>
 }
