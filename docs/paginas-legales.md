@@ -33,12 +33,15 @@ El correo opcional de las cuentas de clientes para recuperar el acceso es una fu
 - La web prepara listas y facilita su envío por WhatsApp. No emite facturas ni procesa pagos; usar el catálogo o enviar listas no requiere datos de tarjeta ni credenciales bancarias. La cotización definitiva se confirma con el negocio fuera del sitio.
 - Estadísticas internas de navegación deshabilitadas por decisión del negocio. El código anterior se conserva inactivo; no se solicita autorización para habilitarlo en la interfaz actual.
 - Datos de cuenta para gestionar el acceso, asociar las listas guardadas a cada usuario y permitir recuperarlas y reutilizarlas. Datos de contacto y contenido de listas para atender consultas y gestionar pedidos.
+- El negocio confirmó que utiliza los datos para el funcionamiento del servicio de cuentas y listas, gestión de consultas y pedidos y atención en el local en Uruguay. Esta finalidad local no confirma la ubicación física de servidores ni las condiciones de los prestadores.
 - Cuentas, listas y consultas funcionan sin el sistema de estadísticas.
 - No se incorpora monitoreo automático de errores. Si se decide agregarlo, documentar primero qué recoge, su proveedor, permisos y conservación.
 
 ## Información pública reducida
 
 La política conserva las finalidades, datos utilizados, clases de destinatarios, información sobre transferencias internacionales, conservación, identidad y domicilio del responsable, contacto y derechos. Se omiten RUT, marcas de infraestructura y claves técnicas de almacenamiento. WhatsApp y Google Maps se identifican donde intervienen directamente en la elección de la persona. El artículo 13 de la Ley 18.331 permite informar destinatarios o clases de destinatarios; describir solo las finalidades no sustituye los demás apartados de información previa.
+
+La mención a servidores fuera de Uruguay describe alojamiento o procesamiento técnico para el servicio. No se deduce una finalidad comercial adicional ni se declara que los datos permanezcan físicamente en Uruguay. La región contratada y las condiciones siguen pendientes de confirmar; `internationalTransfers` permanece vacío hasta verificarlo. La [documentación de regiones de Supabase](https://supabase.com/docs/guides/platform/regions) explica que la región elegida determina dónde se guardan los datos principales del proyecto.
 
 Estos cambios simplifican la información publicada; no eliminan campos de las cuentas ni datos existentes. El registro mantiene el correo opcional. Las preferencias ya no ofrecen activar estadísticas.
 

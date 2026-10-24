@@ -14,6 +14,7 @@ export default function PrivacyPage() {
       <li><strong>Cuenta:</strong> nombre, comercio, teléfono, datos de acceso y correo opcional, para gestionar el acceso, asociarte listas guardadas y atender consultas y pedidos. El correo también permite recuperar el acceso.</li>
       <li><strong>Listas:</strong> productos, cantidades y notas que elegís guardar o comunicar al negocio por WhatsApp.</li>
     </ul>
+    <p>El negocio utiliza estos datos para el funcionamiento de las cuentas y listas, la gestión de consultas y pedidos, y la atención en su local en Uruguay.</p>
     <p>Los datos requeridos permiten gestionar la cuenta y los pedidos; sin ellos puede no ser posible utilizar esas funciones. El catálogo público sigue disponible. La web no procesa pagos ni emite facturas y no pide datos de tarjeta ni credenciales bancarias.</p>
     <p>La función de estadísticas internas de navegación está deshabilitada.</p>
     <h2 id="cookies">3. Cookies, almacenamiento y preferencias</h2>
@@ -23,7 +24,7 @@ export default function PrivacyPage() {
     <PrivacySettingsButton className={styles.preferences} />
     <h2>4. Servicios que intervienen</h2>
     <p>La información puede ser tratada por el personal autorizado del negocio y los servicios de alojamiento, almacenamiento y correo necesarios para estas funciones. Estos servicios pueden procesar datos técnicos de conexión. WhatsApp recibe la información que decidís comunicar; el mapa de Google se conecta con ese servicio si lo permitís. Los enlaces externos y esos servicios tienen sus propias políticas.</p>
-    <p>Tratamiento fuera de Uruguay: {LEGAL_DETAILS.internationalTransfers || <span className={styles.pending}>información pendiente de confirmar por el negocio.</span>}</p>
+    <p>El alojamiento técnico puede realizarse en servidores fuera de Uruguay para prestar este mismo servicio. {LEGAL_DETAILS.internationalTransfers || <span className={styles.pending}>La ubicación y las condiciones del alojamiento están pendientes de verificación.</span>}</p>
     <h2>5. Conservación</h2>
     <p>Cuentas y listas guardadas en servidores: {LEGAL_DETAILS.retentionDetails || <span className={styles.pending}>plazos de conservación y eliminación pendientes de revisar por el negocio.</span>}</p>
     <h2>6. Derechos y consultas</h2>
