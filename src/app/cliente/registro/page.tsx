@@ -91,7 +91,7 @@ export default function CustomerRegisterPage() {
           <p className="text-sm text-gray-600 mb-6">Solicitá acceso para realizar pedidos como comercio.</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <p className="rounded-xl border border-[#e3d7c4] bg-[#f8f3e9] p-3 text-xs leading-6 text-[#706556]">Usamos estos datos para revisar tu acceso, guardar tus listas en tu cuenta y gestionar tus consultas y pedidos. El correo es opcional y permite recuperar el acceso. Consultá quién es responsable y cómo ejercer tus derechos en la <Link href="/privacidad" className="font-semibold underline">política de privacidad</Link>, y cómo funciona el servicio en las <Link href="/terminos" className="font-semibold underline">condiciones de uso</Link>. Las estadísticas para mejorar la web son opcionales y se eligen por separado.</p>
+            <p className="rounded-xl border border-[#e3d7c4] bg-[#f8f3e9] p-3 text-xs leading-6 text-[#706556]">Usamos tus datos para gestionar el acceso, guardar tus listas y atender consultas y pedidos. El correo es opcional y permite recuperar el acceso. Las estadísticas se eligen por separado. Más información en la <Link href="/privacidad" className="font-semibold underline">política de privacidad</Link> y los <Link href="/terminos" className="font-semibold underline">términos de uso</Link>.</p>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nombre</label>
               <input

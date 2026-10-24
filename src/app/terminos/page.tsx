@@ -1,18 +1,19 @@
 import Link from 'next/link'
 import { LegalPage, LegalResponsibleDetails, legalMetadata } from '@/components/legal-page'
 
-export const metadata = legalMetadata('Condiciones de uso')
+export const metadata = legalMetadata('Términos de uso')
 
 export default function TermsPage() {
-  return <LegalPage title="Condiciones de uso" introduction="Esta web permite explorar el catálogo, preparar listas de pedido y consultar precios por WhatsApp. La facturación y los cobros se gestionan fuera del sitio.">
-    <h2>1. Identificación del negocio</h2><LegalResponsibleDetails />
-    <h2>2. Catálogo y consultas</h2><p>El sitio permite explorar productos, buscar y filtrar categorías, armar una lista de consulta de precios y comunicarse con el negocio por WhatsApp. Algunas funciones, como las listas de compras y las cuentas de comercios, dependen de que el negocio las tenga habilitadas.</p>
-    <p>Agregar productos a una lista, guardar una lista o abrir WhatsApp no confirma por sí solo una compra, una reserva de mercadería, un precio ni un plazo de entrega. El negocio y la persona interesada deben confirmar las condiciones antes de concretar un pedido.</p>
-    <h2>3. Productos y consulta de precios</h2><p>Las imágenes y descripciones ayudan a identificar productos. La lista que preparás sirve para consultar precios o comunicar un pedido. La cotización definitiva, las presentaciones y la disponibilidad se confirman directamente con el negocio por WhatsApp u otro canal de atención.</p><p>Si detectás un error en una ficha, comunicalo para que pueda revisarse. Cualquier corrección se realizará respetando los derechos que correspondan y las condiciones que ya se hubieran confirmado.</p>
-    <h2>4. Listas de compras y consultas de precios</h2><p>Las listas permanecen en el navegador o, si utilizás esa función, se guardan en tu cuenta. Pueden perderse al borrar datos del navegador. Revisá productos, cantidades, unidades y notas antes de comunicar un pedido.</p><p>El botón de WhatsApp abre un texto preparado. Podés revisarlo antes de enviarlo dentro de ese servicio. Un clic medido por las estadísticas no acredita que el mensaje haya sido enviado ni atendido.</p>
-    <h2>5. Acceso como comercio</h2><p>Cuando el registro está habilitado, permite solicitar acceso para operar como comercio. Los datos deben ser correctos y la solicitud queda sujeta a revisión y aprobación del negocio. Presentar la solicitud no garantiza su aceptación.</p><p>La persona usuaria debe cuidar su código de acceso y comunicar cualquier uso no autorizado que detecte. El negocio podrá revisar accesos ante datos incorrectos, incumplimientos o uso abusivo, respetando la normativa aplicable.</p>
-    <h2>6. Gestión fuera de la web</h2><p>La cotización definitiva, la facturación y los cobros se gestionan directamente con el negocio fuera de este sitio. La web no emite facturas ni procesa pagos. El catálogo y el envío de listas no requieren ingresar datos de tarjeta ni credenciales bancarias.</p><p>La confirmación del pedido, entrega o retiro y cualquier consulta posterior se coordinan con el negocio por sus canales de atención. Ninguna disposición de esta página pretende limitar derechos irrenunciables que puedan corresponder a consumidores o usuarios.</p>
-    <h2>7. Uso adecuado y servicios externos</h2><p>No utilices el sitio para intentar acceder a información ajena, alterar su funcionamiento ni enviar contenido abusivo. Los enlaces a servicios externos se rigen también por las condiciones de esos servicios. El sitio puede tener interrupciones o actualizaciones; si una función no está disponible, podés comunicarte con el local.</p>
-    <h2>8. Privacidad y contacto</h2><p>El tratamiento de información se explica en la <Link href="/privacidad">política de privacidad</Link> y las preferencias del navegador en <Link href="/cookies">cookies y almacenamiento</Link>. Para consultas sobre pedidos o sobre estas condiciones, utilizá los canales del negocio publicados en el sitio.</p>
+  return <LegalPage title="Términos de uso" introduction="La web permite explorar el catálogo, preparar listas de pedido y consultar precios por WhatsApp.">
+    <h2>1. El negocio</h2>
+    <LegalResponsibleDetails />
+    <h2>2. Catálogo y listas</h2>
+    <p>Podés buscar productos y preparar listas para comunicar pedidos o consultar precios. Antes de enviarlas, revisá los productos, cantidades y notas. El botón de WhatsApp abre un texto que podés revisar y enviar desde ese servicio; abrirlo no confirma el envío ni una compra.</p>
+    <p>Los precios definitivos, disponibilidad, confirmación del pedido y entrega o retiro se coordinan directamente con el negocio. La facturación y los cobros se gestionan fuera de esta web, que no emite facturas ni procesa pagos.</p>
+    <h2>3. Cuenta y listas guardadas</h2>
+    <p>Cuando el registro está habilitado, el acceso como comercio requiere aprobación del negocio. Proporcioná datos correctos y cuidá tu código de acceso. Las listas se guardan en el navegador o en tu cuenta, según la función que utilices; borrar el almacenamiento local puede eliminar las listas que solo estén en ese navegador.</p>
+    <h2>4. Uso y consultas</h2>
+    <p>Utilizá el sitio sin alterar su funcionamiento ni acceder a información ajena. Si encontrás un error o necesitás ayuda con un pedido, comunicate con el negocio por los canales publicados.</p>
+    <p>El uso de datos, las estadísticas opcionales y el almacenamiento se explican en la <Link href="/privacidad">política de privacidad</Link>. Estos términos no limitan los derechos que correspondan conforme a la normativa aplicable.</p>
   </LegalPage>
 }

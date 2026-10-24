@@ -56,7 +56,7 @@ export function PrivacyControls() {
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
     }
     window.addEventListener('keydown', key)
-    return () => { document.body.style.overflow = previous; window.removeEventListener('keydown', key); lastFocus.current?.focus() }
+    return () => { document.body.style.overflow = previous; window.removeEventListener('keydown', key); lastFocus.current?.focus({ preventScroll: true }) }
   }, [open])
 
   function choose(allowAnalytics: boolean, allowMaps: boolean) {
@@ -70,7 +70,7 @@ export function PrivacyControls() {
     <p role="status" className="sr-only">{feedback}</p>
     {notice && !open && <aside className={styles.notice} aria-label="Preferencias de privacidad">
       <h2 className={styles.heading}>Tu privacidad, tu elección</h2>
-      <p className={styles.copy}>Guardamos lo necesario para tus listas y el acceso a tu cuenta. Con tu permiso usamos estadísticas internas para conocer los productos más buscados y mejorar la navegación. También podés permitir mapas de Google. Podés rechazar lo opcional y seguir usando el catálogo y tus listas. <Link href="/privacidad" className={styles.link}>Privacidad</Link> · <Link href="/cookies" className={styles.link}>Cookies y almacenamiento</Link>.</p>
+      <p className={styles.copy}>Usamos almacenamiento para tus listas y tu cuenta. Podés permitir estadísticas para mejorar el catálogo y mapas de Google, o rechazar lo opcional y seguir usando la web. <Link href="/privacidad" className={styles.link}>Política de privacidad</Link>.</p>
       <div className={styles.actions}>
         <button type="button" className={styles.button} onClick={() => choose(false,false)}>Rechazar opcionales</button>
         <button type="button" className={styles.button} onClick={openPrivacySettings}>Configurar</button>
@@ -87,7 +87,7 @@ export function PrivacyControls() {
         <label className={styles.option}><input type="checkbox" checked={maps} disabled={!LEGAL_READY} onChange={event => setMaps(event.target.checked)} /><span><strong>Mapas externos de Google</strong><small>Permite cargar el mapa interactivo y establecer una conexión con Google. Sin permiso podés seguir leyendo la dirección y abrir el mapa en otra pestaña.</small></span></label>
         {!LEGAL_READY && <p className={styles.copy}>Las opciones se habilitarán cuando esté completa la información de privacidad del negocio.</p>}
         <div className={styles.actions}><button type="button" className={styles.button} onClick={() => choose(false,false)}>Rechazar opcionales</button><button type="button" className={`${styles.button} ${styles.primary}`} onClick={() => choose(analytics,maps)}>Guardar elección</button></div>
-        <p className={styles.copy}>La elección se recuerda hasta 180 días en este navegador. <Link href="/cookies" onClick={() => setOpen(false)} className={styles.link}>Más información</Link>.</p>
+        <p className={styles.copy}>La elección se recuerda hasta 180 días en este navegador. <Link href="/privacidad#cookies" onClick={() => setOpen(false)} className={styles.link}>Almacenamiento y preferencias</Link>.</p>
       </div>
     </div>}
   </>

@@ -2,9 +2,10 @@
 
 ## Entregado
 
-- `/privacidad`: responsable, datos, finalidades, destinatarios, conservación, derechos y contacto.
-- `/cookies`: almacenamiento local/de sesión, elecciones y servicios externos.
-- `/terminos`: navegación, consultas, listas, cuentas de comercios y confirmación de operaciones.
+- Dos páginas principales: `/privacidad` y `/terminos` (Términos de uso), con textos breves sobre el funcionamiento real del sitio.
+- `/privacidad` reúne datos, finalidades, almacenamiento, métricas opcionales, servicios que intervienen, conservación, derechos y contacto. La sección de almacenamiento está en `/privacidad#cookies`.
+- `/terminos` describe catálogo, listas, cuentas y consultas por WhatsApp; la cotización definitiva, facturación y cobros quedan fuera de la web.
+- La ruta anterior `/cookies` redirige permanentemente a `/privacidad#cookies` para conservar enlaces existentes; ya no es una tercera página de contenido ni figura en la navegación legal.
 - Enlaces permanentes en el footer y aviso informativo en el formulario de registro.
 - Preferencias con estadísticas y mapas externos desactivados inicialmente, rechazo de opciones y cambio posterior desde el footer.
 
@@ -34,6 +35,8 @@ Sin completar los datos requeridos y la revisión, las páginas indican **Docume
 La política conserva las finalidades, datos utilizados, clases de destinatarios, información sobre transferencias internacionales, conservación, identidad y domicilio del responsable, contacto y derechos. Se omiten RUT, marcas de infraestructura y claves técnicas de almacenamiento. WhatsApp y Google Maps se identifican donde intervienen directamente en la elección de la persona. El artículo 13 de la Ley 18.331 permite informar destinatarios o clases de destinatarios; describir solo las finalidades no sustituye los demás apartados de información previa.
 
 Estos cambios simplifican la información publicada; no eliminan campos de las cuentas ni datos existentes. El registro mantiene el correo opcional y la elección de métricas por separado.
+
+La redacción se limita a describir las funciones disponibles. No agrega garantías absolutas de seguridad, plazos de atención, promesas de disponibilidad, condiciones de venta o cláusulas generales de exención de responsabilidad. Los borradores siguen sujetos a revisión del negocio; acortar los documentos no modifica las obligaciones que puedan corresponder.
 
 ## Activación técnica
 

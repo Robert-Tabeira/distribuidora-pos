@@ -16,6 +16,5 @@ export const LEGAL_READY = Boolean(LEGAL_DETAILS.legalName && LEGAL_DETAILS.regi
 
 export const LEGAL_LINKS = [
   { href: '/privacidad', label: 'Privacidad' },
-  { href: '/cookies', label: 'Cookies y almacenamiento' },
-  { href: '/terminos', label: 'Condiciones de uso' },
+  { href: '/terminos', label: 'Términos de uso' },
 ]

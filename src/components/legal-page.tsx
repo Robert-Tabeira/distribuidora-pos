@@ -16,7 +16,7 @@ export function LegalPage({ title, introduction, children }: { title: string; in
     <p className="mt-4 max-w-3xl text-sm leading-7 text-[#776b5b]">{introduction}</p>
     <p className="mt-3 text-xs text-[#847966]">Versión: {LEGAL_DATE_LABEL}</p>
     <nav className={styles.nav} aria-label="Páginas legales">{LEGAL_LINKS.map(link => <Link key={link.href} href={link.href}>{link.label}</Link>)}</nav>
-    {!LEGAL_READY && <aside className={styles.draft}><strong>Documento en preparación.</strong> Falta confirmar información del responsable, conservación y condiciones de los proveedores, y revisar el texto antes de publicarlo como definitivo. Los datos pendientes están identificados expresamente.</aside>}
+    {!LEGAL_READY && <aside className={styles.draft}><strong>Borrador para revisión del negocio.</strong> Los campos pendientes deben completarse antes de publicarlo como definitivo.</aside>}
     <article className={styles.article}>{children}</article>
   </div></main></PublicLayout>
 }
