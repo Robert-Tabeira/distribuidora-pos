@@ -1,7 +1,7 @@
-import { LEGAL_READY } from '@/lib/legal-details'
+import { LEGAL_READY, LEGAL_VERSION } from '@/lib/legal-details'
 import { SITE_ANALYTICS_ENABLED } from '@/lib/analytics-config'
 
-export const PRIVACY_VERSION = LEGAL_READY ? '2026-10-23' : '2026-10-23-draft'
+export const PRIVACY_VERSION = LEGAL_READY ? LEGAL_VERSION : `${LEGAL_VERSION}-draft`
 export const PRIVACY_STORAGE_KEY = 'los_primos_privacy_preferences'
 export const PRIVACY_CHANGED = 'los-primos:privacy-changed'
 export const PRIVACY_OPEN = 'los-primos:privacy-open'

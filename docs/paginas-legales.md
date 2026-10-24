@@ -8,8 +8,9 @@
 - La ruta anterior `/cookies` redirige permanentemente a `/privacidad#cookies` para conservar enlaces existentes; ya no es una tercera página de contenido ni figura en la navegación legal.
 - Enlaces permanentes en el footer y aviso informativo en el formulario de registro.
 - Preferencias para permitir el mapa externo o mantenerlo apagado, con cambio posterior desde el footer. La opción de estadísticas está oculta y bloqueada por configuración.
+- Publicación habilitada por solicitud del usuario el 24 de octubre de 2026. El aviso de borrador deja de mostrarse y las páginas permiten indexación.
 
-## Completar antes de publicar como definitivo
+## Publicación y mantenimiento de la información
 
 Editar `src/lib/legal-details.ts` con información confirmada por la dueña:
 
@@ -18,15 +19,15 @@ Editar `src/lib/legal-details.ts` con información confirmada por la dueña:
 3. Confirmar internamente destinatarios, regiones/países y condiciones de transferencia de los proveedores contratados; no se infieren a partir del dominio. El aviso público describe clases de destinatarios por su función, sin publicar marcas de alojamiento o base de datos ni el inventario técnico. Completar `internationalTransfers` con la información confirmada sobre el tratamiento fuera de Uruguay, evitando detalles de infraestructura innecesarios.
 4. Revisar que `/terminos` describa el alcance real: catálogo, listas de pedido, listas de consulta de precios y envío por WhatsApp. La cotización definitiva, la facturación, los cobros y la coordinación de entrega o retiro se gestionan fuera de la web.
 5. Revisar permisos de acceso a datos de clientes y las obligaciones de inscripción y documentación del negocio ante la URCDP con su asesor.
-6. Tras la revisión y completar los campos, cambiar `reviewed` a `true`. Este indicador es un control editorial del proyecto, no una certificación de cumplimiento legal.
+6. La publicación se controla con `published`, actualmente `true` por solicitud del usuario. Es un control editorial del proyecto, no una certificación de cumplimiento legal. `retentionDetails` e `internationalTransfers` son campos de texto ampliado y ya no bloquean la publicación cuando están vacíos; no se inventa su contenido.
 
-Sin completar los datos requeridos y la revisión, las páginas indican **Borrador para revisión del negocio**, no se indexan y el mapa integrado permanece apagado. Las estadísticas están deshabilitadas de forma independiente: completar la revisión no las reactiva. El catálogo, listas, acceso y enlaces externos continúan disponibles.
+Con `published: true`, razón social, domicilio y contacto completos, las páginas se muestran sin aviso de borrador y permiten indexación. Las preferencias habilitan elegir el mapa, que sigue sin cargarse hasta obtener permiso. Las estadísticas están deshabilitadas de forma independiente: publicar las páginas no las reactiva. El catálogo, listas, acceso y enlaces externos continúan disponibles.
 
 ## Contacto de privacidad sin correo
 
 `privacyContact` contiene el medio de contacto que se muestra en ambos documentos. Actualmente indica atención presencial en el local, utilizando el domicilio confirmado por el negocio. `privacyContactHref` es opcional: puede configurarse con un enlace `tel:` o de WhatsApp si se confirma ese canal y su número. No se inventó ni se publicó un teléfono sin confirmar.
 
-El correo opcional de las cuentas de clientes para recuperar el acceso es una función distinta y se mantiene. La revisión pendiente del negocio incluye confirmar cómo recibe y tramita las solicitudes presenciales. Los formularios de ejercicio de derechos de la [URCDP](https://www.gub.uy/unidad-reguladora-control-datos-personales/tramites-y-servicios/formularios) contemplan su presentación ante la empresa.
+El correo opcional de las cuentas de clientes para recuperar el acceso es una función distinta y se mantiene. El negocio debe organizar la recepción y tramitación de solicitudes presenciales. Los formularios de ejercicio de derechos de la [URCDP](https://www.gub.uy/unidad-reguladora-control-datos-personales/tramites-y-servicios/formularios) contemplan su presentación ante la empresa.
 
 ## Finalidades confirmadas por el negocio
 
@@ -45,17 +46,17 @@ La mención a servidores fuera de Uruguay describe alojamiento o procesamiento t
 
 Estos cambios simplifican la información publicada; no eliminan campos de las cuentas ni datos existentes. El registro mantiene el correo opcional. Las preferencias ya no ofrecen activar estadísticas.
 
-La redacción se limita a describir las funciones disponibles. No agrega garantías absolutas de seguridad, plazos de atención, promesas de disponibilidad, condiciones de venta o cláusulas generales de exención de responsabilidad. Los borradores siguen sujetos a revisión del negocio; acortar los documentos no modifica las obligaciones que puedan corresponder.
+La redacción se limita a describir las funciones disponibles. No agrega garantías absolutas de seguridad, plazos de atención, promesas de disponibilidad, condiciones de venta o cláusulas generales de exención de responsabilidad. La publicación solicitada no modifica las obligaciones que puedan corresponder.
 
-La adaptación del ejemplo no incorpora comunicaciones promocionales ni una declaración de ausencia total de prestadores externos. Tampoco reproduce garantías de seguridad absoluta ni la exención general de responsabilidad del modelo. La identidad, domicilio y contacto figuran en párrafos en lugar de una ficha extensa. Los detalles de conservación y transferencias se muestran cuando se completan `retentionDetails` e `internationalTransfers`; mientras sigan pendientes no se inventan plazos ni regiones, y `LEGAL_READY` sigue bloqueando la publicación como versión definitiva.
+La adaptación del ejemplo no incorpora comunicaciones promocionales ni una declaración de ausencia total de prestadores externos. Tampoco reproduce garantías de seguridad absoluta ni la exención general de responsabilidad del modelo. La identidad, domicilio y contacto figuran en párrafos en lugar de una ficha extensa. Los detalles de conservación y transferencias se muestran cuando se completan `retentionDetails` e `internationalTransfers`; mientras sigan vacíos no se inventan plazos ni regiones. `LEGAL_READY` representa el estado de publicación y los datos básicos, sin depender de esos textos ampliados.
 
-Los términos se adaptan al servicio de listas y comunicación por WhatsApp. No se copian los medios de pago, señas, reservas, plazos de retiro o condiciones de devoluciones del comercio del ejemplo; tampoco la renuncia de jurisdicción ni las exenciones generales de responsabilidad. La coordinación de una operación con el local no implica que se facture o cobre en la web. Los documentos siguen como borradores para revisión del negocio.
+Los términos se adaptan al servicio de listas y comunicación por WhatsApp. No se copian los medios de pago, señas, reservas, plazos de retiro o condiciones de devoluciones del comercio del ejemplo; tampoco la renuncia de jurisdicción ni las exenciones generales de responsabilidad. La coordinación de una operación con el local no implica que se facture o cobre en la web.
 
 ## Publicación y bloqueo de estadísticas
 
 1. Aplicar `supabase/migrations/202610230002_disable_site_analytics.sql` para cerrar recepción y consulta de métricas desde clientes anteriores. No requiere instalar las migraciones antiguas si las métricas nunca se habilitaron.
 2. Publicar el código en Vercel. La configuración del código bloquea las estadísticas aun si existen preferencias antiguas o se completa la revisión legal.
-3. Completar la revisión editorial anterior para los documentos y el mapa opcional.
+3. La publicación ya está habilitada en el código. El visitante puede permitir el mapa desde las preferencias; publicar los documentos no lo autoriza automáticamente.
 
 No se agregan secretos ni variables de entorno. No se ejecutaron migraciones remotas en esta entrega.
 
@@ -63,7 +64,7 @@ No se agregan secretos ni variables de entorno. No se ejecutaron migraciones rem
 
 - Las estadísticas están bloqueadas por `SITE_ANALYTICS_ENABLED = false`, sin depender del consentimiento. El componente público borra el identificador local anterior sin recopilar actividad.
 - La preferencia se guarda localmente con su fecha, versión y vencimiento de 180 días, plazo elegido por el proyecto. Si el almacenamiento está bloqueado se mantiene únicamente una elección temporal en memoria.
-- Al pasar de borrador a versión final, se vuelve a solicitar la elección del mapa. Las estadísticas permanecen bloqueadas.
+- La versión de preferencias usa `LEGAL_VERSION` y el sufijo `-draft` solo si no está publicada. Al pasar de borrador a publicada, se vuelve a solicitar la elección del mapa. Las estadísticas permanecen bloqueadas.
 - Los nuevos guardados de preferencias fuerzan `analytics: false`; los valores anteriores se interpretan como falsos mientras la funcionalidad esté deshabilitada.
 - Deshabilitar la recopilación no elimina eventos previos en la base. El procedimiento de acceso/supresión debe contemplar los identificadores y los registros que razonablemente puedan identificarse, sin recolectar datos excesivos para esa verificación.
 - No se carga el iframe de Google Maps sin permiso. Al retirar mapas se desmonta. Los enlaces externos que la persona decide abrir siguen disponibles.
