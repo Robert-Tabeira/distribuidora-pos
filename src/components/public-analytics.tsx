@@ -4,10 +4,16 @@ import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { flushSiteAnalytics, resetSiteAnalytics, trackSiteEvent } from '@/lib/site-analytics'
 import { analyticsConsentGranted, PRIVACY_CHANGED, PRIVACY_STORAGE_KEY } from '@/lib/privacy-preferences'
+import { SITE_ANALYTICS_ENABLED } from '@/lib/analytics-config'
 
 export function PublicAnalytics() {
   const pathname = usePathname()
   useEffect(() => {
+    if (!SITE_ANALYTICS_ENABLED) {
+      // Remove identifiers left by an older version; attach no tracking listeners.
+      resetSiteAnalytics()
+      return
+    }
     let allowed = false
     const sync = () => {
       const next = analyticsConsentGranted()

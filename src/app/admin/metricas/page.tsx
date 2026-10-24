@@ -9,6 +9,7 @@ import { analyticsCsv, DEVICE_LABELS, type AnalyticsReport } from '@/lib/analyti
 import { ANALYTICS_ACCESS_KEY, clearAnalyticsAccess, readAnalyticsAccess } from '@/lib/analytics-admin'
 import styles from './metrics.module.css'
 import { LEGAL_READY } from '@/lib/legal-details'
+import { SITE_ANALYTICS_ENABLED } from '@/lib/analytics-config'
 
 const number = (value: number) => new Intl.NumberFormat('es-UY', { maximumFractionDigits: 1 }).format(value)
 function date(value: string, time = false) {
@@ -26,6 +27,15 @@ function Ranking({ title, rows }: { title: string; rows: { label: string; value:
 }
 
 export default function MetricsPage() {
+  if (!SITE_ANALYTICS_ENABLED) return <main className={styles.page}><div className={styles.inner}>
+    <Link href="/admin" className="text-sm text-[#686c46]">← Volver al panel</Link>
+    <h1 className={`${styles.heading} mt-6 text-3xl`}>Estadísticas deshabilitadas</h1>
+    <p className="mt-4 text-sm">La recopilación y el panel de métricas internas están desactivados.</p>
+  </div></main>
+  return <MetricsDashboard />
+}
+
+function MetricsDashboard() {
   const router = useRouter()
   const [admin, setAdmin] = useState<{ id: string; name: string } | null>(null)
   const [token, setToken] = useState('')

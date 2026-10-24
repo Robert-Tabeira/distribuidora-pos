@@ -10,6 +10,7 @@ import { Icon } from '@/components/ui/icon'
 import { SiteImage } from '@/components/site-image'
 import styles from './catalog.module.css'
 import { normalizeSearchTerm, trackSiteEvent } from '@/lib/site-analytics'
+import { SITE_ANALYTICS_ENABLED } from '@/lib/analytics-config'
 
 interface ProductWithDiscount extends Pick<Product, 'id' | 'name' | 'unit' | 'category_id' | 'created_at' | 'gallery' | 'description' | 'product_code'> {
   discount?: Discount
@@ -74,11 +75,12 @@ export default function CatalogPage() {
   const trackedCategoriesRef = useRef<string[]>([])
 
   useEffect(() => {
+    if (!SITE_ANALYTICS_ENABLED) return
     if (selectedProduct) trackSiteEvent('product_view', { product_id: selectedProduct.id })
   }, [selectedProduct?.id])
 
   useEffect(() => {
-    if (!urlStateReady) return
+    if (!SITE_ANALYTICS_ENABLED || !urlStateReady) return
     for (const id of selectedCategories) {
       if (!trackedCategoriesRef.current.includes(id)) trackSiteEvent('category_select', { category_id: id })
     }
@@ -425,6 +427,7 @@ export default function CatalogPage() {
   }, [products, categories, searchQuery, selectedCategories, showOnlyDiscounts, showOnlyRecentlyAdded, showRecentProductBadge, sortOption])
 
   useEffect(() => {
+    if (!SITE_ANALYTICS_ENABLED) return
     const term = normalizeSearchTerm(searchQuery)
     if (!term) { trackedSearchRef.current = ''; return }
     if (loading || trackedSearchRef.current === term) return

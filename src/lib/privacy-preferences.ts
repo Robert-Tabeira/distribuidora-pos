@@ -1,4 +1,5 @@
 import { LEGAL_READY } from '@/lib/legal-details'
+import { SITE_ANALYTICS_ENABLED } from '@/lib/analytics-config'
 
 export const PRIVACY_VERSION = LEGAL_READY ? '2026-10-23' : '2026-10-23-draft'
 export const PRIVACY_STORAGE_KEY = 'los_primos_privacy_preferences'
@@ -26,11 +27,11 @@ export function readPrivacyPreferences(): PrivacyPreferences | null {
   } catch { /* A choice can still apply for this page with blocked storage. */ }
   if (!choice || choice.version !== PRIVACY_VERSION || typeof choice.analytics !== 'boolean' || typeof choice.externalMaps !== 'boolean') return null
   if (!Number.isFinite(Date.parse(choice.updatedAt)) || !Number.isFinite(Date.parse(choice.expiresAt)) || Date.parse(choice.expiresAt) <= Date.now()) return null
-  return choice
+  return { ...choice, analytics: SITE_ANALYTICS_ENABLED && choice.analytics }
 }
 
 export function analyticsConsentGranted(): boolean {
-  return LEGAL_READY && !browserRejectsAnalytics() && readPrivacyPreferences()?.analytics === true
+  return SITE_ANALYTICS_ENABLED && LEGAL_READY && !browserRejectsAnalytics() && readPrivacyPreferences()?.analytics === true
 }
 
 export function externalMapsConsentGranted(): boolean {
@@ -39,7 +40,7 @@ export function externalMapsConsentGranted(): boolean {
 
 export function savePrivacyPreferences(analytics: boolean, externalMaps: boolean): PrivacyPreferences {
   const now = Date.now()
-  const choice: PrivacyPreferences = { version: PRIVACY_VERSION, analytics: LEGAL_READY && analytics && !browserRejectsAnalytics(), externalMaps: LEGAL_READY && externalMaps, updatedAt: new Date(now).toISOString(), expiresAt: new Date(now + 180 * 24 * 60 * 60 * 1000).toISOString() }
+  const choice: PrivacyPreferences = { version: PRIVACY_VERSION, analytics: SITE_ANALYTICS_ENABLED && LEGAL_READY && analytics && !browserRejectsAnalytics(), externalMaps: LEGAL_READY && externalMaps, updatedAt: new Date(now).toISOString(), expiresAt: new Date(now + 180 * 24 * 60 * 60 * 1000).toISOString() }
   try { localStorage.setItem(PRIVACY_STORAGE_KEY, JSON.stringify(choice)); temporaryChoice = null }
   catch { temporaryChoice = choice }
   window.dispatchEvent(new Event(PRIVACY_CHANGED))

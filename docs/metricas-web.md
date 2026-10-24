@@ -1,6 +1,22 @@
 # Métricas Web de Los Primos
 
-## Activación
+## Estado actual: deshabilitadas
+
+Por decisión del negocio, las estadísticas internas están inhabilitadas. El código se conserva como archivo de la funcionalidad.
+
+- `SITE_ANALYTICS_ENABLED = false` en `src/lib/analytics-config.ts` bloquea eventos, identificadores nuevos y envíos, aunque se complete la revisión legal o haya preferencias antiguas que autorizaban estadísticas.
+- El componente público elimina identificadores locales anteriores y no instala escuchas para recopilar visitas o clics.
+- La opción de estadísticas se oculta en preferencias y las elecciones nuevas guardan `analytics: false`.
+- Se oculta el acceso en el menú de administración. La ruta directa `/admin/metricas` muestra un aviso, sin montar el informe ni consultar sus RPC.
+- Para cerrar también el acceso desde versiones antiguas ya abiertas, ejecutar **solo** `supabase/migrations/202610230002_disable_site_analytics.sql` en Supabase. Es seguro aplicarla si las funciones de métricas nunca se instalaron.
+- La migración revoca el acceso de `public`, `anon` y `authenticated` a la recepción de eventos, el login de métricas y sus reportes. No elimina tablas ni registros históricos. El logout se conserva para permitir cerrar autorizaciones previas.
+- No se ejecutó esta migración en la base remota. Publicar el código y aplicar el bloqueo SQL son pasos separados.
+
+No instalar ni volver a ejecutar las migraciones antiguas de activación, que podrían restituir permisos. Una eventual reactivación requiere una nueva decisión del negocio, revisar los textos y el consentimiento y restaurar los permisos en una migración específica. Cambiar la configuración legal no reactiva estadísticas.
+
+## Referencia histórica: activación original (inactiva)
+
+Las secciones siguientes documentan el funcionamiento anterior. No son instrucciones para la versión actual.
 
 1. En Supabase → SQL Editor, ejecutar el archivo completo `supabase/migrations/202610220001_site_analytics.sql`.
 2. Ejecutar también `supabase/migrations/202610230001_analytics_consent.sql`. Completar la información y revisión indicadas en `docs/paginas-legales.md`; mientras el contenido legal esté en borrador, la recopilación opcional permanece apagada.

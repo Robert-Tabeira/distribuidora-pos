@@ -1,6 +1,7 @@
 'use client'
 
 import { analyticsConsentGranted, readPrivacyPreferences } from '@/lib/privacy-preferences'
+import { SITE_ANALYTICS_ENABLED } from '@/lib/analytics-config'
 
 export type SiteEventName = 'page_view' | 'product_view' | 'search' | 'category_select' | 'inquiry_add' | 'cart_add' | 'whatsapp_inquiry' | 'whatsapp_cart' | 'whatsapp_contact'
 type EventDetails = { product_id?: string; category_id?: string; search_term?: string; result_count?: number; item_count?: number }
@@ -55,6 +56,7 @@ export function normalizeSearchTerm(value: string): string {
 }
 
 export function trackSiteEvent(eventName: SiteEventName, details: EventDetails = {}) {
+  if (!SITE_ANALYTICS_ENABLED) return
   try {
     if (excluded() || unavailable) return
     const path = window.location.pathname === '/' ? '/landing' : window.location.pathname
@@ -75,7 +77,7 @@ export function trackSiteEvent(eventName: SiteEventName, details: EventDetails =
 export async function flushSiteAnalytics() {
   clearTimeout(timer)
   timer = undefined
-  if (!analyticsConsentGranted()) { resetSiteAnalytics(); return }
+  if (!SITE_ANALYTICS_ENABLED || !analyticsConsentGranted()) { resetSiteAnalytics(); return }
   if (sending || !queue.length || unavailable) return
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY

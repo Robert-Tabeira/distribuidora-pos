@@ -14,6 +14,6 @@ export default function TermsPage() {
     <p>Cuando el registro está habilitado, el acceso como comercio requiere aprobación del negocio. Proporcioná datos correctos y cuidá tu código de acceso. Las listas se guardan en el navegador o en tu cuenta, según la función que utilices; borrar el almacenamiento local puede eliminar las listas que solo estén en ese navegador.</p>
     <h2>4. Uso y consultas</h2>
     <p>Utilizá el sitio sin alterar su funcionamiento ni acceder a información ajena. Si encontrás un error o necesitás ayuda con un pedido, comunicate con el negocio por los canales publicados.</p>
-    <p>El uso de datos, las estadísticas opcionales y el almacenamiento se explican en la <Link href="/privacidad">política de privacidad</Link>. Estos términos no limitan los derechos que correspondan conforme a la normativa aplicable.</p>
+    <p>El uso de datos y el almacenamiento se explican en la <Link href="/privacidad">política de privacidad</Link>. Estos términos no limitan los derechos que correspondan conforme a la normativa aplicable.</p>
   </LegalPage>
 }
