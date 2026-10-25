@@ -17,13 +17,14 @@ import type { LandingLocationSettings } from '@/lib/landing-location'
 import { CATEGORY_APPEARANCE_DEFAULTS, CATEGORY_APPEARANCE_COLORS, categoryTitleSize, type LandingCategoryAppearance } from '@/lib/landing-category-appearance'
 import { ORDER_INSTRUCTIONS_CONTENT } from '@/lib/landing-order-instructions'
 import { SAVED_LISTS_INSTRUCTIONS_CONTENT } from '@/lib/landing-saved-lists-instructions'
+import { INSTRUCTION_BACKGROUND_TEXTURE, isInstructionBlock, landingBackgroundColor, type LandingBackgroundSettings } from '@/lib/landing-background'
 
 interface ProductWithDiscount extends Pick<Product, 'id' | 'name' | 'gallery'> {
   discount?: Discount
 }
 
 type LandingBlockType = 'content' | 'categories' | 'banner' | 'feature_cards' | 'instructions' | 'order_instructions' | 'saved_lists_instructions' | 'business_info' | 'location_map' | 'image_carousel' | 'product_grid'
-interface LandingSectionSettings extends LandingLocationSettings, LandingCategoryAppearance {
+interface LandingSectionSettings extends LandingLocationSettings, LandingCategoryAppearance, LandingBackgroundSettings {
   button_text?: string
   button_url?: string
   background_color?: string
@@ -159,6 +160,7 @@ function LandingBlockRenderer({
     '--landing-heading-weight': settings.heading_weight || '700',
     '--landing-body-weight': settings.body_weight || '400',
   } as CSSProperties
+  const sectionStyle = { ...fontStyle, backgroundColor: landingBackgroundColor(section.block_type, settings) }
   const categoryIconStyle = {
     '--category-icon-size-mobile': `${settings.category_icon_size_mobile || 44}px`,
     '--category-icon-size-desktop': `${settings.category_icon_size_desktop || 44}px`,
@@ -179,7 +181,7 @@ function LandingBlockRenderer({
     if (displayedCategories.length === 0) return null
     const appearance = { ...CATEGORY_APPEARANCE_DEFAULTS, ...settings }
     const categoryStyle = {
-      ...fontStyle,
+      ...sectionStyle,
       ...categoryIconStyle,
       ...Object.fromEntries(CATEGORY_APPEARANCE_COLORS.map(([key]) => [`--${key.replaceAll('_', '-')}`, settings[key] || CATEGORY_APPEARANCE_DEFAULTS[key]])),
       '--landing-heading-font': getSiteFontFamily(headingFont || 'lora'),
@@ -214,16 +216,15 @@ function LandingBlockRenderer({
     )
   }
 
-  if (section.block_type === 'instructions' || section.block_type === 'order_instructions' || section.block_type === 'saved_lists_instructions') {
+  if (isInstructionBlock(section.block_type)) {
     const steps = (settings.instruction_steps || []).filter(step => Boolean(step && (step.title || step.description || step.image_url)))
     return (
       <section
         data-heading-font={headingFont}
         data-body-font={bodyFont}
         style={{
-          ...fontStyle,
-          backgroundColor: settings.instruction_section_bg || '#f3ecde',
-          backgroundImage: 'radial-gradient(ellipse at 96% 4%, rgba(160, 125, 76, 0.13), transparent 32%), radial-gradient(ellipse at 2% 96%, rgba(160, 125, 76, 0.10), transparent 30%), repeating-linear-gradient(135deg, rgba(74, 59, 35, 0.018) 0px, rgba(74, 59, 35, 0.018) 1px, transparent 2px, transparent 9px)',
+          ...sectionStyle,
+          backgroundImage: settings.instruction_texture_enabled === false ? 'none' : INSTRUCTION_BACKGROUND_TEXTURE,
         }}
         className={`landing-section px-4 py-14 text-[#21170f] sm:px-6 sm:py-16 ${responsiveTextClasses(settings, 'left')}`}
       >
@@ -271,7 +272,7 @@ function LandingBlockRenderer({
                             className="mx-auto block h-auto max-h-[340px] w-full object-contain"
                           />
                         </picture>
-                      : <div className="flex min-h-40 w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-[#d9ceb9] bg-[#f8f4eb] sm:min-h-48" style={{ color: settings.instruction_placeholder_color || '#a99a7c' }}><Icon name="image" className="h-8 w-8" /><span className="text-xs font-medium">Imagen del paso {index + 1}</span></div>}
+                      : <div className="flex min-h-40 w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-[#d9ceb9] sm:min-h-48" style={{ backgroundColor: settings.instruction_image_bg || '#f8f4eb', color: settings.instruction_placeholder_color || '#a99a7c' }}><Icon name="image" className="h-8 w-8" /><span className="text-xs font-medium">Imagen del paso {index + 1}</span></div>}
                   </div>
                 </article>
                 {index < steps.length - 1 && <span aria-hidden="true" className="absolute -right-[1.65rem] top-1/2 z-10 hidden -translate-y-1/2 text-3xl md:block" style={{ color: settings.instruction_accent_color || '#353321' }}>→</span>}
@@ -300,8 +301,8 @@ function LandingBlockRenderer({
 
   if (section.block_type === 'banner') {
     return (
-      <section data-heading-font={headingFont} data-body-font={bodyFont} style={{ ...fontStyle, backgroundColor: settings.background_color || '#fff7ed' }} className={`landing-section px-4 py-10 ${responsiveTextClasses(settings)}`}>
-        <div className={`mx-auto flex max-w-7xl flex-col overflow-hidden rounded-3xl bg-white/60 shadow-sm lg:flex-row ${section.image_url ? 'items-stretch' : 'items-center text-center'}`}>
+      <section data-heading-font={headingFont} data-body-font={bodyFont} style={sectionStyle} className={`landing-section px-4 py-10 ${responsiveTextClasses(settings)}`}>
+        <div style={{ backgroundColor: settings.card_background_color }} className={`mx-auto flex max-w-7xl flex-col overflow-hidden rounded-3xl bg-white/60 shadow-sm lg:flex-row ${section.image_url ? 'items-stretch' : 'items-center text-center'}`}>
           {section.image_url && <div className={`w-full lg:w-2/5 ${mobileImageOrder} ${desktopImageOrder}`}><ResponsiveImage desktopSrc={section.image_url} mobileSrc={settings.mobile_image_url} alt={heading} settings={settings} className="max-h-72 min-h-48 w-full object-cover" /></div>}
           <div className={`flex flex-1 flex-col items-center justify-center p-7 lg:p-10 ${section.image_url ? `${mobileTextOrder} ${desktopTextOrder}` : ''}`}>
             <h2 className="text-3xl font-black text-gray-900 sm:text-4xl">{heading}</h2>
@@ -316,13 +317,13 @@ function LandingBlockRenderer({
 
   if (section.block_type === 'feature_cards') {
     return (
-      <section data-heading-font={headingFont} data-body-font={bodyFont} style={fontStyle} className={`landing-section bg-[#fffdf9] px-4 py-14 ${responsiveTextClasses(settings)}`}>
+      <section data-heading-font={headingFont} data-body-font={bodyFont} style={sectionStyle} className={`landing-section px-4 py-14 ${responsiveTextClasses(settings)}`}>
         <div className="mx-auto max-w-7xl">
           <h2 className={`text-3xl font-bold text-gray-900 sm:text-4xl ${responsiveTextClasses(settings, 'center')}`}>{heading}</h2>
           {section.subtitle && <p className={`mt-2 text-gray-600 ${responsiveTextClasses(settings, 'center')}`}>{section.subtitle}</p>}
           <div className="mt-8 grid gap-5 md:grid-cols-2">
             {(settings.cards || []).filter(card => card.title || card.image_url || card.description).map((card, index) => (
-              <article key={`${section.id}-${index}`} className={`flex flex-col overflow-hidden rounded-2xl border border-[#e7d9c8] bg-white shadow-sm ${settings.desktop_image_side ? 'lg:flex-row' : ''}`}>
+              <article key={`${section.id}-${index}`} style={{ backgroundColor: settings.card_background_color }} className={`flex flex-col overflow-hidden rounded-2xl border border-[#e7d9c8] bg-white shadow-sm ${settings.desktop_image_side ? 'lg:flex-row' : ''}`}>
                 {card.image_url && <div className={`${mobileImageOrder} ${settings.desktop_image_side ? `${desktopImageOrder} lg:w-2/5` : ''}`}><ResponsiveImage desktopSrc={card.image_url} mobileSrc={card.mobile_image_url} alt={card.title} settings={settings} className="h-56 w-full object-cover" /></div>}
                 <div className={`p-6 ${settings.desktop_image_side ? `${mobileTextOrder} ${desktopTextOrder} lg:flex-1` : ''}`}>
                   <h3 className="text-xl font-bold text-gray-900">{card.title}</h3>
@@ -345,14 +346,14 @@ function LandingBlockRenderer({
       settings.show_email !== false && businessSettings?.email ? { icon: 'mail' as const, label: 'Email', value: businessSettings.email, href: `mailto:${businessSettings.email}` } : null
     ].filter(Boolean) as Array<{ icon: 'clock' | 'location' | 'phone' | 'mail'; label: string; value: string; href?: string }>
     return (
-      <section data-heading-font={headingFont} data-body-font={bodyFont} style={fontStyle} className={`landing-section bg-[#f6efe5] px-4 py-14 ${responsiveTextClasses(settings)}`}>
+      <section data-heading-font={headingFont} data-body-font={bodyFont} style={sectionStyle} className={`landing-section px-4 py-14 ${responsiveTextClasses(settings)}`}>
         <div className="mx-auto max-w-6xl">
           <h2 className={`text-3xl font-bold text-gray-900 sm:text-4xl ${responsiveTextClasses(settings, 'center')}`}>{heading}</h2>
           {section.subtitle && <p className={`mt-2 text-gray-600 ${responsiveTextClasses(settings, 'center')}`}>{section.subtitle}</p>}
           {section.description && <p className={`mx-auto mt-4 max-w-3xl whitespace-pre-line text-gray-600 ${responsiveTextClasses(settings, 'center')}`}>{section.description}</p>}
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {details.map(detail => (
-              <div key={detail.label} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+              <div key={detail.label} style={{ backgroundColor: settings.card_background_color }} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                 <Icon name={detail.icon} className="h-6 w-6 text-primary" />
                 <h3 className="mt-3 font-bold text-gray-900">{detail.label}</h3>
                 {detail.href ? <a href={detail.href} className="mt-1 block whitespace-pre-line text-sm text-gray-600 hover:text-primary">{detail.value}</a> : <p className="mt-1 whitespace-pre-line text-sm text-gray-600">{detail.value}</p>}
@@ -365,14 +366,14 @@ function LandingBlockRenderer({
   }
 
   if (section.block_type === 'location_map') {
-    return <LandingLocation title={heading} subtitle={section.subtitle} description={section.description} settings={settings} business={businessSettings} />
+    return <LandingLocation title={heading} subtitle={section.subtitle} description={section.description} settings={{ ...settings, map_section_bg: landingBackgroundColor(section.block_type, settings) }} business={businessSettings} />
   }
 
   if (section.block_type === 'image_carousel') {
     const slides = (settings.slides || []).filter(slide => slide.image_url)
     if (slides.length === 0) return null
     return (
-      <section data-heading-font={headingFont} data-body-font={bodyFont} style={fontStyle} className={`landing-section bg-[#fffdf9] px-4 py-14 ${responsiveTextClasses(settings)}`}>
+      <section data-heading-font={headingFont} data-body-font={bodyFont} style={sectionStyle} className={`landing-section px-4 py-14 ${responsiveTextClasses(settings)}`}>
         <div className="mx-auto max-w-7xl">
           <h2 className={`text-3xl font-bold text-gray-900 sm:text-4xl ${responsiveTextClasses(settings, 'center')}`}>{heading}</h2>
           {section.subtitle && <p className={`mt-2 text-gray-600 ${responsiveTextClasses(settings, 'center')}`}>{section.subtitle}</p>}
@@ -393,13 +394,13 @@ function LandingBlockRenderer({
     const shownProducts = settings.mode === 'discounts' ? products.filter(product => product.discount) : products
     if (shownProducts.length === 0) return null
     return (
-      <section data-heading-font={headingFont} data-body-font={bodyFont} style={fontStyle} className={`landing-section bg-[#fbf7f0] px-4 py-14 ${responsiveTextClasses(settings)}`}>
+      <section data-heading-font={headingFont} data-body-font={bodyFont} style={sectionStyle} className={`landing-section px-4 py-14 ${responsiveTextClasses(settings)}`}>
         <div className="mx-auto max-w-7xl">
           <h2 className={`text-3xl font-bold text-gray-900 sm:text-4xl ${responsiveTextClasses(settings, 'center')}`}>{heading}</h2>
           {section.subtitle && <p className={`mt-2 text-gray-600 ${responsiveTextClasses(settings, 'center')}`}>{section.subtitle}</p>}
           <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {shownProducts.slice(0, settings.limit || 5).map(product => (
-              <Link key={product.id} href="/catalogo" className="overflow-hidden rounded-2xl border border-gray-200 bg-white transition hover:-translate-y-1 hover:shadow-lg">
+              <Link key={product.id} href="/catalogo" style={{ backgroundColor: settings.card_background_color }} className="overflow-hidden rounded-2xl border border-gray-200 bg-white transition hover:-translate-y-1 hover:shadow-lg">
                 <div className="h-36 bg-gray-100 md:h-44">{product.gallery?.[0] ? <ResponsiveImage desktopSrc={product.gallery[0]} alt={product.name} settings={settings} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-gray-300"><Icon name="box" className="h-9 w-9" /></div>}</div>
                 <div className="p-3"><h3 className="line-clamp-2 text-sm font-bold text-gray-900">{product.name}</h3>{product.discount && <p className="mt-1 text-xs font-semibold text-red-600">{product.discount.name}</p>}</div>
               </Link>
@@ -412,7 +413,7 @@ function LandingBlockRenderer({
   }
 
   return (
-      <section data-heading-font={headingFont} data-body-font={bodyFont} style={fontStyle} className={`landing-section bg-[#fffdf9] px-4 py-14 ${responsiveTextClasses(settings)}`}>
+      <section data-heading-font={headingFont} data-body-font={bodyFont} style={sectionStyle} className={`landing-section px-4 py-14 ${responsiveTextClasses(settings)}`}>
       <div className={`mx-auto grid max-w-6xl items-center gap-8 ${section.image_url ? 'lg:grid-cols-2' : 'max-w-4xl text-center'}`}>
         {section.image_url && <div className={`${mobileImageOrder} ${desktopImageOrder}`}><ResponsiveImage desktopSrc={section.image_url} mobileSrc={settings.mobile_image_url} alt={heading} settings={settings} className="max-h-[28rem] min-h-56 w-full rounded-2xl object-cover" /></div>}
         <div className={`${section.image_url ? `${mobileTextOrder} ${desktopTextOrder}` : ''}`}><h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">{heading}</h2>{section.subtitle && <p className="mt-3 text-lg font-medium text-primary">{section.subtitle}</p>}{section.description && <p className="mt-4 whitespace-pre-line leading-7 text-gray-600">{section.description}</p>}</div>

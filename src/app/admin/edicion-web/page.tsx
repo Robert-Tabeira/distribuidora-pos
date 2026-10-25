@@ -18,6 +18,7 @@ import { DEFAULT_LOCATION_SETTINGS, googleMapsEmbedSource, safeLocationLink, typ
 import { CATEGORY_APPEARANCE_DEFAULTS, CATEGORY_APPEARANCE_COLORS, type LandingCategoryAppearance } from '@/lib/landing-category-appearance'
 import { ORDER_INSTRUCTIONS_CONTENT } from '@/lib/landing-order-instructions'
 import { SAVED_LISTS_INSTRUCTIONS_CONTENT } from '@/lib/landing-saved-lists-instructions'
+import { INSTRUCTION_BACKGROUND_TEXTURE, isInstructionBlock, landingBackgroundKey, landingBackgroundColor, landingCardBackgroundKey, landingCardBackgroundColor, hasLandingCards, type LandingBackgroundSettings } from '@/lib/landing-background'
 import { MobileMenuPanel } from '@/components/mobile-menu-panel'
 import { headerNavigationColors } from '@/lib/header-navigation'
 import { DEFAULT_MOBILE_MENU_SETTINGS, MOBILE_MENU_COLOR_FIELDS, resolveMobileMenuSettings, type MobileMenuSettings } from '@/lib/mobile-menu-settings'
@@ -293,7 +294,7 @@ function ProductDestinationSelect({
   )
 }
 
-interface LandingSectionSettings extends LandingLocationSettings, LandingCategoryAppearance {
+interface LandingSectionSettings extends LandingLocationSettings, LandingCategoryAppearance, LandingBackgroundSettings {
   button_text?: string
   button_url?: string
   background_color?: string
@@ -4257,6 +4258,23 @@ export default function WebsiteEditionPage() {
                 />
               </div>
 
+              <CollapsibleCard icon="palette" title="Fondo de la sección" subtitle="Color del bloque y de sus tarjetas" defaultOpen>
+                <div className="mt-4 space-y-4">
+                  <ColorPicker label="Color de fondo del bloque" value={landingBackgroundColor(sectionForm.block_type, sectionForm.settings)} onChange={color => updateLandingSettings({ [landingBackgroundKey(sectionForm.block_type)]: color })} palette={palette} />
+                  {hasLandingCards(sectionForm.block_type) && <ColorPicker label="Fondo de las tarjetas o recuadros" value={landingCardBackgroundColor(sectionForm.block_type, sectionForm.settings)} onChange={color => updateLandingSettings({ [landingCardBackgroundKey(sectionForm.block_type)]: color })} palette={palette} />}
+                  {isInstructionBlock(sectionForm.block_type) && <>
+                    <ColorPicker label="Fondo de las aclaraciones y la franja inferior" value={sectionForm.settings.instruction_note_bg || '#fffdf8'} onChange={color => updateLandingSettings({ instruction_note_bg: color })} palette={palette} />
+                    <ColorPicker label="Fondo de los espacios de imágenes" value={sectionForm.settings.instruction_image_bg || '#f5f0e6'} onChange={color => updateLandingSettings({ instruction_image_bg: color })} palette={palette} />
+                  </>}
+                  {isInstructionBlock(sectionForm.block_type) && <label className="flex cursor-pointer items-start gap-3 text-sm text-text-muted">
+                    <input type="checkbox" checked={sectionForm.settings.instruction_texture_enabled !== false} onChange={event => updateLandingSettings({ instruction_texture_enabled: event.target.checked })} className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300" />
+                    <span><strong className="block font-semibold text-text">Mostrar textura decorativa en el fondo</strong><span className="mt-1 block text-xs">Desactivala para mostrar únicamente el color liso que elegiste.</span></span>
+                  </label>}
+                  <div role="img" aria-label="Vista previa del fondo de esta sección" className="h-20 rounded-xl border border-border" style={{ backgroundColor: landingBackgroundColor(sectionForm.block_type, sectionForm.settings), backgroundImage: isInstructionBlock(sectionForm.block_type) && sectionForm.settings.instruction_texture_enabled !== false ? INSTRUCTION_BACKGROUND_TEXTURE : 'none' }} />
+                  <p className="text-xs text-text-muted">Estos colores se aplican solamente a este bloque. Guardá la sección para publicarlos en la landing.</p>
+                </div>
+              </CollapsibleCard>
+
               <div className="grid gap-3 rounded-xl border border-border p-4 sm:grid-cols-2">
                 <p className="text-sm font-semibold text-text sm:col-span-2">Tipografía de esta sección</p>
                 <label className="block text-sm font-medium text-text-muted">Títulos
@@ -4328,7 +4346,7 @@ export default function WebsiteEditionPage() {
                             <input type="range" min="22" max={device === 'mobile' ? 60 : 80} value={size} onChange={e => updateLandingSettings({ [key]: Number(e.target.value) })} className="mt-2 w-full" />
                           </label>
                         })}
-                        {CATEGORY_APPEARANCE_COLORS.map(([key, label]) => <ColorPicker key={key} label={label} value={sectionForm.settings[key] || CATEGORY_APPEARANCE_DEFAULTS[key]} onChange={color => updateLandingSettings({ [key]: color })} palette={palette} />)}
+                        {CATEGORY_APPEARANCE_COLORS.filter(([key]) => !['category_section_bg', 'category_card_bg'].includes(key)).map(([key, label]) => <ColorPicker key={key} label={label} value={sectionForm.settings[key] || CATEGORY_APPEARANCE_DEFAULTS[key]} onChange={color => updateLandingSettings({ [key]: color })} palette={palette} />)}
                       </div>
                       <p className="text-xs text-text-muted">En tablet, el título usa un tamaño intermedio. Los colores al pasar el cursor también se muestran al enfocar una tarjeta con el teclado.</p>
                     </div>
@@ -4492,7 +4510,6 @@ export default function WebsiteEditionPage() {
                     <div><label className="mb-1 block text-xs font-medium text-text-muted">Texto del botón</label><input className="input" value={sectionForm.settings.button_text || ''} onChange={e => updateLandingSettings({ button_text: e.target.value })} placeholder="Ver catálogo" /></div>
                     <div><label className="mb-1 block text-xs font-medium text-text-muted">Enlace del botón</label><input className="input" value={sectionForm.settings.button_url || ''} onChange={e => updateLandingSettings({ button_url: e.target.value })} placeholder="/catalogo" /><CategoryDestinationSelect categories={landingCategories} value={sectionForm.settings.button_url || ''} onChange={url => updateLandingSettings({ button_url: url })} /><ProductDestinationSelect products={landingProducts} value={sectionForm.settings.button_url || ''} onChange={url => updateLandingSettings({ button_url: url })} /></div>
                   </div>
-                  <div><label className="mb-1 block text-xs font-medium text-text-muted">Color de fondo</label><input type="color" className="h-11 w-full cursor-pointer rounded-lg border border-border p-1" value={sectionForm.settings.background_color || '#fff7ed'} onChange={e => updateLandingSettings({ background_color: e.target.value })} /></div>
                 </div>
               )}
 
@@ -4513,7 +4530,7 @@ export default function WebsiteEditionPage() {
                 </div>
               )}
 
-              {(sectionForm.block_type === 'instructions' || sectionForm.block_type === 'order_instructions' || sectionForm.block_type === 'saved_lists_instructions') && (
+              {isInstructionBlock(sectionForm.block_type) && (
                 <div className="space-y-4 rounded-xl border border-[#d8c1a3] bg-[#fbf7f0] p-4">
                   <div>
                     <h4 className="font-semibold text-[#3b2a20]">Pasos e imágenes</h4>
@@ -4578,9 +4595,9 @@ export default function WebsiteEditionPage() {
                       <p className="mt-1 text-xs text-text-muted">Personalizá fondos, textos, números, imágenes y botón. Los cambios se guardan junto con la sección.</p>
                     </div>
                     {([
-                      { title: 'Fondo y encabezado', colors: [['Fondo del bloque', 'instruction_section_bg', '#f3ecde'], ['Texto pequeño superior', 'instruction_eyebrow_color', '#706b45'], ['Título principal', 'instruction_heading_color', '#241a12'], ['Subtítulo', 'instruction_subtitle_color', '#5d573b'], ['Descripción', 'instruction_description_color', '#39332c'], ['Línea decorativa y flechas', 'instruction_accent_color', '#68663e']] },
-                      { title: 'Tarjetas y pasos', colors: [['Fondo de tarjetas', 'instruction_card_bg', '#fffdf8'], ['Borde de tarjetas', 'instruction_card_border', '#e4dac7'], ['Fondo de los números', 'instruction_number_bg', '#62613b'], ['Número', 'instruction_number_color', '#fffdf8'], ['Título de cada paso', 'instruction_step_title_color', '#21170f'], ['Texto de cada paso', 'instruction_step_text_color', '#49433b'], ['Fondo de las imágenes', 'instruction_image_bg', '#f5f0e6'], ['Texto del espacio sin imagen', 'instruction_placeholder_color', '#a99a7c']] },
-                      { title: 'Franja inferior y botón', colors: [['Fondo de la franja', 'instruction_note_bg', '#fffdf8'], ['Borde de la franja', 'instruction_note_border', '#e3d8c4'], ['Título de la franja', 'instruction_note_title_color', '#21170f'], ['Mensaje de la franja', 'instruction_note_text_color', '#49433b'], ['Ícono de la franja', 'instruction_note_icon_color', '#4f4e30'], ['Fondo del botón', 'instruction_button_bg', '#525333'], ['Texto del botón', 'instruction_button_color', '#ffffff']] },
+                      { title: 'Encabezado', colors: [['Texto pequeño superior', 'instruction_eyebrow_color', '#706b45'], ['Título principal', 'instruction_heading_color', '#241a12'], ['Subtítulo', 'instruction_subtitle_color', '#5d573b'], ['Descripción', 'instruction_description_color', '#39332c'], ['Línea decorativa y flechas', 'instruction_accent_color', '#68663e']] },
+                      { title: 'Tarjetas y pasos', colors: [['Borde de tarjetas', 'instruction_card_border', '#e4dac7'], ['Fondo de los números', 'instruction_number_bg', '#62613b'], ['Número', 'instruction_number_color', '#fffdf8'], ['Título de cada paso', 'instruction_step_title_color', '#21170f'], ['Texto de cada paso', 'instruction_step_text_color', '#49433b'], ['Texto del espacio sin imagen', 'instruction_placeholder_color', '#a99a7c']] },
+                      { title: 'Franja inferior y botón', colors: [['Borde de la franja', 'instruction_note_border', '#e3d8c4'], ['Título de la franja', 'instruction_note_title_color', '#21170f'], ['Mensaje de la franja', 'instruction_note_text_color', '#49433b'], ['Ícono de la franja', 'instruction_note_icon_color', '#4f4e30'], ['Fondo del botón', 'instruction_button_bg', '#525333'], ['Texto del botón', 'instruction_button_color', '#ffffff']] },
                     ] as const).map(group => (
                       <div key={group.title}>
                         <h6 className="mb-2 text-sm font-medium text-text-muted">{group.title}</h6>
@@ -4707,7 +4724,7 @@ export default function WebsiteEditionPage() {
                           ['map_text_size', 'Texto de la tarjeta', 13, 22],
                         ] as const).map(([key, label, min, max]) => <label key={key} className="block text-sm text-text-muted">{label}: {sectionForm.settings[key] ?? DEFAULT_LOCATION_SETTINGS[key]} px<input type="range" min={min} max={max} step="1" className="mt-2 w-full" value={sectionForm.settings[key] ?? DEFAULT_LOCATION_SETTINGS[key]} onChange={e => updateLandingSettings({ [key]: Number(e.target.value) })} /></label>)}
                       </div>
-                      <div className="grid gap-4 sm:grid-cols-2">{LOCATION_COLOR_FIELDS.map(([label, key]) => <ColorPicker key={key} label={label} value={sectionForm.settings[key] || DEFAULT_LOCATION_SETTINGS[key]} onChange={color => updateLandingSettings({ [key]: color })} palette={palette} />)}</div>
+                      <div className="grid gap-4 sm:grid-cols-2">{LOCATION_COLOR_FIELDS.filter(([, key]) => !['map_section_bg', 'map_card_bg'].includes(key)).map(([label, key]) => <ColorPicker key={key} label={label} value={sectionForm.settings[key] || DEFAULT_LOCATION_SETTINGS[key]} onChange={color => updateLandingSettings({ [key]: color })} palette={palette} />)}</div>
                       <button type="button" className="text-sm font-semibold text-primary hover:underline" onClick={() => updateLandingSettings(Object.fromEntries(LOCATION_COLOR_FIELDS.map(([, key]) => [key, DEFAULT_LOCATION_SETTINGS[key]])))}>Restablecer los colores cálidos del bloque</button>
                     </div>
                   </CollapsibleCard>
