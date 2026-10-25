@@ -1087,39 +1087,37 @@ export default function CatalogPage() {
       )}
 
       {showPriceInquiry && (
-        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-[#1a120d]/65 backdrop-blur-sm sm:items-center sm:p-4" onClick={() => setShowPriceInquiry(false)}>
-          <section className="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl border border-[#e7d9c8] bg-[#fbf7f0] shadow-[0_24px_70px_rgba(20,12,6,0.38)] sm:max-w-xl sm:rounded-3xl" onClick={event => event.stopPropagation()}>
-            <div className="flex items-center justify-between bg-[#38251a] px-5 py-5 text-[#fff8ec] sm:px-6">
+        <div className="fixed inset-0 z-[70] bg-black/60 flex items-end sm:items-center justify-center sm:p-4" onClick={() => setShowPriceInquiry(false)}>
+          <section className="bg-white w-full sm:max-w-xl rounded-t-3xl sm:rounded-3xl max-h-[90vh] flex flex-col shadow-2xl" onClick={event => event.stopPropagation()}>
+            <div className="p-5 border-b flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d9b98c]">Los Primos · Catálogo</p>
-                <h2 className="mt-1 text-2xl font-bold" style={{ fontFamily: "'Lora', Georgia, serif" }}>Consulta de precios</h2>
-                <p className="mt-1 text-sm text-[#e9ddcf]">{priceInquiryProducts.length} producto{priceInquiryProducts.length !== 1 ? 's' : ''} en tu lista</p>
+                <h2 className={styles.modalTitle}>Consulta de precios</h2>
+                <p className="text-sm text-[#817565]">{priceInquiryProducts.length} producto{priceInquiryProducts.length !== 1 ? 's' : ''} para consultar</p>
               </div>
-              <button onClick={() => setShowPriceInquiry(false)} className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition hover:bg-white/20" aria-label="Cerrar">×</button>
+              <button onClick={() => setShowPriceInquiry(false)} className="text-2xl text-[#817565]" aria-label="Cerrar">×</button>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 sm:p-5">
-              {priceInquiryProducts.length === 0 ? <div className="rounded-2xl border border-dashed border-[#d8c1a3] bg-white/70 px-6 py-12 text-center">
-                <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#f2e9e3] text-[#8b4a2f]"><Icon name="tag" className="h-7 w-7" /></span>
-                <p className="mt-4 font-bold text-[#3b2a20]">Tu consulta está vacía</p>
+            <div className="p-5 overflow-y-auto flex-1">
+              {priceInquiryProducts.length === 0 ? <div className="text-center text-[#817565] py-10">
+                <p>Tu consulta está vacía.</p>
                 <p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-[#706556]">Abrí un producto del catálogo y elegí “Agregar a consulta de precios” para pedir su cotización.</p>
               </div> : (
-                <ul className="space-y-3">
-                  {priceInquiryProducts.map(product => <li key={product.id} className="flex items-center gap-3 rounded-2xl border border-[#e7d9c8] bg-white p-3 shadow-sm sm:gap-4 sm:p-4">
-                    <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#eee3d6] bg-[#f8f3ec] sm:h-[72px] sm:w-[72px]">
-                      {product.gallery?.[0] ? <SiteImage src={product.gallery[0]} alt={product.name} fill sizes="72px" quality={60} loading="lazy" className="object-contain p-1" /> : <Icon name="box" className="h-8 w-8 text-[#b58b5d]" />}
+                <ul className="divide-y">
+                  {priceInquiryProducts.map(product => <li key={product.id} className="flex items-center gap-3 py-3">
+                    <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#d9cdb8] bg-[#f7f2e6]">
+                      {product.gallery?.[0] ? <SiteImage src={product.gallery[0]} alt={product.name} fill sizes="64px" quality={60} loading="lazy" className="object-contain p-1" /> : <Icon name="box" className="h-8 w-8 text-[#817565]" />}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 font-bold leading-snug text-[#3b2a20]">{product.name}</p>
-                      <p className="mt-1 text-xs font-medium text-[#817565]">Precio a consultar</p>
+                      <p className="font-semibold">{product.name}</p>
+                      <p className="text-xs text-[#817565]">Precio a consultar</p>
                     </div>
-                    <button onClick={() => removeFromPriceInquiry(product.id)} className="shrink-0 rounded-lg px-2 py-2 text-xs font-bold text-[#8b4a2f] transition hover:bg-[#f6efe5] hover:text-red-700 sm:px-3 sm:text-sm">Quitar</button>
+                    <button onClick={() => removeFromPriceInquiry(product.id)} className="shrink-0 text-red-600 text-sm ml-2">Quitar</button>
                   </li>)}
                 </ul>
               )}
             </div>
-            <div className="space-y-3 border-t border-[#e7d9c8] bg-white px-4 py-4 sm:px-6 sm:py-5">
-              <button onClick={sendPriceInquiryToWhatsApp} disabled={!priceInquiryProducts.length} className="w-full rounded-xl bg-[#16834d] py-3.5 font-bold text-white shadow-sm transition hover:bg-[#126c40] disabled:cursor-not-allowed disabled:opacity-50">Preguntar precios por WhatsApp</button>
-              {priceInquiryProducts.length > 0 && <button onClick={() => savePriceInquiry([])} className="w-full py-1 text-sm font-semibold text-[#817565] transition hover:text-red-600">Vaciar consulta</button>}
+            <div className="p-5 border-t space-y-2">
+              <button onClick={sendPriceInquiryToWhatsApp} disabled={!priceInquiryProducts.length} className="w-full py-3 rounded-xl bg-green-600 text-white font-bold disabled:opacity-50">Preguntar precios por WhatsApp</button>
+              {priceInquiryProducts.length > 0 && <button onClick={() => savePriceInquiry([])} className="w-full py-3 rounded-xl border border-[#73794e] text-[#575b36] font-bold">Vaciar consulta</button>}
             </div>
           </section>
         </div>
