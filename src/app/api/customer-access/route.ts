@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { normalizePhone, type Customer } from '@/lib/customer-auth'
 import { isCustomerOrderingEnabled } from '@/lib/customer-ordering'
 import { hashPassword, verifyPassword, isLegacyPasswordHash, passwordValidationError, MAX_PASSWORD_LENGTH } from '@/lib/customer-password'
+import { setCustomerServerSession } from '@/lib/customer-server-session'
 
 const PROFILE_FIELDS = 'id,name,business_name,phone,email,created_at,approval_status,pin_hash'
 
@@ -61,7 +62,9 @@ export async function POST(request: NextRequest) {
         ? 'La solicitud de acceso de este comercio no fue aprobada. Comunicate con Distribuidora Los Primos.'
         : 'La solicitud de este comercio está pendiente de revisión y confirmación del local. La respuesta puede demorar hasta 24 horas.' }, 403)
       await supabase.from('customers').update({ last_login_at: new Date().toISOString() }).eq('id', customer.id)
-      return reply({ customer: profile(customer, isLegacyPasswordHash(customer.pin_hash)) })
+      const response = reply({ customer: profile(customer, isLegacyPasswordHash(customer.pin_hash)) })
+      setCustomerServerSession(response, customer)
+      return response
     }
 
     if (input.action === 'change-password') {
@@ -75,10 +78,13 @@ export async function POST(request: NextRequest) {
       if (error) throw error
       if (!customer || typeof customer.pin_hash !== 'string' || !await verifyPassword(currentPassword, customer.pin_hash)) return reply({ error: 'Tu contraseña actual no es correcta' }, 401)
       if (customer.approval_status !== 'approved') return reply({ error: 'La cuenta requiere la aprobación del local' }, 403)
-      const { error: updateError } = await supabase.from('customers').update({ pin_hash: await hashPassword(password) })
+      const passwordHash = await hashPassword(password)
+      const { error: updateError } = await supabase.from('customers').update({ pin_hash: passwordHash })
         .eq('id', customer.id).eq('pin_hash', customer.pin_hash).select('id').single()
       if (updateError) throw updateError
-      return reply({ customer: profile(customer) })
+      const response = reply({ customer: profile(customer) })
+      setCustomerServerSession(response, { id: customer.id, pin_hash: passwordHash })
+      return response
     }
 
     return reply({ error: 'Acción inválida' }, 400)

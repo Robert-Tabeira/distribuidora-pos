@@ -71,6 +71,7 @@ export default function CatalogPage() {
   const [sortOption, setSortOption] = useState<'default' | 'name_asc' | 'name_desc' | 'recent'>('default')
   const [businessPhone, setBusinessPhone] = useState('')
   const [cartMessage, setCartMessage] = useState('')
+  const [cartNeedsLogin, setCartNeedsLogin] = useState(false)
   const [savingList, setSavingList] = useState(false)
   const [sendingOrder, setSendingOrder] = useState(false)
   const [orderAccess, setOrderAccess] = useState<OrderAccess>({ status: 'anonymous' })
@@ -388,16 +389,23 @@ export default function CatalogPage() {
     if (!customerOrderingEnabled || !cartProducts.length || savingList) return
     setSavingList(true)
     setCartMessage('')
+    setCartNeedsLogin(false)
     try {
       const access = await getOrderAccess()
       setOrderAccess(access)
       if (access.status !== 'approved') { showAccessMessage(access.status); return }
-      const { error } = await supabase.from('customer_shopping_lists').insert({
-        customer_id: access.customer.id,
-        items: cartProducts.map(({ product, quantity, unit, notes }) => ({ product_id: product.id, product_name: product.name, quantity, unit, notes, units_per_box: unit === 'caja' ? getUnitsPerBox(product) : null }))
+      const response = await fetch('/api/customer-shopping-lists', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-Customer-Id': access.customer.id },
+        body: JSON.stringify({ items: cartProducts.map(({ product, quantity, unit, notes }) => ({ product_id: product.id, quantity, unit, notes })) }),
       })
-      if (error) throw error
-      setCartMessage('Lista guardada en tu cuenta de empresa.')
+      const result = await response.json()
+      if (!response.ok) {
+        setCartNeedsLogin(response.status === 401)
+        setCartMessage(result.error || 'No pudimos guardar la lista. Tu carrito se conserva.')
+        return
+      }
+      setCartMessage('Lista guardada en tu cuenta.')
     } catch {
       setCartMessage('No pudimos guardar la lista. Intentá de nuevo más tarde.')
     } finally { setSavingList(false) }
@@ -1075,10 +1083,10 @@ export default function CatalogPage() {
                 </div>
                 {notes && <p className="text-sm text-[#706556] mt-2">Nota: {notes}</p>}
               </li>)}</ul>}
-              {cartMessage && <div role="status" className="mt-4 text-sm text-[#575b36] bg-[#eeeedf] border border-[#d9dcc0] rounded-xl p-3"><p>{cartMessage}</p>{cartMessage.includes('registrarte') && <p className="mt-2"><Link href="/cliente/registro" className="font-bold underline">Solicitar acceso</Link>{' · '}<Link href="/cliente/login" className="font-bold underline">Iniciar sesión</Link></p>}{cartMessage.includes('pendiente') && <p className="mt-2"><Link href="/cliente/login" className="font-bold underline">Consultar estado</Link></p>}</div>}
+              {cartMessage && <div role="status" className="mt-4 text-sm text-[#575b36] bg-[#eeeedf] border border-[#d9dcc0] rounded-xl p-3"><p>{cartMessage}</p>{cartNeedsLogin && <p className="mt-2"><Link href="/cliente/login" className="font-bold underline">Volver a iniciar sesión</Link></p>}{cartMessage.includes('registrarte') && <p className="mt-2"><Link href="/cliente/registro" className="font-bold underline">Solicitar acceso</Link>{' · '}<Link href="/cliente/login" className="font-bold underline">Iniciar sesión</Link></p>}{cartMessage.includes('pendiente') && <p className="mt-2"><Link href="/cliente/login" className="font-bold underline">Consultar estado</Link></p>}</div>}
             </div>
             <div className="p-5 border-t space-y-2">
-              {orderAccess.status === 'approved' && <button onClick={saveShoppingList} disabled={!cartProducts.length || savingList || sendingOrder} className="w-full py-3 rounded-xl border border-[#73794e] text-[#575b36] font-bold disabled:opacity-50">{savingList ? 'Guardando…' : 'Guardar lista en mi cuenta de empresa'}</button>}
+              {orderAccess.status === 'approved' && <button onClick={saveShoppingList} disabled={!cartProducts.length || savingList || sendingOrder} className="w-full py-3 rounded-xl border border-[#73794e] text-[#575b36] font-bold disabled:opacity-50">{savingList ? 'Guardando…' : 'Guardar lista en mi cuenta'}</button>}
               <button onClick={sendCartToWhatsApp} disabled={!cartProducts.length || sendingOrder || savingList} className="w-full py-3 rounded-xl bg-green-600 text-white font-bold disabled:opacity-50">{sendingOrder ? 'Abriendo WhatsApp…' : orderAccess.status === 'approved' ? 'Enviar pedido por WhatsApp' : 'Pedir para retirar en mostrador'}</button>
               {orderAccess.status !== 'approved' && <p className="text-center text-xs leading-5 text-[#817565]">Coordiná la confirmación y el horario de retiro con el local por WhatsApp.</p>}
             </div>

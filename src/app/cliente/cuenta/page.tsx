@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { PublicLayout } from '@/components/public-layout'
 import { supabase } from '@/lib/supabase'
 import { getCustomerSession, saveCustomerSession, clearCustomerSession, type Customer } from '@/lib/customer-auth'
@@ -28,6 +29,9 @@ export default function CustomerAccountPage() {
   const [passwordSuccess, setPasswordSuccess] = useState('')
   const [changingPassword, setChangingPassword] = useState(false)
   const [shoppingLists, setShoppingLists] = useState<{ id: string; created_at: string; items: { product_id: string; product_name: string; quantity: number; unit?: string; notes?: string; units_per_box?: number | null }[] }[]>([])
+  const [listsLoading, setListsLoading] = useState(true)
+  const [listsError, setListsError] = useState('')
+  const [listsNeedLogin, setListsNeedLogin] = useState(false)
   const [activeSection, setActiveSection] = useState<'lists' | 'details'>('lists')
   const [listsPage, setListsPage] = useState(1)
   const [featureChecked, setFeatureChecked] = useState(false)
@@ -60,10 +64,28 @@ export default function CustomerAccountPage() {
       setActiveSection('details')
       setShowPasswordChange(true)
     }
-    supabase.from('customer_shopping_lists').select('id, created_at, items').eq('customer_id', session.id).order('created_at', { ascending: false }).then(({ data }) => {
-      if (data) setShoppingLists(data as typeof shoppingLists)
-    })
+    void loadShoppingLists(session.id)
   }, [router])
+
+  async function loadShoppingLists(customerId: string) {
+    setListsLoading(true)
+    setListsError('')
+    setListsNeedLogin(false)
+    try {
+      const response = await fetch('/api/customer-shopping-lists', { cache: 'no-store', credentials: 'same-origin', headers: { 'X-Customer-Id': customerId } })
+      const result = await response.json()
+      if (!response.ok) {
+        setShoppingLists([])
+        setListsNeedLogin(response.status === 401)
+        setListsError(result.error || 'No pudimos cargar tus listas. Intentá de nuevo.')
+        return
+      }
+      setShoppingLists(Array.isArray(result.lists) ? result.lists : [])
+      setListsPage(1)
+    } catch {
+      setListsError('No pudimos cargar tus listas. Revisá la conexión e intentá de nuevo.')
+    } finally { setListsLoading(false) }
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -143,9 +165,16 @@ export default function CustomerAccountPage() {
     }
   }
 
-  function handleLogout() {
-    clearCustomerSession()
-    router.push('/catalogo')
+  async function handleLogout() {
+    try {
+      const response = await fetch('/api/customer-shopping-lists', { method: 'DELETE', credentials: 'same-origin' })
+      if (!response.ok) throw new Error('Logout failed')
+      clearCustomerSession()
+      router.push('/catalogo')
+    } catch {
+      setMessage('No pudimos cerrar la sesión. Revisá la conexión e intentá de nuevo.')
+      setActiveSection('details')
+    }
   }
 
   function repeatShoppingList(list: typeof shoppingLists[number]) {
@@ -187,7 +216,7 @@ export default function CustomerAccountPage() {
             {activeSection === 'lists' ? <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 sm:p-6">
               <h2 className="font-bold text-gray-900 text-lg">Mis listas de compras</h2>
               <p className="text-sm text-gray-500 mt-1 mb-4">Guardá una lista para armarla de nuevo cuando quieras.</p>
-              {shoppingLists.length === 0 ? <p className="text-sm text-gray-500">Todavía no guardaste listas desde el catálogo.</p> : <>
+              {listsLoading ? <p role="status" className="text-sm text-gray-500">Cargando tus listas…</p> : listsError ? <div role="alert" className="rounded-xl border border-[#d6c9aa] bg-[#f7f2e6] p-4 text-sm text-[#514738]"><p>{listsError}</p>{listsNeedLogin ? <Link href="/cliente/login" className="mt-3 inline-block font-bold underline">Volver a iniciar sesión</Link> : <button onClick={() => void loadShoppingLists(customer.id)} className="mt-3 font-bold underline">Reintentar</button>}</div> : shoppingLists.length === 0 ? <p className="text-sm text-gray-500">Todavía no guardaste listas desde el catálogo.</p> : <>
                 <div className="space-y-3">{visibleLists.map(list => <div key={list.id} className="border border-gray-200 rounded-xl p-3 sm:p-4">
                   <div className="flex justify-between items-center gap-3"><p className="font-semibold">{new Date(list.created_at).toLocaleDateString('es-UY')}</p><button onClick={() => repeatShoppingList(list)} className="px-3 py-2 bg-blue-900 text-white rounded-lg text-sm font-semibold hover:bg-blue-800">Repetir lista</button></div>
                   <ul className="mt-2 text-sm text-gray-600">{list.items.map((item, index) => {

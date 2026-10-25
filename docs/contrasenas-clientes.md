@@ -3,7 +3,7 @@
 ## Publicación
 
 1. Ejecutar en Supabase → SQL Editor el archivo completo `supabase/migrations/202610250002_customer_passwords.sql` antes de publicar el código. Permite almacenar hashes con sal en la columna histórica `customers.pin_hash` convirtiéndola a texto; conserva las credenciales y los datos existentes.
-2. Publicar el código actualizado. No hay nuevas dependencias ni variables de entorno.
+2. Publicar el código actualizado. No hay nuevas dependencias. Para guardar y consultar listas privadas, configurar también el acceso de servidor descrito en `docs/listas-compras-privadas.md`.
 
 ## Uso
 
@@ -23,6 +23,6 @@
 
 ## Alcance
 
-Este cambio refuerza la elección, verificación y almacenamiento de contraseñas dentro de la autenticación personalizada existente. La sesión sigue en localStorage y otros flujos conservan consultas directas de Supabase. No sustituye ese sistema por Supabase Auth, cookies de sesión verificadas en servidor, límites de intentos distribuidos ni nuevas políticas RLS. Por tanto, no debe presentarse como una revisión completa de la seguridad del acceso o de la autorización de datos. Las políticas actuales de la tabla deben auditarse antes de afirmar que los hashes y datos no se pueden consultar o modificar por otras vías.
+Este cambio refuerza la elección, verificación y almacenamiento de contraseñas dentro de la autenticación personalizada existente. El perfil de interfaz sigue en localStorage y otros flujos conservan consultas directas de Supabase. Las listas privadas utilizan una cookie HttpOnly firmada, emitida tras verificar el acceso, con restricciones de tabla descritas en `docs/listas-compras-privadas.md`. El proyecto no usa Supabase Auth ni incorpora límites de intentos distribuidos en esta entrega; las políticas de las demás tablas requieren revisión antes de afirmar que sus datos no se pueden consultar o modificar por otras vías.
 
 Se realizó revisión estática de los cambios. No se ejecutaron build, comprobaciones de tipos ni pruebas automáticas, ni la migración remota.
