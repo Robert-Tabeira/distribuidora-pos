@@ -73,6 +73,9 @@ export default function CatalogPage() {
   const [savingList, setSavingList] = useState(false)
   const [sendingOrder, setSendingOrder] = useState(false)
   const [orderAccess, setOrderAccess] = useState<OrderAccess>({ status: 'anonymous' })
+  const [pickupName, setPickupName] = useState('')
+  const [pickupNameError, setPickupNameError] = useState('')
+  const pickupNameRef = useRef<HTMLInputElement>(null)
   const [selectedProductUnit, setSelectedProductUnit] = useState('unidad')
   const [productNotes, setProductNotes] = useState('')
   const [customerOrderingEnabled, setCustomerOrderingEnabled] = useState(false)
@@ -384,6 +387,15 @@ export default function CatalogPage() {
       setCartMessage('Agregá productos y verificá que el negocio tenga un teléfono de WhatsApp configurado.')
       return
     }
+    const customerName = pickupName.replace(/\s+/g, ' ').trim().slice(0, 80)
+    const requestPickupName = () => {
+      setPickupNameError('Ingresá tu nombre para identificar el pedido al retirarlo.')
+      window.requestAnimationFrame(() => pickupNameRef.current?.focus())
+    }
+    if (orderAccess.status !== 'approved' && !customerName) {
+      requestPickupName()
+      return
+    }
     const popup = window.open('about:blank', '_blank')
     setSendingOrder(true)
     setCartMessage('')
@@ -396,10 +408,15 @@ export default function CatalogPage() {
           showAccessMessage(access.status)
           return
         }
+        if (access.status !== 'approved' && !customerName) {
+          popup?.close()
+          requestPickupName()
+          return
+        }
         const lines = cartProducts.map(({ product, quantity, unit, notes }) => `• ${quantity} ${unit === 'caja' ? (quantity === 1 ? 'caja' : 'cajas') : unit === 'funda' ? (quantity === 1 ? 'funda' : 'fundas') : unit === 'unidad' ? (quantity === 1 ? 'unidad' : 'unidades') : unit} de ${product.name}${notes ? `\n  Nota: ${notes}` : ''}`)
         const message = access.status === 'approved'
           ? `Hola, quiero hacer este pedido a nombre de ${access.customer.name}, del comercio ${access.customer.business_name}:\n\n${lines.join('\n')}`
-          : `Hola, quiero hacer este pedido para retirar en mostrador:\n\n${lines.join('\n')}\n\nModalidad: RETIRO EN MOSTRADOR (sin envío).\nQuedo a la espera de confirmación para coordinar el retiro.`
+          : `Hola, quiero hacer este pedido para retirar en mostrador:\n\nNombre para el retiro: ${customerName}\n\n${lines.join('\n')}\n\nModalidad: RETIRO EN MOSTRADOR (sin envío).\nQuedo a la espera de confirmación para coordinar el retiro.`
         const url = `https://wa.me/${businessPhone}?text=${encodeURIComponent(message)}`
         trackSiteEvent('whatsapp_cart', { item_count: cartProducts.length })
         if (popup) popup.location.href = url
@@ -1018,6 +1035,12 @@ export default function CatalogPage() {
             <div className="p-5 overflow-y-auto flex-1">
               {orderAccess.status !== 'approved' && <div className="mb-4 rounded-2xl border border-[#d6c9aa] bg-[#f7f2e6] p-4 text-[#514738]">
                 <div className="flex items-start gap-3"><Icon name="store" className="mt-0.5 h-5 w-5 shrink-0 text-[#686f43]" /><div><h3 className="font-bold">Solo retiro en mostrador</h3><p className="mt-1 text-sm leading-6">Podés hacer tu pedido sin registrarte. Sin una cuenta de empresa aprobada, solamente podés retirarlo en el local; no incluye envío.</p><p className="mt-2 text-xs leading-5 text-[#817565]">Guardar listas en una cuenta está disponible únicamente para empresas aprobadas. Este carrito se conserva en tu navegador.</p></div></div>
+                <div className="mt-4">
+                  <label htmlFor="catalog-pickup-name" className="mb-2 block text-sm font-semibold">Nombre para el retiro <span className="font-normal text-[#817565]">(obligatorio)</span></label>
+                  <input ref={pickupNameRef} id="catalog-pickup-name" name="pickup_name" type="text" autoComplete="given-name" required maxLength={80} value={pickupName} disabled={sendingOrder} onChange={event => { setPickupName(event.target.value); setPickupNameError('') }} aria-invalid={Boolean(pickupNameError)} aria-describedby={`catalog-pickup-name-help${pickupNameError ? ' catalog-pickup-name-error' : ''}`} placeholder="Tu nombre" className={`w-full rounded-xl border bg-white px-3 py-3 text-base text-[#332a20] focus:outline-none focus:ring-2 focus:ring-[#777b52] disabled:opacity-60 ${pickupNameError ? 'border-red-500' : 'border-[#d9cdb8]'}`} />
+                  <p id="catalog-pickup-name-help" className="mt-2 text-xs leading-5 text-[#817565]">Lo incluiremos en el mensaje de WhatsApp para identificar tu pedido al retirarlo.</p>
+                  {pickupNameError && <p id="catalog-pickup-name-error" role="alert" className="mt-2 text-sm font-semibold text-red-700">{pickupNameError}</p>}
+                </div>
               </div>}
               {cartProducts.length === 0 ? <p className="text-center text-[#817565] py-10">Todavía no agregaste productos.</p> : <ul className="divide-y">{cartProducts.map(({ itemId, product, quantity, unit, notes }) => <li key={itemId} className="py-3"><div className="flex items-center gap-3"><div className="flex-1 min-w-0"><p className="font-semibold">{product.name}</p><p className="text-xs text-[#817565] capitalize">Por {unit}</p></div><div className="flex items-center gap-2"><button onClick={() => updateCartQuantity(itemId, quantity - 1)} className="w-8 h-8 rounded-lg border">−</button><span className="w-6 text-center">{quantity}</span><button onClick={() => updateCartQuantity(itemId, quantity + 1)} className="w-8 h-8 rounded-lg border">+</button></div><button onClick={() => removeFromCart(itemId)} className="text-red-600 text-sm ml-2">Quitar</button></div>{notes && <p className="text-sm text-[#706556] mt-2">Nota: {notes}</p>}</li>)}</ul>}
               {cartMessage && <div role="status" className="mt-4 text-sm text-[#575b36] bg-[#eeeedf] border border-[#d9dcc0] rounded-xl p-3"><p>{cartMessage}</p>{cartMessage.includes('registrarte') && <p className="mt-2"><Link href="/cliente/registro" className="font-bold underline">Solicitar acceso</Link>{' · '}<Link href="/cliente/login" className="font-bold underline">Iniciar sesión</Link></p>}{cartMessage.includes('pendiente') && <p className="mt-2"><Link href="/cliente/login" className="font-bold underline">Consultar estado</Link></p>}</div>}

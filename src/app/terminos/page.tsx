@@ -14,6 +14,7 @@ export default function TermsPage() {
     <h2>3. Listas y consultas por WhatsApp</h2>
     <p>El carrito y las listas de consulta permiten reunir productos, cantidades y notas para preparar un pedido o consultar precios. Se conservan en el navegador cuando su almacenamiento está disponible. Guardar una lista en una cuenta para volver a utilizarla está disponible únicamente para empresas aprobadas. Borrar el almacenamiento puede eliminar los elementos guardados solamente en ese navegador.</p>
     <p>El botón de WhatsApp abre un texto preparado que el usuario puede revisar y enviar desde ese servicio. Guardar una lista o abrir WhatsApp no confirma por sí solo el envío del mensaje, una compra ni una reserva de mercadería.</p>
+    <p>Para enviar un pedido sin registro se debe indicar un nombre que permita identificar al cliente al retirar en mostrador. Ese nombre se incluye en el mensaje de WhatsApp.</p>
     <h2>4. Confirmación de pedidos y precios</h2>
     <p>Antes de enviar una solicitud, se deben revisar los productos, cantidades, unidades y notas. Los precios definitivos, las presentaciones, la disponibilidad y las condiciones del pedido se confirman directamente con el negocio por sus canales de atención. La web no procesa pagos ni emite facturas.</p>
     <h2>5. Entrega, retiro y atención posterior</h2>
