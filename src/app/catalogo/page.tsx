@@ -78,6 +78,8 @@ export default function CatalogPage() {
   const [pickupNameError, setPickupNameError] = useState('')
   const pickupNameRef = useRef<HTMLInputElement>(null)
   const [selectedProductUnit, setSelectedProductUnit] = useState('')
+  const [productUnitError, setProductUnitError] = useState(false)
+  const productUnitOptionsRef = useRef<HTMLDivElement>(null)
   const [productNotes, setProductNotes] = useState('')
   const [customerOrderingEnabled, setCustomerOrderingEnabled] = useState(false)
   const [showRecentProductBadge, setShowRecentProductBadge] = useState(true)
@@ -205,6 +207,7 @@ export default function CatalogPage() {
       setSelectedProduct(product)
       setActiveImageIndex(0)
       setSelectedProductUnit('')
+      setProductUnitError(false)
       setProductNotes('')
       setPendingProductId('')
     }
@@ -349,7 +352,13 @@ export default function CatalogPage() {
   }
 
   function handleAddToCart() {
-    if (!customerOrderingEnabled || !selectedProduct || !hasSelectedProductUnit) return
+    if (!customerOrderingEnabled || !selectedProduct) return
+    if (!hasSelectedProductUnit) {
+      setProductUnitError(true)
+      productUnitOptionsRef.current?.querySelector('button')?.focus({ preventScroll: true })
+      productUnitOptionsRef.current?.scrollIntoView({ block: 'center' })
+      return
+    }
     addToCart(selectedProduct.id, selectedProductUnit, productNotes.trim())
     setCartMessage('Producto agregado a tu pedido.')
     closeProductDetail()
@@ -603,6 +612,7 @@ export default function CatalogPage() {
   function closeProductDetail() {
     setSelectedProduct(null)
     setSelectedProductUnit('')
+    setProductUnitError(false)
     const url = new URL(window.location.href)
     url.searchParams.delete('producto')
     window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`)
@@ -612,6 +622,7 @@ export default function CatalogPage() {
     setSelectedProduct(product)
     setActiveImageIndex(0)
     setSelectedProductUnit('')
+    setProductUnitError(false)
     setProductNotes('')
     const url = new URL(window.location.href)
     url.searchParams.set('producto', product.id)
@@ -1025,8 +1036,8 @@ export default function CatalogPage() {
               {!customerOrderingEnabled && getUnitsPerBox(selectedProduct) !== null && <p className="mb-4 text-sm font-semibold text-[#575b36]">Caja cerrada: {getUnitsPerBox(selectedProduct)} {getUnitsPerBox(selectedProduct) === 1 ? 'unidad' : 'unidades'}.</p>}
               {customerOrderingEnabled && <div className="mb-4">
                 <p id="catalog-product-unit-label" className="text-sm font-semibold text-[#514738] mb-2">¿Cómo lo querés? <span className="font-normal text-[#817565]">(obligatorio)</span></p>
-                <div role="group" aria-labelledby="catalog-product-unit-label" aria-describedby="catalog-product-unit-help" className="grid grid-cols-2 gap-2">{productSaleOptions.map(unit => <button type="button" key={unit} aria-pressed={selectedProductUnit === unit} onClick={() => setSelectedProductUnit(unit)} className={`py-2.5 px-3 rounded-xl border font-semibold capitalize ${selectedProductUnit === unit ? 'border-[#73794e] bg-[#eeeedf] text-[#575b36]' : 'border-[#d9cdb8] text-[#514738]'}`}>{unit === 'unidad' ? 'Por unidad' : `Por ${unit}`}{unit === 'caja' && getUnitsPerBox(selectedProduct) !== null && <span className="mt-1 block text-xs font-normal normal-case">Caja cerrada de {getUnitsPerBox(selectedProduct)} {getUnitsPerBox(selectedProduct) === 1 ? 'unidad' : 'unidades'}</span>}</button>)}</div>
-                <p id="catalog-product-unit-help" className="mt-2 text-xs leading-5 text-[#817565]">Elegí una opción para habilitar el botón Agregar al pedido.</p>
+                <div ref={productUnitOptionsRef} role="group" aria-labelledby="catalog-product-unit-label" aria-describedby={productUnitError ? 'catalog-product-unit-error' : 'catalog-product-unit-help'} className={`grid grid-cols-2 gap-2 rounded-xl ${productUnitError ? 'ring-2 ring-red-500 ring-offset-2' : ''}`}>{productSaleOptions.map(unit => <button type="button" key={unit} aria-pressed={selectedProductUnit === unit} onClick={() => { setSelectedProductUnit(unit); setProductUnitError(false) }} className={`py-2.5 px-3 rounded-xl border font-semibold capitalize ${selectedProductUnit === unit ? 'border-[#73794e] bg-[#eeeedf] text-[#575b36]' : 'border-[#d9cdb8] text-[#514738]'}`}>{unit === 'unidad' ? 'Por unidad' : `Por ${unit}`}{unit === 'caja' && getUnitsPerBox(selectedProduct) !== null && <span className="mt-1 block text-xs font-normal normal-case">Caja cerrada de {getUnitsPerBox(selectedProduct)} {getUnitsPerBox(selectedProduct) === 1 ? 'unidad' : 'unidades'}</span>}</button>)}</div>
+                {productUnitError ? <p id="catalog-product-unit-error" role="alert" className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">Para agregar este producto al pedido, primero elegí una de las opciones de arriba.</p> : <p id="catalog-product-unit-help" className="mt-2 text-xs leading-5 text-[#817565]">Seleccioná cómo querés pedir este producto.</p>}
               </div>}
               {customerOrderingEnabled && <label className="block text-sm font-semibold text-[#514738] mb-2" htmlFor="catalog-product-notes">Anotación para este producto <span className="font-normal text-[#9a8e7d]">(opcional)</span></label>}
               {customerOrderingEnabled && <textarea id="catalog-product-notes" value={productNotes} onChange={event => setProductNotes(event.target.value)} maxLength={300} rows={3} placeholder="Ej.: sabor, presentación o alguna indicación" className="w-full px-3 py-2 border border-[#d9cdb8] rounded-xl resize-y focus:outline-none focus:ring-2 focus:ring-[#777b52]" />}
@@ -1034,7 +1045,7 @@ export default function CatalogPage() {
               <button onClick={() => addToPriceInquiry(selectedProduct.id)} className={`${styles.primaryButton} mt-4 w-full`}>
                 {priceInquiryProductIds.includes(selectedProduct.id) ? 'Ver mi consulta de precios' : 'Agregar a consulta de precios'}
               </button>
-              {customerOrderingEnabled && <button type="button" onClick={handleAddToCart} disabled={!hasSelectedProductUnit} aria-describedby="catalog-product-unit-help" className={`${styles.secondaryButton} mt-2 w-full disabled:opacity-50 disabled:cursor-not-allowed`}>
+              {customerOrderingEnabled && <button type="button" onClick={handleAddToCart} className={`${styles.secondaryButton} mt-2 w-full`}>
                 Agregar al pedido
               </button>}
             </div>

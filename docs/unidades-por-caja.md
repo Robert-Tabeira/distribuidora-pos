@@ -20,7 +20,7 @@ La cantidad del pedido sigue expresada en cajas; el dato no cambia precios ni co
 
 ## Elección obligatoria al pedir
 
-El detalle del producto abre sin una presentación preseleccionada, incluso si hay una sola opción. El cliente debe elegir **Por unidad**, **Por caja** o **Por funda**, según las opciones disponibles, para habilitar **Agregar al pedido**. El manejador también rechaza agregar sin una elección válida.
+El detalle del producto abre sin una presentación preseleccionada, incluso si hay una sola opción. **Agregar al pedido** permanece activo. Si se pulsa sin elegir **Por unidad**, **Por caja** o **Por funda**, según las opciones disponibles, se muestra un aviso, se resaltan las opciones y se lleva el foco a la primera sin seleccionarla automáticamente. No se agrega el producto hasta realizar una elección válida y volver a pulsar el botón. El aviso se limpia al elegir una opción o abrir otro producto.
 
 La elección se reinicia al abrir cualquier producto, también desde un enlace directo o al navegar con las flechas del navegador. La consulta de precios sigue disponible sin seleccionar una presentación; los artículos ya agregados al carrito y las listas guardadas conservan sus opciones.
 
