@@ -9,6 +9,7 @@ export interface Product {
   id: string
   name: string
   unit: string[]
+  units_per_box?: number | null
   category_id: string | null
   location: string | null
   status: 'pending' | 'complete'

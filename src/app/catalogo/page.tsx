@@ -11,8 +11,9 @@ import { SiteImage } from '@/components/site-image'
 import styles from './catalog.module.css'
 import { normalizeSearchTerm, trackSiteEvent } from '@/lib/site-analytics'
 import { SITE_ANALYTICS_ENABLED } from '@/lib/analytics-config'
+import { getUnitsPerBox, describeBoxContents, isMissingBoxUnitsColumn } from '@/lib/product-packaging'
 
-interface ProductWithDiscount extends Pick<Product, 'id' | 'name' | 'unit' | 'category_id' | 'created_at' | 'gallery' | 'description' | 'product_code'> {
+interface ProductWithDiscount extends Pick<Product, 'id' | 'name' | 'unit' | 'units_per_box' | 'category_id' | 'created_at' | 'gallery' | 'description' | 'product_code'> {
   discount?: Discount
   subcategory_id?: string | null
 }
@@ -206,19 +207,25 @@ export default function CatalogPage() {
   async function loadData() {
     try {
       const [productsRes, categoriesRes, discountsRes] = await Promise.all([
-        supabase.from('products').select('id,name,unit,category_id,subcategory_id,status,created_at,product_code,gallery,description').eq('status', 'complete').eq('visible_in_catalog', true),
+        supabase.from('products').select('id,name,unit,units_per_box,category_id,subcategory_id,status,created_at,product_code,gallery,description').eq('status', 'complete').eq('visible_in_catalog', true),
         supabase.from('categories').select('*').order('order_position'),
         supabase.from('discounts').select('*').eq('is_active', true)
       ])
 
-      if (productsRes.data) {
-        const productIds = productsRes.data.map(product => product.id)
+      let productRows = productsRes.data
+      if (isMissingBoxUnitsColumn(productsRes.error)) {
+        const legacy = await supabase.from('products').select('id,name,unit,category_id,subcategory_id,status,created_at,product_code,gallery,description').eq('status', 'complete').eq('visible_in_catalog', true)
+        productRows = legacy.data?.map(product => ({ ...product, units_per_box: null })) || null
+      }
+
+      if (productRows) {
+        const productIds = productRows.map(product => product.id)
         const { data: productDiscounts } = productIds.length
           ? await supabase.from('product_discounts').select('product_id,discount_id').in('product_id', productIds)
           : { data: [] }
         const discountById = new Map((discountsRes.data || []).map(discount => [discount.id, discount]))
         const discountByProductId = new Map((productDiscounts || []).map(item => [item.product_id, discountById.get(item.discount_id)]))
-        setProducts(productsRes.data.map(product => ({ ...product, discount: discountByProductId.get(product.id) })))
+        setProducts(productRows.map(product => ({ ...product, discount: discountByProductId.get(product.id) })))
       }
 
       if (categoriesRes.data) setCategories(categoriesRes.data)
@@ -372,7 +379,7 @@ export default function CatalogPage() {
       if (access.status !== 'approved') { showAccessMessage(access.status); return }
       const { error } = await supabase.from('customer_shopping_lists').insert({
         customer_id: access.customer.id,
-        items: cartProducts.map(({ product, quantity, unit, notes }) => ({ product_id: product.id, product_name: product.name, quantity, unit, notes }))
+        items: cartProducts.map(({ product, quantity, unit, notes }) => ({ product_id: product.id, product_name: product.name, quantity, unit, notes, units_per_box: unit === 'caja' ? getUnitsPerBox(product) : null }))
       })
       if (error) throw error
       setCartMessage('Lista guardada en tu cuenta de empresa.')
@@ -413,7 +420,10 @@ export default function CatalogPage() {
           requestPickupName()
           return
         }
-        const lines = cartProducts.map(({ product, quantity, unit, notes }) => `• ${quantity} ${unit === 'caja' ? (quantity === 1 ? 'caja' : 'cajas') : unit === 'funda' ? (quantity === 1 ? 'funda' : 'fundas') : unit === 'unidad' ? (quantity === 1 ? 'unidad' : 'unidades') : unit} de ${product.name}${notes ? `\n  Nota: ${notes}` : ''}`)
+        const lines = cartProducts.map(({ product, quantity, unit, notes }) => {
+          const contents = unit === 'caja' ? describeBoxContents(product, quantity) : null
+          return `• ${quantity} ${unit === 'caja' ? (quantity === 1 ? 'caja' : 'cajas') : unit === 'funda' ? (quantity === 1 ? 'funda' : 'fundas') : unit === 'unidad' ? (quantity === 1 ? 'unidad' : 'unidades') : unit} de ${product.name}${contents ? ` (${contents})` : ''}${notes ? `\n  Nota: ${notes}` : ''}`
+        })
         const message = access.status === 'approved'
           ? `Hola, quiero hacer este pedido a nombre de ${access.customer.name}, del comercio ${access.customer.business_name}:\n\n${lines.join('\n')}`
           : `Hola, quiero hacer este pedido para retirar en mostrador:\n\nNombre para el retiro: ${customerName}\n\n${lines.join('\n')}\n\nModalidad: RETIRO EN MOSTRADOR (sin envío).\nQuedo a la espera de confirmación para coordinar el retiro.`
@@ -1006,12 +1016,13 @@ export default function CatalogPage() {
                 <p className="mb-4 inline-flex items-center gap-1 text-sm text-red-600 font-semibold"><Icon name="tag" className="h-4 w-4" />{selectedProduct.discount.name}</p>
               )}
 
+              {!customerOrderingEnabled && getUnitsPerBox(selectedProduct) !== null && <p className="mb-4 text-sm font-semibold text-[#575b36]">Caja cerrada: {getUnitsPerBox(selectedProduct)} {getUnitsPerBox(selectedProduct) === 1 ? 'unidad' : 'unidades'}.</p>}
               {customerOrderingEnabled && (() => {
                 const units = Array.isArray(selectedProduct.unit) ? selectedProduct.unit : [selectedProduct.unit]
                 const saleOptions = [...new Set(['unidad', ...(units.includes('caja') ? ['caja'] : []), ...(units.includes('funda') ? ['funda'] : [])])]
                 return <div className="mb-4">
                   <p className="text-sm font-semibold text-[#514738] mb-2">¿Cómo lo querés?</p>
-                  <div className="grid grid-cols-2 gap-2">{saleOptions.map(unit => <button key={unit} onClick={() => setSelectedProductUnit(unit)} className={`py-2.5 px-3 rounded-xl border font-semibold capitalize ${selectedProductUnit === unit ? 'border-[#73794e] bg-[#eeeedf] text-[#575b36]' : 'border-[#d9cdb8] text-[#514738]'}`}>{unit === 'unidad' ? 'Por unidad' : `Por ${unit}`}</button>)}</div>
+                  <div className="grid grid-cols-2 gap-2">{saleOptions.map(unit => <button key={unit} onClick={() => setSelectedProductUnit(unit)} className={`py-2.5 px-3 rounded-xl border font-semibold capitalize ${selectedProductUnit === unit ? 'border-[#73794e] bg-[#eeeedf] text-[#575b36]' : 'border-[#d9cdb8] text-[#514738]'}`}>{unit === 'unidad' ? 'Por unidad' : `Por ${unit}`}{unit === 'caja' && getUnitsPerBox(selectedProduct) !== null && <span className="mt-1 block text-xs font-normal normal-case">Caja cerrada de {getUnitsPerBox(selectedProduct)} {getUnitsPerBox(selectedProduct) === 1 ? 'unidad' : 'unidades'}</span>}</button>)}</div>
                 </div>
               })()}
               {customerOrderingEnabled && <label className="block text-sm font-semibold text-[#514738] mb-2" htmlFor="catalog-product-notes">Anotación para este producto <span className="font-normal text-[#9a8e7d]">(opcional)</span></label>}
@@ -1042,7 +1053,14 @@ export default function CatalogPage() {
                   {pickupNameError && <p id="catalog-pickup-name-error" role="alert" className="mt-2 text-sm font-semibold text-red-700">{pickupNameError}</p>}
                 </div>
               </div>}
-              {cartProducts.length === 0 ? <p className="text-center text-[#817565] py-10">Todavía no agregaste productos.</p> : <ul className="divide-y">{cartProducts.map(({ itemId, product, quantity, unit, notes }) => <li key={itemId} className="py-3"><div className="flex items-center gap-3"><div className="flex-1 min-w-0"><p className="font-semibold">{product.name}</p><p className="text-xs text-[#817565] capitalize">Por {unit}</p></div><div className="flex items-center gap-2"><button onClick={() => updateCartQuantity(itemId, quantity - 1)} className="w-8 h-8 rounded-lg border">−</button><span className="w-6 text-center">{quantity}</span><button onClick={() => updateCartQuantity(itemId, quantity + 1)} className="w-8 h-8 rounded-lg border">+</button></div><button onClick={() => removeFromCart(itemId)} className="text-red-600 text-sm ml-2">Quitar</button></div>{notes && <p className="text-sm text-[#706556] mt-2">Nota: {notes}</p>}</li>)}</ul>}
+              {cartProducts.length === 0 ? <p className="text-center text-[#817565] py-10">Todavía no agregaste productos.</p> : <ul className="divide-y">{cartProducts.map(({ itemId, product, quantity, unit, notes }) => <li key={itemId} className="py-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 min-w-0"><p className="font-semibold">{product.name}</p><p className="text-xs text-[#817565] capitalize">Por {unit}</p>{unit === 'caja' && getUnitsPerBox(product) !== null && <p className="mt-1 text-xs leading-5 text-[#575b36]">{describeBoxContents(product, quantity)}</p>}</div>
+                  <div className="flex items-center gap-2"><button onClick={() => updateCartQuantity(itemId, quantity - 1)} className="w-8 h-8 rounded-lg border">−</button><span className="w-6 text-center">{quantity}</span><button onClick={() => updateCartQuantity(itemId, quantity + 1)} className="w-8 h-8 rounded-lg border">+</button></div>
+                  <button onClick={() => removeFromCart(itemId)} className="text-red-600 text-sm ml-2">Quitar</button>
+                </div>
+                {notes && <p className="text-sm text-[#706556] mt-2">Nota: {notes}</p>}
+              </li>)}</ul>}
               {cartMessage && <div role="status" className="mt-4 text-sm text-[#575b36] bg-[#eeeedf] border border-[#d9dcc0] rounded-xl p-3"><p>{cartMessage}</p>{cartMessage.includes('registrarte') && <p className="mt-2"><Link href="/cliente/registro" className="font-bold underline">Solicitar acceso</Link>{' · '}<Link href="/cliente/login" className="font-bold underline">Iniciar sesión</Link></p>}{cartMessage.includes('pendiente') && <p className="mt-2"><Link href="/cliente/login" className="font-bold underline">Consultar estado</Link></p>}</div>}
             </div>
             <div className="p-5 border-t space-y-2">

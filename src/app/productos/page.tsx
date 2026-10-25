@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import type { Employee, Product } from '@/types/database'
 import { uploadImageToSupabase } from '@/lib/image-upload-helper'
+import { MAX_UNITS_PER_BOX, isMissingBoxUnitsColumn } from '@/lib/product-packaging'
 
 // Normaliza texto para comparar sin importar tildes/diacríticos
 // ("azucar" debe coincidir con "azúcar")
@@ -96,6 +97,9 @@ export default function ProductosPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [editName, setEditName] = useState('')
   const [editUnits, setEditUnits] = useState<string[]>(['unidad'])
+  const [editUnitsPerBox, setEditUnitsPerBox] = useState('')
+  const invalidBoxUnits = editUnits.includes('caja') && editUnitsPerBox.trim() !== '' && (!/^\d+$/.test(editUnitsPerBox.trim()) || Number(editUnitsPerBox) < 1 || Number(editUnitsPerBox) > MAX_UNITS_PER_BOX)
+  const editedUnitsPerBox = editUnits.includes('caja') && editUnitsPerBox.trim() !== '' ? Number(editUnitsPerBox) : null
   const [editCategory, setEditCategory] = useState<string | null>(null)
   const [editSubcategory, setEditSubcategory] = useState<string | null>(null)
   const [editLocation, setEditLocation] = useState('')
@@ -237,6 +241,7 @@ export default function ProductosPage() {
     setEditName(product.name)
     const units = Array.isArray(product.unit) ? product.unit : [product.unit]
     setEditUnits(units.length > 0 ? units : ['unidad'])
+    setEditUnitsPerBox(product.units_per_box == null ? '' : String(product.units_per_box))
     setEditCategory(product.category_id)
     setEditSubcategory((product as any).subcategory_id || null)
     setEditLocation(product.location || '')
@@ -432,6 +437,7 @@ export default function ProductosPage() {
 
   async function saveProduct() {
     if (!editingProduct || !editName.trim() || editUnits.length === 0) return
+    if (invalidBoxUnits) { alert('Las unidades por caja deben ser un número entero mayor a cero.'); return }
 
     const similar = findSimilarProducts(editName.trim(), editingProduct.id)
     
@@ -447,6 +453,7 @@ export default function ProductosPage() {
 
   async function performSave() {
     if (!editingProduct || !editName.trim() || editUnits.length === 0) return
+    if (invalidBoxUnits) { alert('Las unidades por caja deben ser un número entero mayor a cero.'); return }
 
     setSaving(true)
 
@@ -458,6 +465,7 @@ export default function ProductosPage() {
         .update({
           name: editName.trim(),
           unit: editUnits,
+          ...(editedUnitsPerBox !== null || editingProduct.units_per_box !== undefined ? { units_per_box: editedUnitsPerBox } : {}),
           category_id: editCategory,
           subcategory_id: editSubcategory,
           location: newLocation,
@@ -476,6 +484,7 @@ export default function ProductosPage() {
               ...p, 
               name: editName.trim(), 
               unit: editUnits, 
+              ...(editedUnitsPerBox !== null || editingProduct.units_per_box !== undefined ? { units_per_box: editedUnitsPerBox } : {}),
               category_id: editCategory, 
               subcategory_id: editSubcategory,
               location: newLocation,
@@ -497,7 +506,7 @@ export default function ProductosPage() {
 
     } catch (error) {
       console.error('Error al guardar:', error)
-      alert('Error al guardar el producto')
+      alert(isMissingBoxUnitsColumn(error as { code?: string; message?: string }) ? 'Primero ejecutá la migración 202610250001_product_units_per_box.sql en Supabase para guardar las unidades por caja.' : 'Error al guardar el producto')
     } finally {
       setSaving(false)
     }
@@ -508,6 +517,7 @@ export default function ProductosPage() {
   // los datos nuevos, y borra el pendiente (ya no hace falta, era el duplicado).
   async function replaceOldWithNew(oldProduct: Product) {
     if (!editingProduct || !editName.trim() || editUnits.length === 0) return
+    if (invalidBoxUnits) { alert('Las unidades por caja deben ser un número entero mayor a cero.'); return }
 
     setResolvingDuplicate(true)
     try {
@@ -518,6 +528,7 @@ export default function ProductosPage() {
         .update({
           name: editName.trim(),
           unit: editUnits,
+          ...(editedUnitsPerBox !== null || oldProduct.units_per_box !== undefined ? { units_per_box: editedUnitsPerBox } : {}),
           category_id: editCategory,
           subcategory_id: editSubcategory,
           location: newLocation,
@@ -545,6 +556,7 @@ export default function ProductosPage() {
                 ...p,
                 name: editName.trim(),
                 unit: editUnits,
+                ...(editedUnitsPerBox !== null || oldProduct.units_per_box !== undefined ? { units_per_box: editedUnitsPerBox } : {}),
                 category_id: editCategory,
                 subcategory_id: editSubcategory,
                 location: newLocation,
@@ -567,7 +579,7 @@ export default function ProductosPage() {
       if (navigator.vibrate) navigator.vibrate(50)
     } catch (error) {
       console.error('Error al reemplazar:', error)
-      alert('Error al reemplazar el producto')
+      alert(isMissingBoxUnitsColumn(error as { code?: string; message?: string }) ? 'Primero ejecutá la migración 202610250001_product_units_per_box.sql en Supabase para guardar las unidades por caja.' : 'Error al reemplazar el producto')
     } finally {
       setResolvingDuplicate(false)
     }
@@ -1023,6 +1035,12 @@ export default function ProductosPage() {
               </div>
             </div>
 
+            {editUnits.includes('caja') && <div className="mb-4 rounded-xl border border-border bg-gray-50 p-4">
+              <label htmlFor="product-units-per-box" className="mb-2 block text-sm font-semibold text-text-muted">Unidades por caja cerrada <span className="font-normal">(opcional)</span></label>
+              <input id="product-units-per-box" type="number" min={1} max={MAX_UNITS_PER_BOX} step={1} inputMode="numeric" value={editUnitsPerBox} onChange={event => setEditUnitsPerBox(event.target.value)} aria-invalid={invalidBoxUnits} aria-describedby="product-units-per-box-help" placeholder="Ej.: 12" className="input" />
+              <p id="product-units-per-box-help" className={`mt-2 text-xs leading-relaxed ${invalidBoxUnits ? 'text-red-600' : 'text-text-muted'}`}>{invalidBoxUnits ? 'Ingresá un número entero mayor a cero.' : 'Cantidad de unidades que contiene una caja completa. Se mostrará en el catálogo y en los pedidos por caja. Dejalo vacío si todavía no tenés el dato.'}</p>
+            </div>}
+
             {/* Categoría */}
             <div className="mb-4">
               <label className="block text-sm font-semibold text-text-muted mb-2">Categoría</label>
@@ -1118,7 +1136,7 @@ export default function ProductosPage() {
               </button>
               <button 
                 onClick={saveProduct} 
-                disabled={saving || !editName.trim()}
+                disabled={saving || !editName.trim() || invalidBoxUnits}
                 className="btn btn-primary flex-1"
               >
                 {saving ? 'Guardando...' : 'Guardar'}
