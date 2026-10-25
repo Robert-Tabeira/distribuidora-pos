@@ -10,7 +10,7 @@ export default function TermsPage() {
     <h2>1. Uso del servicio</h2>
     <p>El catálogo puede consultarse y los pedidos para retirar en mostrador pueden prepararse sin registro. Quien utilice una cuenta o envíe solicitudes en nombre de un comercio debe estar autorizado para hacerlo. El sitio debe utilizarse sin alterar su funcionamiento ni intentar acceder a información ajena.</p>
     <h2>2. Registro y cuenta</h2>
-    <p>Cuando el registro está habilitado, se deben completar los datos requeridos con información correcta. El correo es opcional. El acceso como comercio queda sujeto a revisión y aprobación del negocio. Cada usuario debe cuidar su código de acceso y comunicar cualquier uso no autorizado que detecte.</p>
+    <p>Cuando el registro está habilitado, se deben completar los datos requeridos con información correcta. El correo es opcional. El acceso como comercio queda sujeto a revisión y aprobación del negocio. Cada usuario debe cuidar su contraseña de acceso y comunicar cualquier uso no autorizado que detecte.</p>
     <h2>3. Listas y consultas por WhatsApp</h2>
     <p>El carrito y las listas de consulta permiten reunir productos, cantidades y notas para preparar un pedido o consultar precios. Se conservan en el navegador cuando su almacenamiento está disponible. Guardar una lista en una cuenta para volver a utilizarla está disponible únicamente para empresas aprobadas. Borrar el almacenamiento puede eliminar los elementos guardados solamente en ese navegador.</p>
     <p>El botón de WhatsApp abre un texto preparado que el usuario puede revisar y enviar desde ese servicio. Guardar una lista o abrir WhatsApp no confirma por sí solo el envío del mensaje, una compra ni una reserva de mercadería.</p>

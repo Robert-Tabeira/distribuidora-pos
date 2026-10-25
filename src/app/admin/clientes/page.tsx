@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { hashPin, normalizePhone, type Customer } from '@/lib/customer-auth'
+import { normalizePhone, type Customer } from '@/lib/customer-auth'
+import { generateTemporaryPassword, hashPassword } from '@/lib/customer-password'
 
 export default function AdminClientesPage() {
   const router = useRouter()
@@ -13,7 +14,7 @@ export default function AdminClientesPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
   const [resettingId, setResettingId] = useState<string | null>(null)
-  const [newPin, setNewPin] = useState<string | null>(null)
+  const [newPassword, setNewPassword] = useState<string | null>(null)
   const [updatingApprovalId, setUpdatingApprovalId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -27,34 +28,32 @@ export default function AdminClientesPage() {
   }, [router])
 
   async function loadCustomers() {
-    const { data } = await supabase.from('customers').select('*').order('created_at', { ascending: false })
+    const { data } = await supabase.from('customers').select('id,name,business_name,phone,email,created_at,approval_status').order('created_at', { ascending: false })
     if (data) setCustomers(data)
     setLoading(false)
   }
 
-  function generateTempPin() {
-    return Math.floor(1000 + Math.random() * 9000).toString()
-  }
-
-  async function resetPin(customer: Customer) {
-    if (!confirm(`¿Generar un código nuevo para ${customer.name}?`)) return
+  async function resetPassword(customer: Customer) {
+    if (!confirm(`¿Generar una contraseña de recuperación para ${customer.name}? La contraseña anterior dejará de funcionar.`)) return
 
     setResettingId(customer.id)
     try {
-      const tempPin = generateTempPin()
-      const pinHash = await hashPin(tempPin)
+      const temporaryPassword = generateTemporaryPassword()
+      const passwordHash = await hashPassword(temporaryPassword)
 
       const { error } = await supabase
         .from('customers')
-        .update({ pin_hash: pinHash })
+        .update({ pin_hash: passwordHash })
         .eq('id', customer.id)
+        .select('id')
+        .single()
 
       if (error) throw error
 
-      setNewPin(tempPin)
+      setNewPassword(temporaryPassword)
     } catch (error) {
-      console.error('Error al resetear código:', error)
-      alert('Error al resetear el código')
+      console.error('Error al restablecer contraseña:', error)
+      alert('Error al restablecer la contraseña')
     } finally {
       setResettingId(null)
     }
@@ -135,7 +134,7 @@ export default function AdminClientesPage() {
                 <div className="flex flex-wrap justify-end gap-2 flex-shrink-0">
                   {customer.approval_status !== 'approved' && <button onClick={() => setApproval(customer, 'approved')} disabled={updatingApprovalId === customer.id} className="px-3 py-2 bg-green-700 text-white rounded-lg font-semibold text-sm hover:bg-green-800 disabled:opacity-50">Aprobar</button>}
                   {customer.approval_status !== 'rejected' && <button onClick={() => setApproval(customer, 'rejected')} disabled={updatingApprovalId === customer.id} className="px-3 py-2 border border-red-300 text-red-700 rounded-lg font-semibold text-sm hover:bg-red-50 disabled:opacity-50">No aprobar</button>}
-                  <button onClick={() => resetPin(customer)} disabled={resettingId === customer.id} className="px-3 py-2 bg-blue-900 text-white rounded-lg font-semibold text-sm hover:bg-blue-800 disabled:opacity-50">{resettingId === customer.id ? 'Generando...' : 'Restablecer código'}</button>
+                  <button onClick={() => resetPassword(customer)} disabled={resettingId !== null} className="px-3 py-2 bg-blue-900 text-white rounded-lg font-semibold text-sm hover:bg-blue-800 disabled:opacity-50">{resettingId === customer.id ? 'Generando...' : 'Restablecer contraseña'}</button>
                 </div>
               </div>
             ))}
@@ -143,15 +142,15 @@ export default function AdminClientesPage() {
         )}
       </main>
 
-      {/* Modal con el código nuevo generado */}
-      {newPin && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50" onClick={() => setNewPin(null)}>
+      {/* Modal con la contraseña de recuperación generada */}
+      {newPassword && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50" onClick={() => setNewPassword(null)}>
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center" onClick={e => e.stopPropagation()}>
             <div className="text-4xl mb-3">✅</div>
-            <p className="font-semibold text-gray-900 mb-2">Código nuevo generado</p>
-            <p className="text-4xl font-black tracking-widest bg-gray-100 rounded-xl py-4 mb-4">{newPin}</p>
-            <p className="text-sm text-gray-600 mb-5">Pasáselo al cliente (por WhatsApp o teléfono). No queda guardado en ningún lado más que acá.</p>
-            <button onClick={() => setNewPin(null)} className="w-full py-2.5 bg-gray-200 rounded-xl font-semibold">
+            <p className="font-semibold text-gray-900 mb-2">Contraseña de recuperación generada</p>
+            <p className="break-all select-all text-xl font-bold bg-gray-100 rounded-xl px-3 py-4 mb-4">{newPassword}</p>
+            <p className="text-sm text-gray-600 mb-5">Compartila únicamente con el titular del negocio después de verificar su identidad. Debe cambiarla desde Mi cuenta → Datos → Cambiar contraseña. Esta ventana es la única copia visible.</p>
+            <button onClick={() => setNewPassword(null)} className="w-full py-2.5 bg-gray-200 rounded-xl font-semibold">
               Cerrar
             </button>
           </div>

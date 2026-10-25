@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { PublicLayout } from '@/components/public-layout'
-import { supabase } from '@/lib/supabase'
-import { hashPin, normalizePhone, saveCustomerSession } from '@/lib/customer-auth'
+import { normalizePhone, saveCustomerSession } from '@/lib/customer-auth'
+import { MAX_PASSWORD_LENGTH } from '@/lib/customer-password'
+import { CustomerPasswordInput } from '@/components/customer-password-input'
 import Link from 'next/link'
 import { isCustomerOrderingEnabled } from '@/lib/customer-ordering'
 import { CustomerOrderingUnavailable } from '@/components/customer-ordering-unavailable'
@@ -12,7 +13,7 @@ import { CustomerOrderingUnavailable } from '@/components/customer-ordering-unav
 export default function CustomerLoginPage() {
   const router = useRouter()
   const [phone, setPhone] = useState('')
-  const [pin, setPin] = useState('')
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [featureChecked, setFeatureChecked] = useState(false)
@@ -30,41 +31,25 @@ export default function CustomerLoginPage() {
     setError('')
 
     const cleanPhone = normalizePhone(phone)
-    if (!cleanPhone || !pin) {
-      setError('Completá tu teléfono y código')
+    if (!cleanPhone || !password) {
+      setError('Completá tu teléfono y contraseña')
       return
     }
 
     setLoading(true)
     try {
-      const pinHash = await hashPin(pin)
-
-      const { data, error: queryError } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('phone', cleanPhone)
-        .eq('pin_hash', pinHash)
-        .single()
-
-      if (queryError || !data) {
-        setError('Teléfono o código incorrecto')
+      const response = await fetch('/api/customer-access', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'login', phone: cleanPhone, password }),
+      })
+      const result = await response.json()
+      if (!response.ok || !result.customer) {
+        setError(result.error || 'No pudimos iniciar sesión')
         return
       }
-
-      if (data.approval_status !== 'approved') {
-        setError(data.approval_status === 'rejected'
-          ? 'La solicitud de acceso de este comercio no fue aprobada. Si necesitás más información, comunicate con Distribuidora Los Primos.'
-          : 'La solicitud de este comercio está pendiente de revisión. La aprobación puede demorar hasta 24 horas.')
-        return
-      }
-
-      await supabase
-        .from('customers')
-        .update({ last_login_at: new Date().toISOString() })
-        .eq('id', data.id)
-
-      saveCustomerSession(data)
-      router.push('/catalogo')
+      saveCustomerSession(result.customer)
+      setPassword('')
+      router.push(result.customer.needs_password_upgrade ? '/cliente/cuenta' : '/catalogo')
     } catch (err) {
       console.error('Error al iniciar sesión:', err)
       setError('No pudimos iniciar sesión. Intentá de nuevo.')
@@ -94,19 +79,18 @@ export default function CustomerLoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Código</label>
-              <input
-                type="password"
-                inputMode="numeric"
-                maxLength={6}
-                value={pin}
-                onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-                placeholder="••••"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-900 tracking-widest"
+              <label htmlFor="login-password" className="block text-sm font-semibold text-gray-700 mb-1.5">Contraseña</label>
+              <CustomerPasswordInput
+                id="login-password" name="password" autoComplete="current-password" required
+                maxLength={MAX_PASSWORD_LENGTH} disabled={loading}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-900"
               />
               <Link href="/cliente/recuperar" className="text-xs text-blue-900 font-semibold hover:underline mt-1.5 inline-block">
-                ¿Olvidaste tu código?
+                ¿Olvidaste tu contraseña?
               </Link>
+              <p className="mt-2 text-xs leading-5 text-gray-500">Si ya tenías una cuenta con código numérico, ingresá ese código para cambiarlo por una contraseña desde Mi cuenta.</p>
             </div>
 
             {error && (

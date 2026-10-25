@@ -9,7 +9,7 @@ import { CustomerOrderingUnavailable } from '@/components/customer-ordering-unav
 
 type Result = 'email' | 'whatsapp' | 'not_found' | null
 
-export default function RecoverPinPage() {
+export default function RecoverPasswordPage() {
   const [phone, setPhone] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<Result>(null)
@@ -37,7 +37,7 @@ export default function RecoverPinPage() {
 
     setLoading(true)
     try {
-      const res = await fetch('/api/recover-pin', {
+      const res = await fetch('/api/recover-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: cleanPhone })
@@ -51,7 +51,7 @@ export default function RecoverPinPage() {
 
       setResult(data.method)
     } catch (err) {
-      console.error('Error al recuperar código:', err)
+      console.error('Error al recuperar contraseña:', err)
       setError('No pudimos procesar el pedido. Intentá de nuevo.')
     } finally {
       setLoading(false)
@@ -59,14 +59,14 @@ export default function RecoverPinPage() {
   }
 
   const whatsappMessage = encodeURIComponent(
-    `Hola, olvidé mi código de acceso. Mi teléfono registrado es ${normalizePhone(phone)}. ¿Me pueden ayudar a restablecerlo?`
+    `Hola, olvidé mi contraseña de acceso. Mi teléfono registrado es ${normalizePhone(phone)}. ¿Me pueden ayudar a restablecerla?`
   )
 
   return (
     <PublicLayout>
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
         {!featureChecked ? <p className="text-gray-500">Cargando...</p> : !featureEnabled ? <CustomerOrderingUnavailable /> : <div className="w-full max-w-md bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
-          <h1 className="text-2xl font-black text-gray-900 mb-1">Recuperar código</h1>
+          <h1 className="text-2xl font-black text-gray-900 mb-1">Recuperar contraseña</h1>
           <p className="text-sm text-gray-600 mb-6">Ingresá tu teléfono registrado</p>
 
           {!result && (
@@ -102,7 +102,7 @@ export default function RecoverPinPage() {
               <div className="text-5xl mb-4">📧</div>
               <p className="font-semibold text-gray-900 mb-2">¡Listo! Revisá tu email</p>
               <p className="text-sm text-gray-600">
-                Te mandamos un código nuevo a tu casilla registrada. Puede tardar unos minutos, y revisá spam por las dudas.
+                Te mandamos una contraseña de recuperación a tu casilla registrada. Puede tardar unos minutos; revisá también spam. Al entrar, cambiala desde Mi cuenta → Datos → Cambiar contraseña.
               </p>
             </div>
           )}
@@ -112,7 +112,7 @@ export default function RecoverPinPage() {
               <div className="text-5xl mb-4">💬</div>
               <p className="font-semibold text-gray-900 mb-2">No tenés email cargado</p>
               <p className="text-sm text-gray-600 mb-5">
-                Escribinos por WhatsApp con el mensaje ya armado y te ayudamos a restablecerlo.
+                Escribinos por WhatsApp con el mensaje ya armado y te ayudamos a restablecer la contraseña.
               </p>
               <a
                 href={`https://wa.me/?text=${whatsappMessage}`}

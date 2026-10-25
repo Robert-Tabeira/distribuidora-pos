@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { PublicLayout } from '@/components/public-layout'
-import { supabase } from '@/lib/supabase'
-import { hashPin, normalizePhone } from '@/lib/customer-auth'
+import { normalizePhone } from '@/lib/customer-auth'
+import { passwordValidationError, PASSWORD_HELP, MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH } from '@/lib/customer-password'
+import { CustomerPasswordInput } from '@/components/customer-password-input'
 import Link from 'next/link'
 import { isCustomerOrderingEnabled } from '@/lib/customer-ordering'
 import { CustomerOrderingUnavailable } from '@/components/customer-ordering-unavailable'
@@ -13,8 +14,8 @@ export default function CustomerRegisterPage() {
   const [businessName, setBusinessName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
-  const [pin, setPin] = useState('')
-  const [pinConfirm, setPinConfirm] = useState('')
+  const [password, setPassword] = useState('')
+  const [passwordConfirm, setPasswordConfirm] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [submitted, setSubmitted] = useState(false)
@@ -37,38 +38,25 @@ export default function CustomerRegisterPage() {
     if (!name.trim()) return setError('Ingresá tu nombre')
     if (!businessName.trim()) return setError('Ingresá el nombre del comercio')
     if (cleanPhone.length < 8) return setError('Ingresá un teléfono válido')
-    if (pin.length < 4 || pin.length > 6 || !/^\d+$/.test(pin)) {
-      return setError('El código debe tener entre 4 y 6 números')
-    }
-    if (pin !== pinConfirm) return setError('Los códigos no coinciden')
+    const passwordError = passwordValidationError(password)
+    if (passwordError) return setError(passwordError)
+    if (password !== passwordConfirm) return setError('Las contraseñas no coinciden')
 
     setLoading(true)
     try {
-      const pinHash = await hashPin(pin)
-
-      const { data, error: insertError } = await supabase
-        .from('customers')
-        .insert([{
-          name: name.trim(),
-          business_name: businessName.trim(),
-          phone: cleanPhone,
-          email: email.trim() || null,
-          pin_hash: pinHash,
-          approval_status: 'pending'
-        }])
-        .select()
-        .single()
-
-      if (insertError) {
-        if (insertError.code === '23505') {
-          setError('Ya existe una cuenta con ese teléfono. Iniciá sesión en vez de registrarte.')
-        } else {
-          throw insertError
-        }
+      const response = await fetch('/api/customer-access', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'register', name, business_name: businessName, phone: cleanPhone, email, password }),
+      })
+      const result = await response.json()
+      if (!response.ok) {
+        setError(result.error || 'No pudimos enviar tu solicitud de registro')
         return
       }
 
       setSubmitted(true)
+      setPassword('')
+      setPasswordConfirm('')
     } catch (err) {
       console.error('Error al registrar:', err)
       setError('No pudimos enviar tu solicitud de registro. Intentá de nuevo.')
@@ -138,32 +126,30 @@ export default function CustomerRegisterPage() {
                 placeholder="tu@email.com"
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-900"
               />
-              <p className="text-xs text-gray-500 mt-1">Si olvidás tu código de acceso, te enviaremos uno nuevo a este correo.</p>
+              <p className="text-xs text-gray-500 mt-1">Este correo permite solicitar la recuperación de tu contraseña.</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Código (4-6 números)</label>
-                <input
-                  type="password"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-                  placeholder="••••"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-900 tracking-widest"
+                <label htmlFor="register-password" className="block text-sm font-semibold text-gray-700 mb-1.5">Contraseña</label>
+                <CustomerPasswordInput
+                  id="register-password" name="password" autoComplete="new-password" required
+                  minLength={MIN_PASSWORD_LENGTH} maxLength={MAX_PASSWORD_LENGTH} disabled={loading}
+                  aria-describedby="register-password-help"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-900"
                 />
+                <p id="register-password-help" className="text-xs text-gray-500 mt-1">{PASSWORD_HELP}</p>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Repetilo</label>
-                <input
-                  type="password"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={pinConfirm}
-                  onChange={(e) => setPinConfirm(e.target.value.replace(/\D/g, ''))}
-                  placeholder="••••"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-900 tracking-widest"
+                <label htmlFor="register-password-confirm" className="block text-sm font-semibold text-gray-700 mb-1.5">Repetí la contraseña</label>
+                <CustomerPasswordInput
+                  id="register-password-confirm" name="password_confirmation" autoComplete="new-password" required
+                  minLength={MIN_PASSWORD_LENGTH} maxLength={MAX_PASSWORD_LENGTH} disabled={loading}
+                  value={passwordConfirm}
+                  onChange={(e) => setPasswordConfirm(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-900"
                 />
               </div>
             </div>

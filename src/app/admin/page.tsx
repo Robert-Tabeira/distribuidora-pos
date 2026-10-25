@@ -81,7 +81,7 @@ export default function AdminDashboard() {
           <button onClick={() => router.push('/admin/clientes')} className="p-6 bg-gradient-to-br from-teal-50 to-teal-100 border-2 border-teal-200 rounded-2xl hover:shadow-lg transition-all text-left">
             <div className="w-12 h-12 mb-4 rounded-xl bg-teal-600/10 text-teal-700 flex items-center justify-center"><Icon name="store" className="w-6 h-6" /></div>
             <h3 className="font-bold text-lg text-gray-900">Clientes</h3>
-            <p className="text-sm text-gray-600">Ver clientes y resetear códigos</p>
+            <p className="text-sm text-gray-600">Ver clientes y restablecer contraseñas</p>
           </button>
 
           {/* EDICIÓN WEB - PRINCIPAL */}

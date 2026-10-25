@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { PublicLayout } from '@/components/public-layout'
 import { supabase } from '@/lib/supabase'
-import { getCustomerSession, saveCustomerSession, clearCustomerSession, hashPin, type Customer } from '@/lib/customer-auth'
+import { getCustomerSession, saveCustomerSession, clearCustomerSession, type Customer } from '@/lib/customer-auth'
+import { passwordValidationError, PASSWORD_HELP, MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH } from '@/lib/customer-password'
+import { CustomerPasswordInput } from '@/components/customer-password-input'
 import { isCustomerOrderingEnabled } from '@/lib/customer-ordering'
 import { CustomerOrderingUnavailable } from '@/components/customer-ordering-unavailable'
 import { describeBoxContents } from '@/lib/product-packaging'
@@ -18,13 +20,13 @@ export default function CustomerAccountPage() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
 
-  const [showPinChange, setShowPinChange] = useState(false)
-  const [currentPin, setCurrentPin] = useState('')
-  const [newPin, setNewPin] = useState('')
-  const [newPinConfirm, setNewPinConfirm] = useState('')
-  const [pinError, setPinError] = useState('')
-  const [pinSuccess, setPinSuccess] = useState('')
-  const [changingPin, setChangingPin] = useState(false)
+  const [showPasswordChange, setShowPasswordChange] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordSuccess, setPasswordSuccess] = useState('')
+  const [changingPassword, setChangingPassword] = useState(false)
   const [shoppingLists, setShoppingLists] = useState<{ id: string; created_at: string; items: { product_id: string; product_name: string; quantity: number; unit?: string; notes?: string; units_per_box?: number | null }[] }[]>([])
   const [activeSection, setActiveSection] = useState<'lists' | 'details'>('lists')
   const [listsPage, setListsPage] = useState(1)
@@ -54,6 +56,10 @@ export default function CustomerAccountPage() {
     setCustomer(session)
     setName(session.name)
     setEmail(session.email || '')
+    if (session.needs_password_upgrade) {
+      setActiveSection('details')
+      setShowPasswordChange(true)
+    }
     supabase.from('customer_shopping_lists').select('id, created_at, items').eq('customer_id', session.id).order('created_at', { ascending: false }).then(({ data }) => {
       if (data) setShoppingLists(data as typeof shoppingLists)
     })
@@ -70,13 +76,14 @@ export default function CustomerAccountPage() {
         .from('customers')
         .update({ name: name.trim(), email: email.trim() || null })
         .eq('id', customer.id)
-        .select()
+        .select('id,name,business_name,phone,email,created_at,approval_status')
         .single()
 
       if (error) throw error
 
-      saveCustomerSession(data)
-      setCustomer(data)
+      const updatedCustomer = { ...data, needs_password_upgrade: customer.needs_password_upgrade }
+      saveCustomerSession(updatedCustomer)
+      setCustomer(updatedCustomer)
       setMessage('✅ Datos actualizados')
     } catch (err) {
       console.error('Error al guardar:', err)
@@ -86,54 +93,53 @@ export default function CustomerAccountPage() {
     }
   }
 
-  async function handleChangePin(e: React.FormEvent) {
+  async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault()
-    setPinError('')
-    setPinSuccess('')
+    setPasswordError('')
+    setPasswordSuccess('')
     if (!customer) return
 
-    if (newPin.length < 4 || newPin.length > 6 || !/^\d+$/.test(newPin)) {
-      setPinError('El código nuevo debe tener entre 4 y 6 números')
+    if (!currentPassword) {
+      setPasswordError('Ingresá tu contraseña actual o tu código anterior')
       return
     }
-    if (newPin !== newPinConfirm) {
-      setPinError('Los códigos nuevos no coinciden')
+    const validationError = passwordValidationError(newPassword)
+    if (validationError) {
+      setPasswordError(validationError)
+      return
+    }
+    if (newPassword !== newPasswordConfirm) {
+      setPasswordError('Las contraseñas nuevas no coinciden')
+      return
+    }
+    if (newPassword === currentPassword) {
+      setPasswordError('Elegí una contraseña diferente de la actual')
       return
     }
 
-    setChangingPin(true)
+    setChangingPassword(true)
     try {
-      const currentHash = await hashPin(currentPin)
-      const { data: check } = await supabase
-        .from('customers')
-        .select('id')
-        .eq('id', customer.id)
-        .eq('pin_hash', currentHash)
-        .single()
-
-      if (!check) {
-        setPinError('Tu código actual no es correcto')
+      const response = await fetch('/api/customer-access', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'change-password', customer_id: customer.id, current_password: currentPassword, password: newPassword }),
+      })
+      const result = await response.json()
+      if (!response.ok || !result.customer) {
+        setPasswordError(result.error || 'No pudimos cambiar la contraseña')
         return
       }
-
-      const newHash = await hashPin(newPin)
-      const { error } = await supabase
-        .from('customers')
-        .update({ pin_hash: newHash })
-        .eq('id', customer.id)
-
-      if (error) throw error
-
-      setCurrentPin('')
-      setNewPin('')
-      setNewPinConfirm('')
-      setPinSuccess('✅ Código actualizado')
-      setTimeout(() => setShowPinChange(false), 1500)
+      const updatedCustomer: Customer = result.customer
+      saveCustomerSession(updatedCustomer)
+      setCustomer(updatedCustomer)
+      setCurrentPassword('')
+      setNewPassword('')
+      setNewPasswordConfirm('')
+      setPasswordSuccess('✅ Contraseña actualizada')
     } catch (err) {
-      console.error('Error al cambiar código:', err)
-      setPinError('No pudimos cambiar el código')
+      console.error('Error al cambiar contraseña:', err)
+      setPasswordError('No pudimos cambiar la contraseña. Intentá de nuevo.')
     } finally {
-      setChangingPin(false)
+      setChangingPassword(false)
     }
   }
 
@@ -167,6 +173,7 @@ export default function CustomerAccountPage() {
         <div className="max-w-6xl mx-auto">
           <h1 className="text-2xl font-black text-gray-900 mb-1">Mi Cuenta</h1>
           <p className="text-sm text-gray-600 mb-6">Tus datos y listas de compras</p>
+          {customer.needs_password_upgrade && <p role="status" className="mb-6 rounded-xl border border-[#d6c9aa] bg-[#f7f2e6] p-4 text-sm leading-6 text-[#514738]"><strong>Actualizá tu acceso.</strong> Reemplazá tu código numérico por una contraseña de al menos 12 caracteres con letras y números en Datos → Cambiar contraseña. Usá tu código anterior en el campo de contraseña actual.</p>}
 
           <div className="grid grid-cols-1 md:grid-cols-[220px_minmax(0,1fr)] gap-6 items-start">
             <aside className="bg-white rounded-2xl border border-gray-200 shadow-sm p-3 md:sticky md:top-24">
@@ -230,7 +237,7 @@ export default function CustomerAccountPage() {
                   placeholder="tu@email.com"
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-900"
                 />
-                <p className="text-xs text-gray-500 mt-1">Si olvidás tu código de acceso, te enviaremos uno nuevo a este correo.</p>
+                <p className="text-xs text-gray-500 mt-1">Este correo permite solicitar la recuperación de tu contraseña.</p>
               </div>
 
               {message && <p className="text-sm">{message}</p>}
@@ -245,78 +252,78 @@ export default function CustomerAccountPage() {
             </form>
             </section>
 
-          {/* Cambiar código */}
+          {/* Cambiar contraseña */}
           <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 sm:p-6">
-            {!showPinChange ? (
+            {!showPasswordChange ? (
               <button
-                onClick={() => setShowPinChange(true)}
+                onClick={() => { setPasswordSuccess(''); setShowPasswordChange(true) }}
                 className="w-full text-left flex items-center justify-between"
               >
-                <span className="font-semibold text-gray-900">Cambiar código de acceso</span>
+                <span className="font-semibold text-gray-900">Cambiar contraseña</span>
                 <span className="text-gray-400">→</span>
               </button>
             ) : (
-              <form onSubmit={handleChangePin} className="space-y-4">
-                <p className="font-semibold text-gray-900">Cambiar código de acceso</p>
+              <form onSubmit={handleChangePassword} className="space-y-4">
+                <p className="font-semibold text-gray-900">Cambiar contraseña</p>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Código actual</label>
-                  <input
-                    type="password"
-                    inputMode="numeric"
-                    maxLength={6}
-                    value={currentPin}
-                    onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, ''))}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-900 tracking-widest"
+                  <label htmlFor="account-current-password" className="block text-sm font-semibold text-gray-700 mb-1.5">Contraseña actual {customer.needs_password_upgrade ? '(código anterior)' : ''}</label>
+                  <CustomerPasswordInput
+                    id="account-current-password" name="current_password" autoComplete="current-password" required
+                    maxLength={MAX_PASSWORD_LENGTH} disabled={changingPassword}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-900"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Código nuevo</label>
-                    <input
-                      type="password"
-                      inputMode="numeric"
-                      maxLength={6}
-                      value={newPin}
-                      onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-900 tracking-widest"
+                    <label htmlFor="account-new-password" className="block text-sm font-semibold text-gray-700 mb-1.5">Contraseña nueva</label>
+                    <CustomerPasswordInput
+                      id="account-new-password" name="new_password" autoComplete="new-password" required
+                      minLength={MIN_PASSWORD_LENGTH} maxLength={MAX_PASSWORD_LENGTH} disabled={changingPassword}
+                      aria-describedby="account-password-help"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-900"
                     />
+                    <p id="account-password-help" className="mt-1 text-xs text-gray-500">{PASSWORD_HELP}</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Repetilo</label>
-                    <input
-                      type="password"
-                      inputMode="numeric"
-                      maxLength={6}
-                      value={newPinConfirm}
-                      onChange={(e) => setNewPinConfirm(e.target.value.replace(/\D/g, ''))}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-900 tracking-widest"
+                    <label htmlFor="account-confirm-password" className="block text-sm font-semibold text-gray-700 mb-1.5">Repetí la contraseña nueva</label>
+                    <CustomerPasswordInput
+                      id="account-confirm-password" name="password_confirmation" autoComplete="new-password" required
+                      minLength={MIN_PASSWORD_LENGTH} maxLength={MAX_PASSWORD_LENGTH} disabled={changingPassword}
+                      value={newPasswordConfirm}
+                      onChange={(e) => setNewPasswordConfirm(e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-900"
                     />
                   </div>
                 </div>
 
-                {pinError && (
-                  <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{pinError}</p>
+                {passwordError && (
+                  <p role="alert" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{passwordError}</p>
                 )}
-                {pinSuccess && (
-                  <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">{pinSuccess}</p>
+                {passwordSuccess && (
+                  <p role="status" className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">{passwordSuccess}</p>
                 )}
 
                 <div className="flex gap-3">
                   <button
                     type="button"
-                    onClick={() => { setShowPinChange(false); setPinError(''); setCurrentPin(''); setNewPin(''); setNewPinConfirm('') }}
+                    disabled={changingPassword}
+                    onClick={() => { setShowPasswordChange(false); setPasswordError(''); setPasswordSuccess(''); setCurrentPassword(''); setNewPassword(''); setNewPasswordConfirm('') }}
                     className="flex-1 py-2.5 bg-gray-200 text-gray-900 rounded-xl font-semibold hover:bg-gray-300"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    disabled={changingPin}
+                    disabled={changingPassword}
                     className="flex-1 py-2.5 bg-blue-900 text-white rounded-xl font-semibold hover:bg-blue-800 disabled:opacity-60"
                   >
-                    {changingPin ? 'Guardando...' : 'Confirmar'}
+                    {changingPassword ? 'Guardando...' : 'Confirmar'}
                   </button>
                 </div>
               </form>
