@@ -15,12 +15,13 @@ import { optimizedImageSource, optimizedImageSourceSet, SiteImage } from '@/comp
 import { LandingLocation } from '@/components/landing-location'
 import type { LandingLocationSettings } from '@/lib/landing-location'
 import { CATEGORY_APPEARANCE_DEFAULTS, CATEGORY_APPEARANCE_COLORS, categoryTitleSize, type LandingCategoryAppearance } from '@/lib/landing-category-appearance'
+import { ORDER_INSTRUCTIONS_CONTENT } from '@/lib/landing-order-instructions'
 
 interface ProductWithDiscount extends Pick<Product, 'id' | 'name' | 'gallery'> {
   discount?: Discount
 }
 
-type LandingBlockType = 'content' | 'categories' | 'banner' | 'feature_cards' | 'instructions' | 'business_info' | 'location_map' | 'image_carousel' | 'product_grid'
+type LandingBlockType = 'content' | 'categories' | 'banner' | 'feature_cards' | 'instructions' | 'order_instructions' | 'business_info' | 'location_map' | 'image_carousel' | 'product_grid'
 interface LandingSectionSettings extends LandingLocationSettings, LandingCategoryAppearance {
   button_text?: string
   button_url?: string
@@ -139,7 +140,9 @@ function LandingBlockRenderer({
   products: ProductWithDiscount[]
   businessSettings: BusinessSettings | null
 }) {
-  const settings = section.settings || {}
+  const settings: LandingSectionSettings = section.block_type === 'order_instructions'
+    ? { ...ORDER_INSTRUCTIONS_CONTENT.settings, ...(section.settings || {}) }
+    : section.settings || {}
   const heading = section.title || section.section_name
   const mobileImageOrder = MOBILE_IMAGE_ORDER_CLASS[settings.mobile_image_order || 'first']
   const mobileTextOrder = MOBILE_TEXT_ORDER_CLASS[settings.mobile_image_order || 'first']
@@ -208,7 +211,7 @@ function LandingBlockRenderer({
     )
   }
 
-  if (section.block_type === 'instructions') {
+  if (section.block_type === 'instructions' || section.block_type === 'order_instructions') {
     const steps = (settings.instruction_steps || []).filter(step => Boolean(step && (step.title || step.description || step.image_url)))
     return (
       <section
