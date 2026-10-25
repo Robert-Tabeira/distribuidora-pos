@@ -175,6 +175,15 @@ export default function CatalogPage() {
   }, [selectedCategories, urlStateReady])
 
   useEffect(() => {
+    if (!urlStateReady || !customerOrderingEnabled) return
+    const url = new URL(window.location.href)
+    if (url.searchParams.get('pedido') !== '1') return
+    setShowCart(true)
+    url.searchParams.delete('pedido')
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`)
+  }, [urlStateReady, customerOrderingEnabled])
+
+  useEffect(() => {
     if (!customerOrderingEnabled) return
     let active = true
     let request = 0

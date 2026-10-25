@@ -1,0 +1,75 @@
+.account { min-height: 100vh; background: #f8f3e9; color: #332a20; font-family: 'DM Sans', sans-serif; overflow-wrap: anywhere; }
+.container { max-width: 1200px; margin: auto; padding: 28px 16px 56px; }
+.intro { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px; padding-bottom: 24px; margin-bottom: 24px; border-bottom: 1px solid #e3d7c4; }
+.eyebrow { color: #6d7048; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .16em; margin-bottom: 8px; }
+.title, .sectionTitle, .listTitle { font-family: 'Lora', Georgia, serif; color: #30261d; font-weight: 700; }
+.title { font-size: clamp(30px, 4vw, 44px); line-height: 1.2; }
+.sectionTitle { font-size: 24px; line-height: 1.35; }
+.listTitle { font-size: 20px; line-height: 1.4; }
+.muted { color: #786e60; font-size: 13px; line-height: 1.7; }
+.layout { display: grid; gap: 20px; align-items: start; }
+.sidebar, .panel, .listCard { background: #fffdf8; border: 1px solid #e3d7c4; border-radius: 22px; box-shadow: 0 4px 18px rgb(60 47 28 / 4%); }
+.sidebar { padding: 18px; }
+.profileIcon { display: inline-flex; align-items: center; justify-content: center; height: 44px; width: 44px; flex-shrink: 0; border-radius: 14px; background: #eeeedf; color: #61683e; }
+.navigation { display: flex; gap: 8px; margin-top: 18px; }
+.navButton { display: flex; flex: 1; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 14px; min-height: 44px; color: #706556; font-size: 13px; font-weight: 600; }
+.navButton[aria-current="page"] { background: #575b36; color: white; }
+.navButton:hover:not([aria-current="page"]) { background: #f2eddf; }
+.panel { padding: 22px 18px; }
+.primaryButton, .secondaryButton, .quietButton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 11px 18px; border-radius: 999px; font-size: 13px; font-weight: 700; text-align: center; transition: background-color .2s, border-color .2s; }
+.primaryButton { background: #575b36; color: white; border: 1px solid #575b36; }
+.primaryButton:hover:not(:disabled) { background: #414529; }
+.secondaryButton { border: 1px solid #bdb99b; background: #fffdf8; color: #545738; }
+.secondaryButton:hover:not(:disabled), .quietButton:hover:not(:disabled) { background: #eeebdc; }
+.quietButton { color: #756854; }
+.account button:disabled { cursor: not-allowed; opacity: .5; }
+.account :is(button, a, input, textarea, select):focus-visible { outline: 2px solid #777b52; outline-offset: 3px; }
+.account button[aria-controls] { color: #575b36; }
+.account input:is([autocomplete="current-password"], [autocomplete="new-password"]) { padding-right: 88px; }
+.field { width: 100%; padding: 11px 13px; border: 1px solid #d9cdb8; border-radius: 12px; color: #332a20; background: white; font-size: 16px; min-height: 44px; }
+.field:disabled { background: #f1ede3; color: #8a8070; }
+.label { display: block; font-size: 13px; font-weight: 600; color: #514738; margin-bottom: 7px; }
+.notice { padding: 14px 16px; border: 1px solid #d6d8bf; border-radius: 14px; background: #f1f1e6; color: #555c37; font-size: 13px; line-height: 1.7; }
+.error { border-color: #e3c1af; background: #fff5ee; color: #8f452b; }
+.empty { padding: 44px 20px; border: 1px dashed #d6c8af; background: #fffdf8; border-radius: 22px; text-align: center; }
+.listGrid { display: grid; gap: 16px; }
+.listCard { padding: 20px; min-width: 0; display: flex; flex-direction: column; }
+.listActions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 18px; }
+.listActions > * { flex: 1; }
+.preview { display: flex; align-items: center; gap: 10px; margin-top: 10px; min-width: 0; font-size: 12px; color: #706556; }
+.previewName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.productImage { position: relative; display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; flex-shrink: 0; border-radius: 12px; overflow: hidden; background: white; border: 1px solid #eee4d4; color: #9b8e73; }
+.preview .productImage { width: 36px; height: 36px; border-radius: 9px; }
+.pagination { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; margin-top: 24px; }
+.pageButton { min-height: 40px; min-width: 40px; border: 1px solid #d9cdb8; border-radius: 11px; padding: 8px 12px; font-size: 12px; }
+.pageButton[aria-current="page"] { background: #575b36; border-color: #575b36; color: white; }
+.backdrop { position: fixed; inset: 0; z-index: 70; background: rgb(0 0 0 / 60%); display: flex; align-items: flex-end; justify-content: center; }
+.dialog { width: 100%; max-height: 92vh; max-height: 92svh; display: flex; flex-direction: column; background: #fffdf8; border-radius: 24px 24px 0 0; box-shadow: 0 20px 60px rgb(30 20 10 / 20%); }
+.dialogHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px; border-bottom: 1px solid #e3d7c4; }
+.dialogBody { padding: 20px; overflow-y: auto; min-height: 0; overscroll-behavior: contain; }
+.dialogFooter { display: flex; flex-wrap: wrap; gap: 10px; padding: 16px 20px; padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid #e3d7c4; }
+.dialogFooter > * { flex: 1; }
+.closeButton { display: flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; border-radius: 12px; color: #817565; }
+.item { padding: 18px 0; border-bottom: 1px solid #e9dfce; }
+.item:last-child { border-bottom: none; }
+.itemHeading { display: flex; gap: 14px; align-items: flex-start; }
+.itemControls { display: grid; gap: 12px; margin-top: 14px; }
+.searchResult { width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; min-height: 64px; padding: 10px; border-bottom: 1px solid #eee4d4; font-size: 13px; }
+.searchResult:hover { background: #f1eddf; }
+@media (min-width: 640px) {
+  .container { padding: 36px 24px 64px; }
+  .panel { padding: 26px; }
+  .listGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .backdrop { align-items: center; padding: 20px; }
+  .dialog { max-width: 720px; border-radius: 24px; }
+  .dialogHeader, .dialogBody { padding: 24px; }
+  .dialogFooter { padding: 18px 24px; }
+  .itemControls { grid-template-columns: 130px minmax(0, 1fr); }
+}
+@media (min-width: 1024px) {
+  .layout { grid-template-columns: 230px minmax(0, 1fr); gap: 24px; }
+  .sidebar { position: sticky; top: 100px; }
+  .navigation { flex-direction: column; }
+  .navButton { justify-content: flex-start; }
+}
+@media (prefers-reduced-motion: reduce) { .primaryButton, .secondaryButton, .quietButton { transition: none; } }

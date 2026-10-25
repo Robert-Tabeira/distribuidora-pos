@@ -22,6 +22,7 @@ Sin la clave privada, el inicio de sesión conserva su funcionamiento y el guard
 - El identificador de cuenta nunca se toma del cuerpo para autorizar ni elegir el propietario de una lista. `X-Customer-Id` solo detecta diferencias entre la cuenta mostrada en la interfaz y la cookie actual, por ejemplo entre pestañas.
 - El servidor valida cantidades, presentaciones y notas, y construye las copias de nombres y unidades por caja consultando los productos actuales del catálogo. Conserva la compatibilidad de productos sin `units_per_box`.
 - Mi cuenta muestra estados de carga y error con opción de reintentar, en vez de presentar un fallo de permisos como si no hubiera listas.
+- La edición, los nombres y la repetición guiada de listas se describen en `docs/mi-cuenta-y-listas-guardadas.md`. Requieren además la migración `202610250004_editable_customer_shopping_lists.sql`.
 - Los pedidos y las consultas por WhatsApp conservan su funcionamiento. Este cambio restringe únicamente la tabla de listas y no constituye una revisión de permisos de las demás tablas del proyecto.
 
 No se configuró la clave privada remota ni se ejecutó la migración de producción. Se revisaron los cambios estáticamente; no se ejecutaron pruebas, build ni comprobaciones de tipos.
