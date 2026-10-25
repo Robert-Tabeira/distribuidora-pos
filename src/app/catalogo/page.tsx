@@ -1042,12 +1042,12 @@ export default function CatalogPage() {
               {customerOrderingEnabled && <label className="block text-sm font-semibold text-[#514738] mb-2" htmlFor="catalog-product-notes">Anotación para este producto <span className="font-normal text-[#9a8e7d]">(opcional)</span></label>}
               {customerOrderingEnabled && <textarea id="catalog-product-notes" value={productNotes} onChange={event => setProductNotes(event.target.value)} maxLength={300} rows={3} placeholder="Ej.: sabor, presentación o alguna indicación" className="w-full px-3 py-2 border border-[#d9cdb8] rounded-xl resize-y focus:outline-none focus:ring-2 focus:ring-[#777b52]" />}
 
-              <button onClick={() => addToPriceInquiry(selectedProduct.id)} className={`${styles.primaryButton} mt-4 w-full`}>
-                {priceInquiryProductIds.includes(selectedProduct.id) ? 'Ver mi consulta de precios' : 'Agregar a consulta de precios'}
-              </button>
-              {customerOrderingEnabled && <button type="button" onClick={handleAddToCart} className={`${styles.secondaryButton} mt-2 w-full`}>
+              {customerOrderingEnabled && <button type="button" onClick={handleAddToCart} className={`${styles.primaryButton} mt-4 w-full`}>
                 Agregar al pedido
               </button>}
+              <button type="button" onClick={() => addToPriceInquiry(selectedProduct.id)} className={`${customerOrderingEnabled ? styles.secondaryButton : styles.primaryButton} ${customerOrderingEnabled ? 'mt-2' : 'mt-4'} w-full`}>
+                {priceInquiryProductIds.includes(selectedProduct.id) ? 'Ver mi consulta de precios' : 'Agregar a consulta de precios'}
+              </button>
             </div>
           </div>
         </div>
