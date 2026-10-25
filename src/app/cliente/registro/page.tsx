@@ -71,7 +71,7 @@ export default function CustomerRegisterPage() {
       setSubmitted(true)
     } catch (err) {
       console.error('Error al registrar:', err)
-      setError('No pudimos crear tu cuenta. Intentá de nuevo.')
+      setError('No pudimos enviar tu solicitud de registro. Intentá de nuevo.')
     } finally {
       setLoading(false)
     }
@@ -84,11 +84,18 @@ export default function CustomerRegisterPage() {
           {submitted ? <>
             <div className="text-4xl mb-3">🕒</div>
             <h1 className="text-2xl font-black text-gray-900 mb-3">Solicitud recibida</h1>
-            <p className="text-sm text-gray-700 leading-relaxed">Revisaremos los datos del comercio y el teléfono indicado. La respuesta puede demorar hasta 24 horas. El acceso para realizar pedidos queda sujeto a la evaluación y aprobación de Distribuidora Los Primos; el envío de la solicitud no garantiza su aprobación.</p>
+            <p className="mb-3 text-sm font-bold text-[#575b36]">Registro únicamente para negocios.</p>
+            <p className="text-sm text-gray-700 leading-relaxed">Tu cuenta está pendiente de revisión y confirmación por parte del local. Revisaremos los datos del comercio y el teléfono indicado; la respuesta puede demorar hasta 24 horas. La cuenta se habilitará únicamente si Distribuidora Los Primos aprueba la solicitud. Enviar el formulario no implica su aprobación automática.</p>
             <Link href="/catalogo" className="block text-center mt-6 w-full py-3 bg-blue-900 text-white rounded-xl font-bold hover:bg-blue-800">Volver al catálogo</Link>
           </> : <>
-          <h1 className="text-2xl font-black text-gray-900 mb-1">Creá tu cuenta</h1>
-          <p className="text-sm text-gray-600 mb-6">Solicitá acceso para realizar pedidos como comercio.</p>
+          <h1 className="text-2xl font-black text-gray-900 mb-1">Solicitá tu cuenta de negocio</h1>
+          <p className="text-sm text-gray-600 mb-4">Completá los datos de tu comercio para solicitar el acceso.</p>
+
+          <div className="mb-6 rounded-xl border border-[#d6c9aa] bg-[#f7f2e6] p-4 text-[#514738]">
+            <h2 className="text-sm font-extrabold">ÚNICAMENTE PARA NEGOCIOS</h2>
+            <p className="mt-2 text-sm leading-6">El registro está sujeto a la revisión y confirmación del local. La cuenta se habilita solo después de que Distribuidora Los Primos apruebe la solicitud.</p>
+            <p className="mt-2 text-sm leading-6">Si comprás para tu hogar, podés <Link href="/catalogo" className="font-semibold underline">hacer un pedido sin registro para retirar en mostrador</Link>.</p>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <p className="rounded-xl border border-[#e3d7c4] bg-[#f8f3e9] p-3 text-xs leading-6 text-[#706556]">Usamos tus datos para gestionar el acceso, guardar tus listas y atender consultas y pedidos. El correo es opcional y permite recuperar el acceso. Más información en la <Link href="/privacidad" className="font-semibold underline">política de privacidad</Link> y los <Link href="/terminos" className="font-semibold underline">términos de uso</Link>.</p>
@@ -170,7 +177,7 @@ export default function CustomerRegisterPage() {
               disabled={loading}
               className="w-full py-3 bg-blue-900 text-white rounded-xl font-bold hover:bg-blue-800 transition-all disabled:opacity-60"
             >
-              {loading ? 'Creando cuenta...' : 'Crear cuenta'}
+              {loading ? 'Enviando solicitud...' : 'Solicitar registro de negocio'}
             </button>
           </form>
 

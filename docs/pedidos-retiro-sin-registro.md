@@ -13,6 +13,7 @@
 
 ## Empresas y listas guardadas
 
+- El acceso desde **Mi cuenta** informa que el registro es únicamente para negocios y está sujeto a la revisión y confirmación del local. El formulario destaca la aclaración antes de pedir datos, presenta el envío como una solicitud y confirma que la cuenta queda pendiente. También ofrece el enlace al catálogo para pedidos de retiro sin registro. Se conserva `approval_status: 'pending'` al registrar y la comprobación de aprobación al iniciar sesión.
 - Se verifica en `customers` que exista un nombre de comercio y que `approval_status` sea `approved` antes de mostrar el botón para guardar listas.
 - Se vuelve a comprobar el acceso antes de guardar en `customer_shopping_lists` y antes de preparar el mensaje de empresa.
 - Las empresas aprobadas mantienen el mensaje con el nombre y comercio de su cuenta y no deben completar el campo de nombre de retiro. Coordinan las condiciones de atención directamente con el negocio.

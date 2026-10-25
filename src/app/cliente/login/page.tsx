@@ -78,7 +78,7 @@ export default function CustomerLoginPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
         {!featureChecked ? <p className="text-gray-500">Cargando...</p> : !featureEnabled ? <CustomerOrderingUnavailable /> : <div className="w-full max-w-md bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
           <h1 className="text-2xl font-black text-gray-900 mb-1">Iniciar sesión</h1>
-          <p className="text-sm text-gray-600 mb-6">Para armar y mandar tu pedido</p>
+          <p className="text-sm text-gray-600 mb-6">Acceso para negocios con cuenta aprobada por el local.</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -125,9 +125,10 @@ export default function CustomerLoginPage() {
           <p className="text-sm text-gray-600 text-center mt-6">
             ¿No tenés cuenta?{' '}
             <Link href="/cliente/registro" className="text-blue-900 font-semibold hover:underline">
-              Registrate
+              Solicitá el registro de tu negocio
             </Link>
           </p>
+          <p className="mt-2 text-center text-xs leading-5 text-gray-600">El registro es únicamente para negocios y está sujeto a la revisión y confirmación del local.</p>
         </div>}
       </div>
     </PublicLayout>
