@@ -43,6 +43,9 @@ interface LandingSectionSettings extends LandingLocationSettings, LandingCategor
   category_icon_hover_color?: string
   cards?: Array<{ title: string; description: string; image_url: string; mobile_image_url?: string; link_url: string; button_text: string }>
   instruction_steps?: Array<{ title: string; description: string; image_url: string; mobile_image_url?: string }>
+  instruction_shipping_visible?: boolean
+  instruction_shipping_title?: string
+  instruction_shipping_text?: string
   instruction_note_title?: string
   instruction_note?: string
   instruction_section_bg?: string
@@ -275,6 +278,13 @@ function LandingBlockRenderer({
               </div>
             ))}
           </div>
+          {section.block_type === 'order_instructions' && settings.instruction_shipping_visible !== false && (settings.instruction_shipping_title || settings.instruction_shipping_text) && <div className="mt-7 flex items-start gap-4 rounded-[1.6rem] border p-5 sm:gap-5 sm:p-6" style={{ backgroundColor: settings.instruction_note_bg || '#fffdf8', borderColor: settings.instruction_note_border || '#e3d8c4' }}>
+            <Icon name="location" aria-hidden="true" className="mt-1 h-7 w-7 shrink-0" style={{ color: settings.instruction_note_icon_color || '#4f4e30' }} />
+            <div className="min-w-0">
+              {settings.instruction_shipping_title && <h3 className="text-xl font-bold sm:text-2xl" style={{ color: settings.instruction_note_title_color || '#21170f' }}>{settings.instruction_shipping_title}</h3>}
+              {settings.instruction_shipping_text && <p className="mt-2 whitespace-pre-line text-sm leading-6 sm:text-base" style={{ color: settings.instruction_note_text_color || '#49433b' }}>{settings.instruction_shipping_text}</p>}
+            </div>
+          </div>}
           {(settings.instruction_note_title || settings.instruction_note || settings.button_text) && <div className="mt-7 flex flex-col gap-5 rounded-[1.8rem] border p-5 shadow-[0_8px_24px_rgba(72,54,31,0.07)] sm:p-6 lg:flex-row lg:items-center lg:gap-7" style={{ backgroundColor: settings.instruction_note_bg || '#fffdf8', borderColor: settings.instruction_note_border || '#e3d8c4' }}>
             {(settings.instruction_note_title || settings.instruction_note) && <div className="flex min-w-0 flex-1 items-center gap-4 sm:gap-6">
               <Icon name="sparkles" className="h-9 w-9 shrink-0 sm:h-10 sm:w-10" style={{ color: settings.instruction_note_icon_color || '#4f4e30' }} />

@@ -313,6 +313,9 @@ interface LandingSectionSettings extends LandingLocationSettings, LandingCategor
   category_icon_hover_color?: string
   cards?: LandingFeatureCard[]
   instruction_steps?: LandingInstructionStep[]
+  instruction_shipping_visible?: boolean
+  instruction_shipping_title?: string
+  instruction_shipping_text?: string
   instruction_note_title?: string
   instruction_note?: string
   instruction_section_bg?: string
@@ -4544,6 +4547,20 @@ export default function WebsiteEditionPage() {
                       </div>
                     </div>
                   ))}
+                  {sectionForm.block_type === 'order_instructions' && <div className="space-y-3 rounded-xl border border-[#d8c1a3] bg-white p-4">
+                    <h5 className="font-semibold text-text">Aclaración sobre retiros y envíos</h5>
+                    <label className="flex items-center gap-3 text-sm font-medium text-text-muted">
+                      <input type="checkbox" checked={sectionForm.settings.instruction_shipping_visible !== false} onChange={event => updateLandingSettings({ instruction_shipping_visible: event.target.checked })} className="h-4 w-4 rounded border-gray-300" />
+                      Mostrar aclaración debajo de los tres pasos
+                    </label>
+                    <label className="block text-sm font-medium text-text-muted">Título de la aclaración
+                      <input className="input mt-1" value={sectionForm.settings.instruction_shipping_title ?? ORDER_INSTRUCTIONS_CONTENT.settings.instruction_shipping_title} onChange={event => updateLandingSettings({ instruction_shipping_title: event.target.value })} />
+                    </label>
+                    <label className="block text-sm font-medium text-text-muted">Condiciones de retiro y envío
+                      <textarea className="input mt-1 min-h-32" value={sectionForm.settings.instruction_shipping_text ?? ORDER_INSTRUCTIONS_CONTENT.settings.instruction_shipping_text} onChange={event => updateLandingSettings({ instruction_shipping_text: event.target.value })} />
+                    </label>
+                    <p className="text-xs text-text-muted">Podés indicar las zonas, días y condiciones del reparto. Este aviso utiliza los colores de la franja inferior y las tipografías del bloque.</p>
+                  </div>}
                   <label className="block text-sm font-medium text-text-muted">Título de la franja inferior (opcional)
                     <input className="input mt-1" value={sectionForm.settings.instruction_note_title || ''} onChange={event => updateLandingSettings({ instruction_note_title: event.target.value })} placeholder="¿Sos comerciante o comprás para tu hogar?" />
                   </label>
