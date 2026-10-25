@@ -18,6 +18,12 @@ El dato es opcional para mantener compatibles los productos existentes. Si se co
 
 La cantidad del pedido sigue expresada en cajas; el dato no cambia precios ni convierte el pedido automáticamente a unidades sueltas. Las formas de venta distintas de caja mantienen su comportamiento.
 
+## Elección obligatoria al pedir
+
+El detalle del producto abre sin una presentación preseleccionada, incluso si hay una sola opción. El cliente debe elegir **Por unidad**, **Por caja** o **Por funda**, según las opciones disponibles, para habilitar **Agregar al pedido**. El manejador también rechaza agregar sin una elección válida.
+
+La elección se reinicia al abrir cualquier producto, también desde un enlace directo o al navegar con las flechas del navegador. La consulta de precios sigue disponible sin seleccionar una presentación; los artículos ya agregados al carrito y las listas guardadas conservan sus opciones.
+
 ## Compatibilidad y entrega
 
 La columna nueva es nullable y tiene una restricción para aceptar únicamente enteros positivos. El catálogo reintenta la consulta sin la columna si la migración todavía no se aplicó, para seguir mostrando los productos. El editor informa la migración requerida si se intenta guardar una cantidad sin la columna instalada.
