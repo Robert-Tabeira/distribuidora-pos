@@ -151,8 +151,28 @@ export async function PATCH(request: NextRequest) {
   } catch (error) { return databaseError(error) }
 }
 
-export async function DELETE() {
-  const response = reply({ success: true })
-  clearCustomerServerSession(response)
-  return response
+export async function DELETE(request: NextRequest) {
+  // Sin identificador sigue siendo el cierre de sesión de Mi cuenta.
+  if (!request.nextUrl.searchParams.has('id')) {
+    const response = reply({ success: true })
+    clearCustomerServerSession(response)
+    return response
+  }
+  try {
+    const result = await access(request)
+    if ('response' in result) return result.response
+    const id = request.nextUrl.searchParams.get('id') || ''
+    const version = request.nextUrl.searchParams.get('updated_at') || ''
+    if (!UUID.test(id) || !Number.isFinite(Date.parse(version))) return reply({ error: 'La lista solicitada no es válida. Recargá tus listas e intentá de nuevo.' }, 400)
+    const { data: existing, error: readError } = await result.client.from('customer_shopping_lists')
+      .select('id,updated_at').eq('id', id).eq('customer_id', result.customer.id).maybeSingle()
+    if (readError) throw readError
+    if (!existing) return reply({ error: 'No encontramos esa lista en tu cuenta. Cancelá y recargá tus listas.' }, 404)
+    if (existing.updated_at !== version) return reply({ error: 'Esta lista cambió en otra ventana. Cancelá y recargá tus listas antes de borrarla.' }, 409)
+    const { data, error } = await result.client.from('customer_shopping_lists').delete()
+      .eq('id', id).eq('customer_id', result.customer.id).eq('updated_at', version).select('id').maybeSingle()
+    if (error) throw error
+    if (!data) return reply({ error: 'La lista cambió mientras intentabas borrarla. Cancelá y recargá tus listas.' }, 409)
+    return reply({ deleted_id: data.id })
+  } catch (error) { return databaseError(error) }
 }

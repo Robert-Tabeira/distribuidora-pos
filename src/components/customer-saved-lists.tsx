@@ -30,6 +30,9 @@ export function CustomerSavedLists({ customerId }: { customerId: string }) {
   const [draftName, setDraftName] = useState('')
   const [draftItems, setDraftItems] = useState<DraftItem[]>([])
   const [saving, setSaving] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<SavedShoppingList | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
   const [modalError, setModalError] = useState('')
   const [notice, setNotice] = useState('')
   const [replaceCart, setReplaceCart] = useState(false)
@@ -38,6 +41,7 @@ export function CustomerSavedLists({ customerId }: { customerId: string }) {
   const [searchLoading, setSearchLoading] = useState(false)
   const [searchError, setSearchError] = useState('')
   const dialogRef = useRef<HTMLElement>(null)
+  const headingRef = useRef<HTMLHeadingElement>(null)
   const closeRef = useRef(() => {})
   const sequence = useRef(0)
   const pages = Math.max(1, Math.ceil(lists.length / 6))
@@ -66,15 +70,18 @@ export function CustomerSavedLists({ customerId }: { customerId: string }) {
   }
 
   useEffect(() => { void loadLists() }, [customerId])
+  useEffect(() => { setPage(current => Math.min(current, Math.max(1, Math.ceil(lists.length / 6)))) }, [lists.length])
 
   function closeDialog() {
-    if (saving || (dirty && !window.confirm('Tenés cambios sin guardar. ¿Querés cerrar la lista y descartarlos?'))) return
+    if (saving || deleting) return
+    if (deleteTarget) { setDeleteTarget(null); setDeleteError(''); return }
+    if (dirty && !window.confirm('Tenés cambios sin guardar. ¿Querés cerrar la lista y descartarlos?')) return
     setActiveList(null); setSearch(''); setReplaceCart(false)
   }
   closeRef.current = closeDialog
 
   useEffect(() => {
-    if (!activeList) return
+    if (!activeList && !deleteTarget) return
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -90,8 +97,8 @@ export function CustomerSavedLists({ customerId }: { customerId: string }) {
       else if (!event.shiftKey && (outside || document.activeElement === last || document.activeElement === dialogRef.current)) { event.preventDefault(); first.focus() }
     }
     document.addEventListener('keydown', keyboard)
-    return () => { document.body.style.overflow = previousOverflow; document.removeEventListener('keydown', keyboard); if (previousFocus?.getClientRects().length) previousFocus.focus() }
-  }, [activeList?.id])
+    return () => { document.body.style.overflow = previousOverflow; document.removeEventListener('keydown', keyboard); if (previousFocus?.getClientRects().length) previousFocus.focus(); else headingRef.current?.focus() }
+  }, [activeList?.id, deleteTarget?.id])
 
   useEffect(() => {
     setSearchResults([]); setSearchError(''); setSearchLoading(false)
@@ -174,9 +181,33 @@ export function CustomerSavedLists({ customerId }: { customerId: string }) {
     finally { setSaving(false) }
   }
 
+  function requestDelete(list: SavedShoppingList) {
+    if (saving || deleting || openingId) return
+    setDeleteTarget(list); setDeleteError(''); setError(''); setNotice(''); setNeedsLogin(false)
+  }
+
+  async function deleteList() {
+    if (!deleteTarget || deleting) return
+    const target = deleteTarget
+    setDeleting(true); setDeleteError(''); setError(''); setNeedsLogin(false)
+    try {
+      const params = new URLSearchParams({ id: target.id, updated_at: target.updated_at })
+      const response = await fetch(`/api/customer-shopping-lists?${params}`, { method: 'DELETE', credentials: 'same-origin', headers: headers() })
+      const result = await response.json()
+      if (!response.ok || result.deleted_id !== target.id) { setNeedsLogin(response.status === 401); throw new Error(result.error || 'No pudimos borrar la lista. Intentá de nuevo.') }
+      setLists(current => current.filter(list => list.id !== target.id))
+      if (activeList?.id === target.id) { setActiveList(null); setEditing(false); setSearch(''); setReplaceCart(false) }
+      setDeleteTarget(null)
+      setNotice(`La lista «${shoppingListTitle(target)}» fue borrada.`)
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : 'No pudimos borrar la lista. Intentá de nuevo.'
+      setDeleteError(message); setError(message)
+    } finally { setDeleting(false) }
+  }
+
   return <>
     <section>
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4"><div><p className={styles.eyebrow}>Tus pedidos de siempre</p><h2 className={styles.sectionTitle}>Mis listas guardadas</h2><p className={`${styles.muted} mt-2 max-w-xl`}>Guardá tus compras habituales una vez. Después abrí una lista, ajustá lo que necesites y repetí el pedido.</p></div><Link href="/catalogo" className={styles.secondaryButton}><Icon name="cart" className="h-4 w-4" />Ir al catálogo</Link></div>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4"><div><p className={styles.eyebrow}>Tus pedidos de siempre</p><h2 ref={headingRef} tabIndex={-1} className={styles.sectionTitle}>Mis listas guardadas</h2><p className={`${styles.muted} mt-2 max-w-xl`}>Guardá tus compras habituales una vez. Después abrí una lista, ajustá lo que necesites y repetí el pedido.</p></div><Link href="/catalogo" className={styles.secondaryButton}><Icon name="cart" className="h-4 w-4" />Ir al catálogo</Link></div>
       {notice && <p role="status" className={`${styles.notice} mb-4`}>{notice}</p>}
       {error && <div role="alert" className={`${styles.notice} ${styles.error} mb-4`}><p>{error}</p>{needsLogin ? <Link href="/cliente/login" className="mt-2 inline-block font-bold underline">Volver a iniciar sesión</Link> : <button onClick={() => void loadLists()} className="mt-2 font-bold underline">Reintentar</button>}</div>}
       {loading ? <p role="status" className={styles.notice}>Cargando tus listas…</p> : !error && !lists.length ? <div className={styles.empty}><span className={styles.profileIcon}><Icon name="document" className="h-6 w-6" /></span><h3 className={`${styles.listTitle} mt-4`}>Tu próximo pedido empieza acá</h3><p className={`${styles.muted} mx-auto mt-2 mb-5 max-w-sm`}>Armá tu pedido en el catálogo y elegí «Guardar lista en mi cuenta». La próxima vez tendrás tus productos listos para repetir.</p><Link href="/catalogo" className={styles.primaryButton}>Armar mi primera lista<Icon name="cart" className="h-4 w-4" /></Link></div> : <div className={styles.listGrid}>{lists.slice((page - 1) * 6, page * 6).map(list => <article key={list.id} className={styles.listCard}>
@@ -184,11 +215,20 @@ export function CustomerSavedLists({ customerId }: { customerId: string }) {
         <h3 className={styles.listTitle}>{shoppingListTitle(list)}</h3><p className={`${styles.muted} mt-1`}>Guardada el {shoppingListDate(list.created_at)}</p>
         <div className="my-3">{list.items.slice(0, 3).map((item, index) => <div key={`${item.product_id}-${index}`} className={styles.preview}><Thumbnail src={item.image_url} /><span className={styles.previewName}>{item.quantity} × {item.product_name}</span></div>)}{list.items.length > 3 && <p className={`${styles.muted} mt-2`}>Y {list.items.length - 3} artículos más</p>}</div>
         <div className={styles.listActions}><button onClick={() => void openList(list, 'view')} disabled={Boolean(openingId)} className={styles.secondaryButton}>{openingId === list.id ? 'Abriendo…' : 'Ver y editar'}</button><button onClick={() => void openList(list, 'repeat')} disabled={Boolean(openingId)} className={styles.primaryButton}>Repetir pedido</button></div>
+        <button onClick={() => requestDelete(list)} disabled={Boolean(openingId) || deleting} className={`${styles.dangerButton} mt-3 self-start`} aria-label={`Borrar lista ${shoppingListTitle(list)}`}>Borrar lista</button>
       </article>)}</div>}
       {!loading && pages > 1 && <nav aria-label="Páginas de listas" className={styles.pagination}><button className={styles.pageButton} disabled={page === 1} onClick={() => setPage(current => current - 1)}>Anterior</button><span className={`${styles.muted} px-2 py-2`}>{page} de {pages}</span><button className={styles.pageButton} disabled={page >= pages} onClick={() => setPage(current => current + 1)}>Siguiente</button></nav>}
     </section>
 
-    {activeList && <div className={styles.backdrop} onClick={event => { if (event.target === event.currentTarget) closeDialog() }}>
+    {deleteTarget && <div className={styles.backdrop} onClick={event => { if (event.target === event.currentTarget) closeDialog() }}>
+      <section ref={dialogRef} tabIndex={-1} role="alertdialog" aria-modal="true" aria-labelledby="delete-list-heading" aria-describedby="delete-list-description" className={styles.dialog}>
+        <header className={styles.dialogHeader}><div><p className={styles.eyebrow}>Mis listas guardadas</p><h2 id="delete-list-heading" className={styles.sectionTitle}>¿Borrar esta lista?</h2></div><button onClick={closeDialog} disabled={deleting} aria-label="Cancelar borrado" className={styles.closeButton}><Icon name="close" className="h-5 w-5" /></button></header>
+        <div className={styles.dialogBody}><p className={`${styles.listTitle} mb-3`}>{shoppingListTitle(deleteTarget)}</p><p id="delete-list-description" className={styles.muted}>Se eliminará esta lista guardada de tu cuenta. Esta acción no se puede deshacer. Los artículos de tu carrito actual se conservan.</p>{deleteError && <div role="alert" className={`${styles.notice} ${styles.error} mt-4`}><p>{deleteError}</p>{needsLogin && <Link href="/cliente/login" className="mt-2 inline-block font-bold underline">Volver a iniciar sesión</Link>}</div>}</div>
+        <footer className={styles.dialogFooter}><button onClick={closeDialog} disabled={deleting} className={styles.secondaryButton}>Cancelar</button><button onClick={() => void deleteList()} disabled={deleting} className={styles.dangerButton}>{deleting ? 'Borrando…' : 'Sí, borrar lista'}</button></footer>
+      </section>
+    </div>}
+
+    {activeList && !deleteTarget && <div className={styles.backdrop} onClick={event => { if (event.target === event.currentTarget) closeDialog() }}>
       <section ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="saved-list-heading" aria-describedby="saved-list-description" className={styles.dialog}>
         <header className={styles.dialogHeader}><div><p className={styles.eyebrow}>{editing ? 'Personalizá tu próxima compra' : 'Tu lista de compras'}</p><h2 id="saved-list-heading" className={styles.sectionTitle}>{editing ? 'Editar lista' : shoppingListTitle(activeList)}</h2><p id="saved-list-description" className={`${styles.muted} mt-1`}>Repetir carga los productos en «Mi pedido». El envío por WhatsApp lo hacés después de revisarlos.</p></div><button onClick={closeDialog} disabled={saving} aria-label="Cerrar lista" className={styles.closeButton}><Icon name="close" className="h-5 w-5" /></button></header>
         <div className={styles.dialogBody}>
@@ -208,6 +248,7 @@ export function CustomerSavedLists({ customerId }: { customerId: string }) {
           })}
           {editing && <div className="mt-6 rounded-2xl border border-[#e3d7c4] bg-[#f8f3e9] p-4"><label htmlFor="saved-list-search" className={styles.label}>Agregar otro producto</label><input id="saved-list-search" type="search" value={search} maxLength={80} disabled={saving || draftItems.length >= 500} className={styles.field} placeholder="Buscá por nombre, al menos 2 letras" onChange={event => setSearch(event.target.value)} />{searchLoading && <p role="status" className={`${styles.muted} mt-2`}>Buscando productos…</p>}{searchError && <p role="alert" className="mt-2 text-sm text-[#9a5035]">{searchError}</p>}{!searchLoading && !searchError && search.trim().length >= 2 && !searchResults.length && <p className={`${styles.muted} mt-2`}>No hay resultados para esta búsqueda.</p>}{searchResults.length > 0 && <div className="mt-2 max-h-64 overflow-y-auto rounded-xl border border-[#e3d7c4] bg-white">{searchResults.map(product => <button key={product.id} disabled={saving} onClick={() => addProduct(product)} className={styles.searchResult}><Thumbnail src={product.image_url} /><span className="min-w-0 flex-1">{product.name}</span><span className="font-bold text-[#5c633e]">+ Agregar</span></button>)}</div>}</div>}
           {editing && invalidDraft && <p className={`${styles.muted} mt-4`}>Para guardar, dejá al menos un artículo y revisá que cada uno tenga cantidad y presentación válidas.</p>}
+          {!editing && <div className="mt-6 border-t border-[#e3d7c4] pt-4"><button onClick={() => requestDelete(activeList)} className={styles.dangerButton}>Borrar lista guardada</button></div>}
         </div>
         <footer className={styles.dialogFooter}>{editing ? <><button disabled={saving} onClick={() => { if (!dirty || window.confirm('¿Descartar los cambios de esta edición?')) { resetDraft(activeList); setEditing(false) } }} className={styles.secondaryButton}>Cancelar edición</button><button disabled={saving || !dirty || invalidDraft} onClick={() => void saveChanges()} className={styles.primaryButton}>{saving ? 'Guardando…' : 'Guardar cambios'}</button></> : <><button onClick={() => { resetDraft(activeList); setEditing(true); setNotice('') }} className={styles.secondaryButton}><Icon name="edit" className="h-4 w-4" />Editar lista</button><button onClick={() => repeatList(activeList, products)} className={styles.primaryButton}><Icon name="cart" className="h-4 w-4" />Repetir pedido</button></>}</footer>
       </section>

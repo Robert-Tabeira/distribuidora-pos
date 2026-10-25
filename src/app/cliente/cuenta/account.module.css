@@ -16,12 +16,14 @@
 .navButton[aria-current="page"] { background: #575b36; color: white; }
 .navButton:hover:not([aria-current="page"]) { background: #f2eddf; }
 .panel { padding: 22px 18px; }
-.primaryButton, .secondaryButton, .quietButton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 11px 18px; border-radius: 999px; font-size: 13px; font-weight: 700; text-align: center; transition: background-color .2s, border-color .2s; }
+.primaryButton, .secondaryButton, .quietButton, .dangerButton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 11px 18px; border-radius: 999px; font-size: 13px; font-weight: 700; text-align: center; transition: background-color .2s, border-color .2s; }
 .primaryButton { background: #575b36; color: white; border: 1px solid #575b36; }
 .primaryButton:hover:not(:disabled) { background: #414529; }
 .secondaryButton { border: 1px solid #bdb99b; background: #fffdf8; color: #545738; }
 .secondaryButton:hover:not(:disabled), .quietButton:hover:not(:disabled) { background: #eeebdc; }
 .quietButton { color: #756854; }
+.dangerButton { color: #963f24; background: #fff5ee; border: 1px solid #d8b5a1; }
+.dangerButton:hover:not(:disabled) { background: #f7e5d9; border-color: #ad7251; }
 .account button:disabled { cursor: not-allowed; opacity: .5; }
 .account :is(button, a, input, textarea, select):focus-visible { outline: 2px solid #777b52; outline-offset: 3px; }
 .account button[aria-controls] { color: #575b36; }
@@ -72,4 +74,4 @@
   .navigation { flex-direction: column; }
   .navButton { justify-content: flex-start; }
 }
-@media (prefers-reduced-motion: reduce) { .primaryButton, .secondaryButton, .quietButton { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .primaryButton, .secondaryButton, .quietButton, .dangerButton { transition: none; } }

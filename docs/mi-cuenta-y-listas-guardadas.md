@@ -6,6 +6,8 @@
 2. Antes de publicar esta versión, ejecutar en Supabase → SQL Editor el archivo completo `supabase/migrations/202610250004_editable_customer_shopping_lists.sql`. Agrega `name` y `updated_at` conservando los artículos guardados y concede actualización al rol de servidor. Mantiene las restricciones de acceso privado.
 3. Publicar el código. No requiere variables de entorno ni dependencias adicionales.
 
+Para habilitar el borrado, ejecutar también `supabase/migrations/202610250005_delete_customer_shopping_lists.sql`. Concede el permiso de borrado al rol privado de servidor, manteniendo restringido el acceso directo desde el navegador.
+
 ## Mi cuenta
 
 - Diseño con fondos crema, acentos oliva, títulos Lora y cuerpo DM Sans, siguiendo el catálogo. Navegación horizontal en móvil y tablet; panel lateral desde escritorio.
@@ -14,6 +16,8 @@
 - **Editar lista** permite poner nombre (hasta 80 caracteres), cambiar cantidades y presentaciones, editar anotaciones, quitar artículos y buscar otros productos del catálogo para agregarlos. Un artículo nuevo requiere elegir presentación. La lista debe conservar al menos un artículo válido.
 - **Guardar cambios** actualiza la misma lista de la cuenta autenticada. La edición conserva su borrador si falla el guardado. Si la lista cambió en otra ventana, se pide volver a abrirla; no se pisan cambios silenciosamente.
 - Al cerrar o cancelar una edición con cambios pendientes, se pide confirmación para descartarlos.
+- **Borrar lista** está disponible en cada tarjeta y en el detalle. Abre una confirmación con el nombre de la lista; el cliente debe pulsar **Sí, borrar lista**. Solo se retira de la pantalla cuando el servidor confirma el borrado. El carrito se conserva y la paginación se ajusta, incluyendo el estado vacío al borrar la última lista.
+- El borrado filtra por cuenta de la cookie verificada, identificador y versión de la lista. Si cambió en otra ventana se solicita recargar; si falla la operación, la lista permanece visible con el mensaje de error. La petición sin identificador se mantiene exclusivamente para cerrar sesión.
 - **Repetir pedido** consulta la lista y las presentaciones actuales, carga los artículos en el carrito y abre «Mi pedido» en el catálogo. Si ya había un carrito, se pide confirmar su reemplazo. Si un producto o presentación ya no está disponible, se solicita revisar la lista antes de repetirla.
 - Repetir no envía WhatsApp ni confirma un pedido por sí solo. El cliente revisa el carrito y usa el botón de WhatsApp cuando quiera enviarlo. Editar la lista no modifica mensajes de pedidos enviados previamente.
 
