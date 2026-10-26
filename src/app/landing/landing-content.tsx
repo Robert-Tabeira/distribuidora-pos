@@ -18,6 +18,7 @@ import { CATEGORY_APPEARANCE_DEFAULTS, CATEGORY_APPEARANCE_COLORS, categoryTitle
 import { ORDER_INSTRUCTIONS_CONTENT } from '@/lib/landing-order-instructions'
 import { SAVED_LISTS_INSTRUCTIONS_CONTENT } from '@/lib/landing-saved-lists-instructions'
 import { INSTRUCTION_BACKGROUND_TEXTURE, isInstructionBlock, landingBackgroundColor, type LandingBackgroundSettings } from '@/lib/landing-background'
+import { ExpandableInstructionImage } from '@/components/expandable-instruction-image'
 
 interface ProductWithDiscount extends Pick<Product, 'id' | 'name' | 'gallery'> {
   discount?: Discount
@@ -249,7 +250,8 @@ function LandingBlockRenderer({
                   </div>
                   <div className="mt-4 flex flex-1 items-center justify-center px-4 pb-4 sm:px-5 sm:pb-5">
                     {step.image_url
-                      ? <picture className="block w-full overflow-hidden rounded-2xl" style={{ backgroundColor: settings.instruction_image_bg || '#f5f0e6' }}>
+                      ? <ExpandableInstructionImage src={step.image_url} mobileSrc={step.mobile_image_url} alt={step.title || `Paso ${index + 1}`} captionColor={settings.instruction_step_text_color}>
+                        <picture className="block w-full overflow-hidden rounded-2xl" style={{ backgroundColor: settings.instruction_image_bg || '#f5f0e6' }}>
                           {step.mobile_image_url && <source media="(max-width: 767px)" sizes="calc(100vw - 64px)" data-original-src={step.mobile_image_url} srcSet={optimizedImageSourceSet(step.mobile_image_url, [384, 640, 750, 828, 1080])} />}
                           <img
                             src={optimizedImageSource(step.image_url, 828)}
@@ -272,6 +274,7 @@ function LandingBlockRenderer({
                             className="mx-auto block h-auto max-h-[340px] w-full object-contain"
                           />
                         </picture>
+                        </ExpandableInstructionImage>
                       : <div className="flex min-h-40 w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-[#d9ceb9] sm:min-h-48" style={{ backgroundColor: settings.instruction_image_bg || '#f8f4eb', color: settings.instruction_placeholder_color || '#a99a7c' }}><Icon name="image" className="h-8 w-8" /><span className="text-xs font-medium">Imagen del paso {index + 1}</span></div>}
                   </div>
                 </article>
