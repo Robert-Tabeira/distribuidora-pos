@@ -1085,12 +1085,19 @@ export default function CatalogPage() {
                 </div>
               </div>}
               {cartProducts.length === 0 ? <p className="text-center text-[#817565] py-10">Todavía no agregaste productos.</p> : <ul className="divide-y">{cartProducts.map(({ itemId, product, quantity, unit, notes }) => <li key={itemId} className="py-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 min-w-0"><p className="font-semibold">{product.name}</p><p className="text-xs text-[#817565] capitalize">Por {unit}</p>{unit === 'caja' && getUnitsPerBox(product) !== null && <p className="mt-1 text-xs leading-5 text-[#575b36]">{describeBoxContents(product, quantity)}</p>}</div>
-                  <div className="flex items-center gap-2"><button onClick={() => updateCartQuantity(itemId, quantity - 1)} className="w-8 h-8 rounded-lg border">−</button><span className="w-6 text-center">{quantity}</span><button onClick={() => updateCartQuantity(itemId, quantity + 1)} className="w-8 h-8 rounded-lg border">+</button></div>
-                  <button onClick={() => removeFromCart(itemId)} className="text-red-600 text-sm ml-2">Quitar</button>
+                <div className="flex items-start gap-3">
+                  <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#d9cdb8] bg-[#f7f2e6]">
+                    {product.gallery?.[0] ? <SiteImage src={product.gallery[0]} alt="" fill sizes="64px" quality={60} loading="lazy" className="object-contain p-1" /> : <Icon name="box" className="h-8 w-8 text-[#817565]" aria-hidden="true" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="break-words font-semibold">{product.name}</p><p className="text-xs text-[#817565] capitalize">Por {unit}</p>{unit === 'caja' && getUnitsPerBox(product) !== null && <p className="mt-1 text-xs leading-5 text-[#575b36]">{describeBoxContents(product, quantity)}</p>}
+                    {notes && <p className="text-sm text-[#706556] mt-2 break-words">Nota: {notes}</p>}
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2"><button type="button" onClick={() => updateCartQuantity(itemId, quantity - 1)} aria-label={`Reducir cantidad de ${product.name}`} className="w-9 h-9 rounded-lg border border-[#d9cdb8]">−</button><span className="min-w-6 text-center">{quantity}</span><button type="button" onClick={() => updateCartQuantity(itemId, quantity + 1)} aria-label={`Aumentar cantidad de ${product.name}`} className="w-9 h-9 rounded-lg border border-[#d9cdb8]">+</button></div>
+                      <button type="button" onClick={() => removeFromCart(itemId)} aria-label={`Quitar ${product.name} del pedido`} className="min-h-9 text-red-600 text-sm">Quitar</button>
+                    </div>
+                  </div>
                 </div>
-                {notes && <p className="text-sm text-[#706556] mt-2">Nota: {notes}</p>}
               </li>)}</ul>}
               {cartMessage && <div role="status" className="mt-4 text-sm text-[#575b36] bg-[#eeeedf] border border-[#d9dcc0] rounded-xl p-3"><p>{cartMessage}</p>{cartNeedsLogin && <p className="mt-2"><Link href="/cliente/login" className="font-bold underline">Volver a iniciar sesión</Link></p>}{cartMessage.includes('registrarte') && <p className="mt-2"><Link href="/cliente/registro" className="font-bold underline">Solicitar acceso</Link>{' · '}<Link href="/cliente/login" className="font-bold underline">Iniciar sesión</Link></p>}{cartMessage.includes('pendiente') && <p className="mt-2"><Link href="/cliente/login" className="font-bold underline">Consultar estado</Link></p>}</div>}
             </div>
