@@ -17,6 +17,7 @@ import { DEFAULT_FOOTER_SETTINGS, FOOTER_COLOR_FIELDS, normalizeFooterSettings, 
 import { DEFAULT_LOCATION_SETTINGS, googleMapsEmbedSource, safeLocationLink, type LandingLocationSettings } from '@/lib/landing-location'
 import { CATEGORY_APPEARANCE_DEFAULTS, CATEGORY_APPEARANCE_COLORS, type LandingCategoryAppearance } from '@/lib/landing-category-appearance'
 import { ORDER_INSTRUCTIONS_CONTENT } from '@/lib/landing-order-instructions'
+import { PICKUP_INSTRUCTIONS_CONTENT } from '@/lib/landing-pickup-instructions'
 import { SAVED_LISTS_INSTRUCTIONS_CONTENT } from '@/lib/landing-saved-lists-instructions'
 import { INSTRUCTION_BACKGROUND_TEXTURE, isInstructionBlock, landingBackgroundKey, landingBackgroundColor, landingCardBackgroundKey, landingCardBackgroundColor, hasLandingCards, type LandingBackgroundSettings } from '@/lib/landing-background'
 import { MobileMenuPanel } from '@/components/mobile-menu-panel'
@@ -196,7 +197,7 @@ interface LandingSection {
   settings: LandingSectionSettings
 }
 
-type LandingBlockType = 'content' | 'categories' | 'banner' | 'feature_cards' | 'instructions' | 'order_instructions' | 'saved_lists_instructions' | 'business_info' | 'location_map' | 'image_carousel' | 'product_grid'
+type LandingBlockType = 'content' | 'categories' | 'banner' | 'feature_cards' | 'instructions' | 'order_instructions' | 'pickup_instructions' | 'saved_lists_instructions' | 'business_info' | 'location_map' | 'image_carousel' | 'product_grid'
 
 interface LandingFeatureCard {
   title: string
@@ -393,6 +394,7 @@ const LANDING_BLOCK_LABELS: Record<LandingBlockType, string> = {
   feature_cards: 'Tarjetas con imagen',
   instructions: 'Instrucciones en 3 pasos',
   order_instructions: 'Cómo hacer pedidos en 3 pasos',
+  pickup_instructions: 'Cómo pedir para retirar en mostrador',
   saved_lists_instructions: 'Cómo repetir pedidos con listas guardadas',
   business_info: 'Información del local',
   location_map: 'Ubicación en mapa',
@@ -433,6 +435,7 @@ function defaultLandingSettings(type: LandingBlockType): LandingSectionSettings 
   const typography: Pick<LandingSectionSettings, 'heading_font' | 'body_font' | 'heading_weight' | 'body_weight'> = { heading_font: 'lora', body_font: 'dm_sans', heading_weight: '700', body_weight: '400' }
   if (type === 'banner') return { ...typography, button_text: 'Ver catálogo', button_url: '/catalogo', background_color: '#fff7ed' }
   if (type === 'order_instructions') return { ...typography, ...ORDER_INSTRUCTIONS_CONTENT.settings }
+  if (type === 'pickup_instructions') return { ...typography, ...PICKUP_INSTRUCTIONS_CONTENT.settings }
   if (type === 'saved_lists_instructions') return { ...typography, ...SAVED_LISTS_INSTRUCTIONS_CONTENT.settings }
   if (type === 'feature_cards') return { cards: [
     { title: '', description: '', image_url: '', link_url: '', button_text: '' },
@@ -4210,7 +4213,7 @@ export default function WebsiteEditionPage() {
                   value={sectionForm.block_type}
                   onChange={(e) => {
                     const block_type = e.target.value as LandingBlockType
-                    const instructionContent = block_type === 'order_instructions' ? ORDER_INSTRUCTIONS_CONTENT : block_type === 'saved_lists_instructions' ? SAVED_LISTS_INSTRUCTIONS_CONTENT : null
+                    const instructionContent = block_type === 'order_instructions' ? ORDER_INSTRUCTIONS_CONTENT : block_type === 'pickup_instructions' ? PICKUP_INSTRUCTIONS_CONTENT : block_type === 'saved_lists_instructions' ? SAVED_LISTS_INSTRUCTIONS_CONTENT : null
                     setSectionForm(current => ({
                       ...current,
                       ...(instructionContent ? {
@@ -4536,6 +4539,7 @@ export default function WebsiteEditionPage() {
                     <h4 className="font-semibold text-[#3b2a20]">Pasos e imágenes</h4>
                     <p className="mt-1 text-xs text-text-muted">Este bloque muestra tres tarjetas. Editá el texto y subí una imagen para cada paso; la imagen móvil es opcional.</p>
                     {sectionForm.block_type === 'order_instructions' && <p className="mt-2 text-xs text-text-muted">Guía para armar y enviar pedidos. Incluye textos iniciales sobre la presentación de los productos, el retiro sin registro y las listas para empresas aprobadas. Podés editar cada texto y su diseño de forma independiente del bloque de consulta de precios.</p>}
+                    {sectionForm.block_type === 'pickup_instructions' && <p className="mt-2 text-xs text-text-muted">Guía de retiro sin registro: elegir productos, revisar cantidades e indicar el nombre, y enviar el mensaje por WhatsApp para coordinar el retiro con el local. Editá los textos, colores, tipografías e imágenes de cada paso.</p>}
                     {sectionForm.block_type === 'saved_lists_instructions' && <p className="mt-2 text-xs text-text-muted">Guía para negocios con cuenta aprobada: guardar una lista, verla y editarla desde Mi cuenta, y repetirla en el carrito. Editá las tres tarjetas y subí tus propias imágenes.</p>}
                   </div>
                   {(sectionForm.settings.instruction_steps || []).map((step, index) => (
@@ -4611,7 +4615,7 @@ export default function WebsiteEditionPage() {
                   </div>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <label className="block text-sm font-medium text-text-muted">Texto del botón
-                      <input className="input mt-1" value={sectionForm.settings.button_text || ''} onChange={event => updateLandingSettings({ button_text: event.target.value })} placeholder={sectionForm.block_type === 'saved_lists_instructions' ? 'Ir a Mi cuenta' : sectionForm.block_type === 'order_instructions' ? 'Ir al catálogo y hacer mi pedido' : 'Ir al catálogo y consultar'} />
+                      <input className="input mt-1" value={sectionForm.settings.button_text || ''} onChange={event => updateLandingSettings({ button_text: event.target.value })} placeholder={sectionForm.block_type === 'saved_lists_instructions' ? 'Ir a Mi cuenta' : sectionForm.block_type === 'pickup_instructions' ? 'Armar mi pedido para retirar' : sectionForm.block_type === 'order_instructions' ? 'Ir al catálogo y hacer mi pedido' : 'Ir al catálogo y consultar'} />
                     </label>
                     <label className="block text-sm font-medium text-text-muted">Enlace del botón
                       <input className="input mt-1" value={sectionForm.settings.button_url || ''} onChange={event => updateLandingSettings({ button_url: event.target.value })} placeholder="/catalogo" />

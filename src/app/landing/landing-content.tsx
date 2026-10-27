@@ -16,6 +16,7 @@ import { LandingLocation } from '@/components/landing-location'
 import type { LandingLocationSettings } from '@/lib/landing-location'
 import { CATEGORY_APPEARANCE_DEFAULTS, CATEGORY_APPEARANCE_COLORS, categoryTitleSize, type LandingCategoryAppearance } from '@/lib/landing-category-appearance'
 import { ORDER_INSTRUCTIONS_CONTENT } from '@/lib/landing-order-instructions'
+import { PICKUP_INSTRUCTIONS_CONTENT } from '@/lib/landing-pickup-instructions'
 import { SAVED_LISTS_INSTRUCTIONS_CONTENT } from '@/lib/landing-saved-lists-instructions'
 import { INSTRUCTION_BACKGROUND_TEXTURE, isInstructionBlock, landingBackgroundColor, type LandingBackgroundSettings } from '@/lib/landing-background'
 import { ExpandableInstructionImage } from '@/components/expandable-instruction-image'
@@ -24,7 +25,7 @@ interface ProductWithDiscount extends Pick<Product, 'id' | 'name' | 'gallery'> {
   discount?: Discount
 }
 
-type LandingBlockType = 'content' | 'categories' | 'banner' | 'feature_cards' | 'instructions' | 'order_instructions' | 'saved_lists_instructions' | 'business_info' | 'location_map' | 'image_carousel' | 'product_grid'
+type LandingBlockType = 'content' | 'categories' | 'banner' | 'feature_cards' | 'instructions' | 'order_instructions' | 'pickup_instructions' | 'saved_lists_instructions' | 'business_info' | 'location_map' | 'image_carousel' | 'product_grid'
 interface LandingSectionSettings extends LandingLocationSettings, LandingCategoryAppearance, LandingBackgroundSettings {
   button_text?: string
   button_url?: string
@@ -146,7 +147,7 @@ function LandingBlockRenderer({
   products: ProductWithDiscount[]
   businessSettings: BusinessSettings | null
 }) {
-  const instructionDefaults = section.block_type === 'order_instructions' ? ORDER_INSTRUCTIONS_CONTENT.settings : section.block_type === 'saved_lists_instructions' ? SAVED_LISTS_INSTRUCTIONS_CONTENT.settings : {}
+  const instructionDefaults = section.block_type === 'order_instructions' ? ORDER_INSTRUCTIONS_CONTENT.settings : section.block_type === 'pickup_instructions' ? PICKUP_INSTRUCTIONS_CONTENT.settings : section.block_type === 'saved_lists_instructions' ? SAVED_LISTS_INSTRUCTIONS_CONTENT.settings : {}
   const settings: LandingSectionSettings = { ...instructionDefaults, ...(section.settings || {}) }
   const heading = section.title || section.section_name
   const mobileImageOrder = MOBILE_IMAGE_ORDER_CLASS[settings.mobile_image_order || 'first']
