@@ -25,6 +25,7 @@ import { headerNavigationColors } from '@/lib/header-navigation'
 import { DEFAULT_MOBILE_MENU_SETTINGS, MOBILE_MENU_COLOR_FIELDS, resolveMobileMenuSettings, type MobileMenuSettings } from '@/lib/mobile-menu-settings'
 import { HeaderUsageEditor } from '@/components/header-usage-editor'
 import { DEFAULT_USAGE_MENU_SETTINGS } from '@/lib/catalog-usage-navigation'
+import { googleMapsLocationLink } from '@/lib/google-maps-link'
 
 interface ColorSwatch {
   name: string
@@ -2125,6 +2126,11 @@ export default function WebsiteEditionPage() {
   // ===== HEADER: ESTILO =====
   async function saveHeaderSettings() {
     if (!headerSettings) return
+    const infoMapsInput = headerForm.mobile_menu_settings.info_maps_url?.trim() || ''
+    if (infoMapsInput && !googleMapsLocationLink(infoMapsInput)) {
+      alert('Pegá un enlace de ubicación de Google Maps válido, desde Compartir → Copiar enlace. También podés dejarlo vacío para buscar la dirección del negocio.')
+      return
+    }
     setSavingHeaderSettings(true)
     try {
       const savedForm = { ...headerForm, mobile_menu_settings: resolveMobileMenuSettings(headerForm.mobile_menu_settings) }
@@ -2152,12 +2158,12 @@ export default function WebsiteEditionPage() {
       setHeaderSettings({ ...headerSettings, ...(mobileSettingsSaved ? { ...desktopForm, mobile_menu_settings } : desktopForm) })
       alert(mobileSettingsSaved
         ? '✅ Estilo guardado correctamente'
-        : '✅ Se guardó el estilo de escritorio. La configuración de Modo de uso y los colores del menú móvil todavía no se guardaron: ejecutá supabase/migrations/202610210001_mobile_menu_colors.sql en Supabase y después volvé a guardar.')
+        : '✅ Se guardó el estilo de escritorio. El enlace de Google Maps de Info, la configuración de Modo de uso y los colores del menú móvil todavía no se guardaron: ejecutá supabase/migrations/202610210001_mobile_menu_colors.sql en Supabase y después volvé a guardar.')
     } catch (error) {
       console.error('Error saving header settings:', error)
       const details = error instanceof Error ? error.message : (error as { message?: string })?.message || 'Error desconocido'
       if (details.includes('mobile_menu_settings')) {
-        alert('❌ Para guardar Modo de uso y los colores del menú móvil, ejecutá primero el archivo supabase/migrations/202610210001_mobile_menu_colors.sql en el SQL Editor de Supabase. Después volvé a guardar.')
+        alert('❌ Para guardar el enlace de Google Maps de Info, Modo de uso y los colores del menú móvil, ejecutá primero el archivo supabase/migrations/202610210001_mobile_menu_colors.sql en el SQL Editor de Supabase. Después volvé a guardar.')
       } else {
         alert(`❌ No se pudo guardar el estilo del header: ${details}`)
       }
@@ -3272,6 +3278,14 @@ export default function WebsiteEditionPage() {
                   <label className="block text-sm font-semibold text-text-muted">Título del panel
                     <input className="input mt-2" value={headerForm.info_title} onChange={e => setHeaderForm({ ...headerForm, info_title: e.target.value })} />
                   </label>
+                  <div className="sm:col-span-2">
+                    <label htmlFor="header-info-maps-url" className="block text-sm font-semibold text-text-muted">Enlace de Google Maps del local
+                      <input id="header-info-maps-url" type="url" className="input mt-2" value={headerForm.mobile_menu_settings.info_maps_url || ''} onChange={event => setHeaderForm(current => ({ ...current, mobile_menu_settings: { ...current.mobile_menu_settings, info_maps_url: event.target.value } }))} placeholder="https://maps.app.goo.gl/…" aria-describedby="header-info-maps-help" aria-invalid={Boolean(headerForm.mobile_menu_settings.info_maps_url?.trim() && !googleMapsLocationLink(headerForm.mobile_menu_settings.info_maps_url))} />
+                    </label>
+                    <p id="header-info-maps-help" className="mt-2 text-xs leading-5 text-text-muted">Abrí el local en Google Maps y elegí Compartir → Copiar enlace. Se usará al pulsar la dirección de Info, tanto en computadora como en celular. Si lo dejás vacío, se busca la dirección de Datos del Negocio.</p>
+                    {headerForm.mobile_menu_settings.info_maps_url?.trim() && !googleMapsLocationLink(headerForm.mobile_menu_settings.info_maps_url) && <p role="alert" className="mt-2 text-xs text-red-600">Usá un enlace de ubicación de Google Maps, completo o compartido. No pegues el código iframe.</p>}
+                    {googleMapsLocationLink(headerForm.mobile_menu_settings.info_maps_url) && <a href={googleMapsLocationLink(headerForm.mobile_menu_settings.info_maps_url)!} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm font-semibold text-primary underline">Comprobar ubicación en Google Maps ↗</a>}
+                  </div>
                   {([
                     ['info_button_icon', 'Icono del botón Info'],
                     ['info_phone_icon', 'Icono de teléfono'],

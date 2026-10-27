@@ -13,6 +13,7 @@ import { headerNavigationColors } from '@/lib/header-navigation'
 import { HeaderUsageMenu } from '@/components/header-usage-menu'
 import { catalogUsageLink, resolveUsageMenuSettings, usageMenuLinks, type CatalogUsageLink } from '@/lib/catalog-usage-navigation'
 import { INSTRUCTION_BLOCK_TYPES } from '@/lib/landing-background'
+import { googleMapsLocationLink } from '@/lib/google-maps-link'
 
 interface WebsiteSettings {
   phone_number: string | null
@@ -217,7 +218,7 @@ export function Header() {
   const infoItems: { key: string; label: string; value: string; icon: IconName; href?: string }[] = []
   if (settings?.show_phone && settings.phone_number) infoItems.push({ key: 'phone', label: 'Teléfono', value: settings.phone_number, icon: safeIconName(headerSettings.info_phone_icon, 'phone'), href: `https://wa.me/${settings.phone_number.replace(/\D/g, '')}` })
   if (settings?.show_business_hours && settings.business_hours) infoItems.push({ key: 'hours', label: 'Horarios', value: settings.business_hours, icon: safeIconName(headerSettings.info_hours_icon, 'clock') })
-  if (settings?.show_address && settings.address) infoItems.push({ key: 'address', label: 'Dirección', value: settings.address, icon: safeIconName(headerSettings.info_address_icon, 'location'), href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(settings.address)}` })
+  if (settings?.show_address && settings.address) infoItems.push({ key: 'address', label: 'Dirección', value: settings.address, icon: safeIconName(headerSettings.info_address_icon, 'location'), href: googleMapsLocationLink(headerSettings.mobile_menu_settings?.info_maps_url) || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(settings.address)}` })
   if (settings?.show_email && settings.email) infoItems.push({ key: 'email', label: 'Email', value: settings.email, icon: safeIconName(headerSettings.info_email_icon, 'mail'), href: `mailto:${settings.email}` })
   const renderInfoContent = (mobile = false) => (
     <div className={mobile ? 'space-y-4' : ''} style={infoRowStyle}>
@@ -227,7 +228,7 @@ export function Header() {
           <Icon name={item.icon} className="mt-0.5 h-5 w-5 flex-shrink-0" style={infoIconStyle} />
           <div className="min-w-0">
             <p className={mobile ? 'text-xs' : 'text-sm'} style={infoLabelStyle}>{item.label}</p>
-            {item.href ? <a href={item.href} className="font-semibold transition-colors hover:underline hover:text-[var(--info-hover-color)]" style={{ ...infoValueStyle, '--info-hover-color': headerSettings.info_hover_color || '#1d4ed8' } as React.CSSProperties}>{item.value}</a> : <p className="font-semibold" style={infoValueStyle}>{item.value}</p>}
+            {item.href ? <a href={item.href} target={item.key === 'address' ? '_blank' : undefined} rel={item.key === 'address' ? 'noopener noreferrer' : undefined} className="font-semibold transition-colors hover:underline hover:text-[var(--info-hover-color)]" style={{ ...infoValueStyle, '--info-hover-color': headerSettings.info_hover_color || '#1d4ed8' } as React.CSSProperties}>{item.value}</a> : <p className="font-semibold" style={infoValueStyle}>{item.value}</p>}
           </div>
         </div>)}
       </div> : <p className="py-4 text-center text-sm" style={infoLabelStyle}>No hay datos de negocio configurados</p>}

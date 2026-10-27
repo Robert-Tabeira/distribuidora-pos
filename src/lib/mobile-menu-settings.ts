@@ -1,7 +1,9 @@
 import { resolveUsageMenuSettings, type CatalogUsageSettings } from '@/lib/catalog-usage-navigation'
+import { googleMapsLocationLink } from '@/lib/google-maps-link'
 
 export interface MobileMenuSettings {
   usage_menu?: Partial<CatalogUsageSettings>
+  info_maps_url?: string
   background: string
   text: string
   active_text: string
@@ -38,5 +40,6 @@ export function resolveMobileMenuSettings(settings?: Partial<MobileMenuSettings>
     if (typeof color === 'string' && /^#[\da-f]{6}$/i.test(color)) resolved[key] = color
   }
   resolved.usage_menu = resolveUsageMenuSettings(settings?.usage_menu)
+  resolved.info_maps_url = googleMapsLocationLink(settings?.info_maps_url) || ''
   return resolved
 }
