@@ -10,6 +10,9 @@ import { SiteImage } from '@/components/site-image'
 import { MobileMenuPanel } from '@/components/mobile-menu-panel'
 import type { MobileMenuSettings } from '@/lib/mobile-menu-settings'
 import { headerNavigationColors } from '@/lib/header-navigation'
+import { HeaderUsageMenu } from '@/components/header-usage-menu'
+import { catalogUsageLink, type CatalogUsageLink } from '@/lib/catalog-usage-navigation'
+import { INSTRUCTION_BLOCK_TYPES } from '@/lib/landing-background'
 
 interface WebsiteSettings {
   phone_number: string | null
@@ -129,6 +132,7 @@ export function Header() {
   const pathname = usePathname()
   const [settings, setSettings] = useState<WebsiteSettings | null>(null)
   const [menuLinks, setMenuLinks] = useState<MenuLink[]>([])
+  const [usageLinks, setUsageLinks] = useState<CatalogUsageLink[]>([])
   const [headerSettings, setHeaderSettings] = useState<HeaderSettings>(DEFAULT_HEADER_SETTINGS)
   const [loading, setLoading] = useState(true)
   const [showInfo, setShowInfo] = useState(false)
@@ -137,6 +141,7 @@ export function Header() {
 
   useEffect(() => {
     loadData()
+    void loadUsageLinks()
   }, [])
 
   useEffect(() => {
@@ -164,6 +169,16 @@ export function Header() {
       console.error('Error loading header data:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function loadUsageLinks() {
+    try {
+      const { data, error } = await supabase.from('landing_sections').select('id,title,section_name,block_type').eq('is_visible', true).in('block_type', INSTRUCTION_BLOCK_TYPES).order('order_position').order('section_name')
+      if (error) throw error
+      if (data) setUsageLinks(data.map(catalogUsageLink))
+    } catch (error) {
+      console.error('Error loading usage navigation:', error)
     }
   }
 
@@ -266,7 +281,7 @@ export function Header() {
           </Link>
 
           {/* Nav Links - Desktop */}
-          <nav className="hidden lg:flex gap-7">
+          <nav className="hidden lg:flex items-center gap-7" aria-label="Menú principal">
             {visibleMenuLinks.map(link => {
               const active = isActive(link.url)
               return (
@@ -292,6 +307,7 @@ export function Header() {
                 </Link>
               )
             })}
+            <HeaderUsageMenu links={usageLinks} settings={headerSettings.mobile_menu_settings} uppercase={headerSettings.nav_uppercase} showIcon={headerSettings.nav_show_icons === true} triggerStyle={{ color: navTextColor, letterSpacing: LETTER_SPACING_MAP[headerSettings.nav_letter_spacing], fontWeight: headerSettings.nav_font_weight, fontFamily: navFontFamily }} onOpen={() => setShowInfo(false)} />
           </nav>
 
           <div className="flex items-center gap-2">
@@ -320,7 +336,7 @@ export function Header() {
             </div>
 
             {/* Menú hamburguesa - Mobile */}
-            {(visibleMenuLinks.length > 0 || hasBusinessInfo) && (
+            {(visibleMenuLinks.length > 0 || usageLinks.length > 0 || hasBusinessInfo) && (
               <button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
                 aria-label={showMobileMenu ? 'Cerrar menú principal' : 'Abrir menú principal'}
@@ -344,12 +360,13 @@ export function Header() {
         </div>
 
         {/* Menú - Mobile: tarjeta con links + info del negocio */}
-        {showMobileMenu && (visibleMenuLinks.length > 0 || hasBusinessInfo) && (
+        {showMobileMenu && (visibleMenuLinks.length > 0 || usageLinks.length > 0 || hasBusinessInfo) && (
           <MobileMenuPanel
             id="public-mobile-menu"
             className="lg:hidden mt-3"
             settings={headerSettings.mobile_menu_settings}
             links={visibleMenuLinks.map(link => ({ ...link, active: isActive(link.url), icon: safeIconName(link.icon, defaultMenuIcon(link.url)) }))}
+            usageLinks={usageLinks}
             fontFamily={navFontFamily}
             fontWeight={headerSettings.nav_font_weight}
             letterSpacing={LETTER_SPACING_MAP[headerSettings.nav_letter_spacing]}

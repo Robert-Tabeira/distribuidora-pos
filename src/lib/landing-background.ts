@@ -12,8 +12,10 @@ export interface LandingBackgroundSettings {
 
 export const INSTRUCTION_BACKGROUND_TEXTURE = 'radial-gradient(ellipse at 96% 4%, rgba(160, 125, 76, 0.13), transparent 32%), radial-gradient(ellipse at 2% 96%, rgba(160, 125, 76, 0.10), transparent 30%), repeating-linear-gradient(135deg, rgba(74, 59, 35, 0.018) 0px, rgba(74, 59, 35, 0.018) 1px, transparent 2px, transparent 9px)'
 
+export const INSTRUCTION_BLOCK_TYPES = ['instructions', 'order_instructions', 'pickup_instructions', 'saved_lists_instructions']
+
 export function isInstructionBlock(type: string): boolean {
-  return ['instructions', 'order_instructions', 'pickup_instructions', 'saved_lists_instructions'].includes(type)
+  return INSTRUCTION_BLOCK_TYPES.includes(type)
 }
 
 export function landingBackgroundKey(type: string): 'background_color' | 'instruction_section_bg' | 'category_section_bg' | 'map_section_bg' {

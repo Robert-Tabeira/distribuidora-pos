@@ -20,6 +20,7 @@ import { PICKUP_INSTRUCTIONS_CONTENT } from '@/lib/landing-pickup-instructions'
 import { SAVED_LISTS_INSTRUCTIONS_CONTENT } from '@/lib/landing-saved-lists-instructions'
 import { INSTRUCTION_BACKGROUND_TEXTURE, isInstructionBlock, landingBackgroundColor, type LandingBackgroundSettings } from '@/lib/landing-background'
 import { ExpandableInstructionImage } from '@/components/expandable-instruction-image'
+import { instructionAnchor, INSTRUCTION_ANCHOR_PREFIX } from '@/lib/catalog-usage-navigation'
 
 interface ProductWithDiscount extends Pick<Product, 'id' | 'name' | 'gallery'> {
   discount?: Discount
@@ -222,10 +223,14 @@ function LandingBlockRenderer({
     const steps = (settings.instruction_steps || []).filter(step => Boolean(step && (step.title || step.description || step.image_url)))
     return (
       <section
+        id={instructionAnchor(section.id)}
+        tabIndex={-1}
+        aria-label={heading}
         data-heading-font={headingFont}
         data-body-font={bodyFont}
         style={{
           ...sectionStyle,
+          scrollMarginTop: '104px',
           backgroundImage: settings.instruction_texture_enabled === false ? 'none' : INSTRUCTION_BACKGROUND_TEXTURE,
         }}
         className={`landing-section px-4 py-14 text-[#21170f] sm:px-6 sm:py-16 ${responsiveTextClasses(settings, 'left')}`}
@@ -435,6 +440,25 @@ export default function LandingContent({ initialHero }: { initialHero: HeroSlide
   useEffect(() => {
     loadData()
   }, [])
+
+  useEffect(() => {
+    let frame = 0
+    function goToInstruction() {
+      let anchor: string
+      try { anchor = decodeURIComponent(window.location.hash.slice(1)) } catch { return }
+      if (!anchor.startsWith(INSTRUCTION_ANCHOR_PREFIX)) return
+      window.cancelAnimationFrame(frame)
+      frame = window.requestAnimationFrame(() => {
+        const section = document.getElementById(anchor)
+        if (!section) return
+        section.scrollIntoView({ block: 'start' })
+        section.focus({ preventScroll: true })
+      })
+    }
+    goToInstruction()
+    window.addEventListener('hashchange', goToInstruction)
+    return () => { window.cancelAnimationFrame(frame); window.removeEventListener('hashchange', goToInstruction) }
+  }, [landingSections])
 
   async function loadData() {
     try {
