@@ -19,6 +19,7 @@ import { CATEGORY_APPEARANCE_DEFAULTS, CATEGORY_APPEARANCE_COLORS, type LandingC
 import { ORDER_INSTRUCTIONS_CONTENT } from '@/lib/landing-order-instructions'
 import { PICKUP_INSTRUCTIONS_CONTENT } from '@/lib/landing-pickup-instructions'
 import { SAVED_LISTS_INSTRUCTIONS_CONTENT } from '@/lib/landing-saved-lists-instructions'
+import { INSTRUCTION_GROUP_CONTENT, INSTRUCTION_GROUP_COLORS, instructionLandingLayout, type InstructionGroupSettings } from '@/lib/landing-instruction-group'
 import { INSTRUCTION_BACKGROUND_TEXTURE, isInstructionBlock, landingBackgroundKey, landingBackgroundColor, landingCardBackgroundKey, landingCardBackgroundColor, hasLandingCards, type LandingBackgroundSettings } from '@/lib/landing-background'
 import { MobileMenuPanel } from '@/components/mobile-menu-panel'
 import { headerNavigationColors } from '@/lib/header-navigation'
@@ -197,7 +198,7 @@ interface LandingSection {
   settings: LandingSectionSettings
 }
 
-type LandingBlockType = 'content' | 'categories' | 'banner' | 'feature_cards' | 'instructions' | 'order_instructions' | 'pickup_instructions' | 'saved_lists_instructions' | 'business_info' | 'location_map' | 'image_carousel' | 'product_grid'
+type LandingBlockType = 'content' | 'categories' | 'banner' | 'feature_cards' | 'instructions' | 'order_instructions' | 'pickup_instructions' | 'saved_lists_instructions' | 'instruction_group' | 'business_info' | 'location_map' | 'image_carousel' | 'product_grid'
 
 interface LandingFeatureCard {
   title: string
@@ -295,7 +296,7 @@ function ProductDestinationSelect({
   )
 }
 
-interface LandingSectionSettings extends LandingLocationSettings, LandingCategoryAppearance, LandingBackgroundSettings {
+interface LandingSectionSettings extends LandingLocationSettings, LandingCategoryAppearance, LandingBackgroundSettings, InstructionGroupSettings {
   button_text?: string
   button_url?: string
   background_color?: string
@@ -396,6 +397,7 @@ const LANDING_BLOCK_LABELS: Record<LandingBlockType, string> = {
   order_instructions: 'Cómo hacer pedidos en 3 pasos',
   pickup_instructions: 'Cómo pedir para retirar en mostrador',
   saved_lists_instructions: 'Cómo repetir pedidos con listas guardadas',
+  instruction_group: 'Cómo utilizar el catálogo (desplegables)',
   business_info: 'Información del local',
   location_map: 'Ubicación en mapa',
   image_carousel: 'Carrusel de imágenes',
@@ -437,6 +439,7 @@ function defaultLandingSettings(type: LandingBlockType): LandingSectionSettings 
   if (type === 'order_instructions') return { ...typography, ...ORDER_INSTRUCTIONS_CONTENT.settings }
   if (type === 'pickup_instructions') return { ...typography, ...PICKUP_INSTRUCTIONS_CONTENT.settings }
   if (type === 'saved_lists_instructions') return { ...typography, ...SAVED_LISTS_INSTRUCTIONS_CONTENT.settings }
+  if (type === 'instruction_group') return { ...typography, background_color: '#f8f3e9', card_background_color: '#fffdf8' }
   if (type === 'feature_cards') return { cards: [
     { title: '', description: '', image_url: '', link_url: '', button_text: '' },
     { title: '', description: '', image_url: '', link_url: '', button_text: '' }
@@ -1598,6 +1601,14 @@ export default function WebsiteEditionPage() {
     }
 
     let savedSettings = sectionForm.settings
+    if (sectionForm.block_type === 'instruction_group') {
+      const ids = savedSettings.instruction_section_ids || sections.filter(section => section.is_visible && isInstructionBlock(section.block_type)).map(section => section.id)
+      if (!ids.some(id => sections.some(section => section.id === id && isInstructionBlock(section.block_type)))) {
+        alert('Seleccioná al menos un instructivo existente para incluir en los desplegables.')
+        return
+      }
+      savedSettings = { ...savedSettings, instruction_section_ids: [...new Set(ids)] }
+    }
     if (sectionForm.block_type === 'location_map') {
       const embedInput = sectionForm.settings.map_embed_url?.trim() || ''
       const directionsInput = sectionForm.settings.map_link_url?.trim() || ''
@@ -1655,7 +1666,9 @@ export default function WebsiteEditionPage() {
             section_name: sectionForm.section_name.trim(),
             block_type: sectionForm.block_type,
             settings: savedSettings,
-            order_position: sections.length ? Math.max(...sections.map(section => section.order_position)) + 10 : 10,
+            order_position: sectionForm.block_type === 'instruction_group'
+              ? Math.min(...sections.filter(section => savedSettings.instruction_section_ids?.includes(section.id)).map(section => section.order_position))
+              : sections.length ? Math.max(...sections.map(section => section.order_position)) + 10 : 10,
             title: sectionForm.title.trim(),
             subtitle: sectionForm.subtitle.trim() || null,
             description: sectionForm.description.trim() || null,
@@ -1677,6 +1690,14 @@ export default function WebsiteEditionPage() {
     } finally {
       setSavingSection(false)
     }
+  }
+
+  function openInstructionGroupModal() {
+    const existing = sections.find(section => section.block_type === 'instruction_group')
+    if (existing) { openSectionModal(existing); return }
+    setEditingSection(null)
+    setSectionForm({ ...INSTRUCTION_GROUP_CONTENT, subtitle: '', image_url: '', is_visible: true, block_type: 'instruction_group', settings: defaultLandingSettings('instruction_group') })
+    setShowSectionModal(true)
   }
 
   function openSectionModal(section?: LandingSection) {
@@ -2335,6 +2356,14 @@ export default function WebsiteEditionPage() {
       setSavingBarSettings(false)
     }
   }
+
+  const instructionCandidates = sections.filter(section => isInstructionBlock(section.block_type))
+  const selectedInstructionIds = sectionForm.settings.instruction_section_ids || instructionCandidates.filter(section => section.is_visible).map(section => section.id)
+  const orderedInstructionCandidates = [
+    ...[...new Set(selectedInstructionIds)].flatMap(id => instructionCandidates.filter(section => section.id === id)),
+    ...instructionCandidates.filter(section => !selectedInstructionIds.includes(section.id)),
+  ]
+  const groupedInstructionIds = new Set(instructionLandingLayout(sections).flatMap(entry => entry.instructions || []).map(section => section.id))
 
   if (loading) {
     return (
@@ -3372,6 +3401,11 @@ export default function WebsiteEditionPage() {
               </button>
             </div>
 
+            {instructionCandidates.length > 0 && <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-[#ddd2bb] bg-[#f8f3e9] p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div><p className="font-semibold text-[#3b3023]">Guía del catálogo en desplegables</p><p className="mt-1 text-xs leading-5 text-[#706556]">Si todavía no guardaste una guía, dos o más instructivos visibles se agrupan automáticamente. Personalizá el título, los colores, la selección y el orden. Los pasos e imágenes se siguen editando en cada bloque.</p></div>
+              <button type="button" onClick={openInstructionGroupModal} className="shrink-0 rounded-xl border border-[#787c54] px-4 py-3 text-sm font-semibold text-[#575b36]">Personalizar guía del catálogo</button>
+            </div>}
+
             {sections.length === 0 ? (
               <div className="card max-w-2xl py-10 text-center">
                 <Icon name="document" className="mx-auto mb-3 h-10 w-10 text-gray-300" />
@@ -3391,6 +3425,7 @@ export default function WebsiteEditionPage() {
                       <div className="flex flex-wrap items-center gap-2">
                         <h4 className="font-bold text-text">{section.section_name}</h4>
                         <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">{LANDING_BLOCK_LABELS[section.block_type] || LANDING_BLOCK_LABELS.content}</span>
+                        {groupedInstructionIds.has(section.id) && <span className="rounded-full bg-[#eeeadc] px-2 py-0.5 text-xs font-semibold text-[#62643e]">Dentro de un desplegable</span>}
                         <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${section.is_visible ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
                           {section.is_visible ? 'Visible' : 'Oculto'}
                         </span>
@@ -4213,7 +4248,7 @@ export default function WebsiteEditionPage() {
                   value={sectionForm.block_type}
                   onChange={(e) => {
                     const block_type = e.target.value as LandingBlockType
-                    const instructionContent = block_type === 'order_instructions' ? ORDER_INSTRUCTIONS_CONTENT : block_type === 'pickup_instructions' ? PICKUP_INSTRUCTIONS_CONTENT : block_type === 'saved_lists_instructions' ? SAVED_LISTS_INSTRUCTIONS_CONTENT : null
+                    const instructionContent = block_type === 'instruction_group' ? INSTRUCTION_GROUP_CONTENT : block_type === 'order_instructions' ? ORDER_INSTRUCTIONS_CONTENT : block_type === 'pickup_instructions' ? PICKUP_INSTRUCTIONS_CONTENT : block_type === 'saved_lists_instructions' ? SAVED_LISTS_INSTRUCTIONS_CONTENT : null
                     setSectionForm(current => ({
                       ...current,
                       ...(instructionContent ? {
@@ -4532,6 +4567,28 @@ export default function WebsiteEditionPage() {
                   <button type="button" onClick={() => updateLandingSettings({ cards: [...(sectionForm.settings.cards || []), { title: '', description: '', image_url: '', link_url: '', button_text: '' }] })} className="w-full rounded-xl border border-dashed border-primary/40 py-3 text-sm font-semibold text-primary hover:bg-primary/5">+ Agregar tarjeta</button>
                 </div>
               )}
+
+              {sectionForm.block_type === 'instruction_group' && <div className="space-y-4 rounded-xl border border-[#ddd2bb] bg-[#fbf7f0] p-4">
+                <div><h4 className="font-semibold text-[#3b3023]">Instructivos incluidos y su orden</h4><p className="mt-1 text-xs leading-5 text-text-muted">Elegí los bloques existentes. Los incluidos se muestran solamente dentro de esta guía; los demás conservan su posición en la landing. Los bloques ocultos no se muestran. Todos los desplegables empiezan cerrados y solo uno puede estar abierto.</p></div>
+                {!instructionCandidates.length && <p className="text-sm text-text-muted">Creá primero los instructivos de consultas, pedidos, retiro o listas guardadas.</p>}
+                {orderedInstructionCandidates.map(section => {
+                  const selected = selectedInstructionIds.includes(section.id)
+                  const index = selectedInstructionIds.indexOf(section.id)
+                  const move = (direction: number) => {
+                    const ids = [...selectedInstructionIds]
+                    const target = index + direction
+                    if (index < 0 || target < 0 || target >= ids.length) return
+                    ;[ids[index], ids[target]] = [ids[target], ids[index]]
+                    updateLandingSettings({ instruction_section_ids: ids })
+                  }
+                  return <div key={section.id} className="space-y-3 rounded-xl border border-[#e3d7c4] bg-white p-3">
+                    <div className="flex items-start gap-2"><label className="flex min-w-0 flex-1 items-start gap-2 text-sm"><input type="checkbox" checked={selected} className="mt-1 h-4 w-4 shrink-0" onChange={event => updateLandingSettings({ instruction_section_ids: event.target.checked ? [...selectedInstructionIds, section.id] : selectedInstructionIds.filter(id => id !== section.id) })} /><span className="min-w-0 break-words"><strong className="block">{section.section_name}</strong><span className="text-xs text-text-muted">{section.is_visible ? 'Visible' : 'Oculto: no aparecerá hasta que lo muestres'}</span></span></label><div className="flex shrink-0 gap-1"><button type="button" disabled={!selected || index === 0} onClick={() => move(-1)} aria-label={`Subir ${section.section_name}`} className="rounded-lg border px-2 py-1 disabled:opacity-30">↑</button><button type="button" disabled={!selected || index === selectedInstructionIds.length - 1} onClick={() => move(1)} aria-label={`Bajar ${section.section_name}`} className="rounded-lg border px-2 py-1 disabled:opacity-30">↓</button></div></div>
+                    {selected && <label className="block text-xs text-text-muted">Título del desplegable<input className="input mt-1" value={sectionForm.settings.instruction_row_titles?.[section.id] || ''} placeholder={section.title || section.section_name} onChange={event => updateLandingSettings({ instruction_row_titles: { ...sectionForm.settings.instruction_row_titles, [section.id]: event.target.value } })} /><span className="mt-1 block">Vacío: usa el título del instructivo.</span></label>}
+                  </div>
+                })}
+                <p className="text-xs leading-5 text-text-muted">Para cambiar pasos, imágenes, botones o el diseño interior, editá el bloque correspondiente en la lista de secciones. No hace falta copiar el contenido.</p>
+                <div className="grid gap-3 sm:grid-cols-2">{INSTRUCTION_GROUP_COLORS.map(([label, key, fallback]) => <ColorPicker key={key} label={label} value={sectionForm.settings[key] || fallback} onChange={color => updateLandingSettings({ [key]: color })} palette={palette} />)}</div>
+              </div>}
 
               {isInstructionBlock(sectionForm.block_type) && (
                 <div className="space-y-4 rounded-xl border border-[#d8c1a3] bg-[#fbf7f0] p-4">

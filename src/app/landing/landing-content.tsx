@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { HeroSlider, type HeroSliderInitialData } from '@/components/hero-slider'
 import { supabase } from '@/lib/supabase'
 import type { Category, Product, Discount } from '@/types/database'
-import { Icon } from '@/components/ui/icon'
+import { Icon, type IconName } from '@/components/ui/icon'
 import { CategoryIconImage } from '@/components/category-icon-image'
 import { getCategoryIconName, isCategoryIconImage } from '@/lib/category-icons'
 import Link from 'next/link'
@@ -20,13 +20,15 @@ import { PICKUP_INSTRUCTIONS_CONTENT } from '@/lib/landing-pickup-instructions'
 import { SAVED_LISTS_INSTRUCTIONS_CONTENT } from '@/lib/landing-saved-lists-instructions'
 import { INSTRUCTION_BACKGROUND_TEXTURE, isInstructionBlock, landingBackgroundColor, type LandingBackgroundSettings } from '@/lib/landing-background'
 import { ExpandableInstructionImage } from '@/components/expandable-instruction-image'
+import { LandingInstructionAccordion } from '@/components/landing-instruction-accordion'
+import { INSTRUCTION_GROUP_CONTENT, instructionLandingLayout, type InstructionGroupSettings } from '@/lib/landing-instruction-group'
 
 interface ProductWithDiscount extends Pick<Product, 'id' | 'name' | 'gallery'> {
   discount?: Discount
 }
 
-type LandingBlockType = 'content' | 'categories' | 'banner' | 'feature_cards' | 'instructions' | 'order_instructions' | 'pickup_instructions' | 'saved_lists_instructions' | 'business_info' | 'location_map' | 'image_carousel' | 'product_grid'
-interface LandingSectionSettings extends LandingLocationSettings, LandingCategoryAppearance, LandingBackgroundSettings {
+type LandingBlockType = 'content' | 'categories' | 'banner' | 'feature_cards' | 'instructions' | 'order_instructions' | 'pickup_instructions' | 'saved_lists_instructions' | 'instruction_group' | 'business_info' | 'location_map' | 'image_carousel' | 'product_grid'
+interface LandingSectionSettings extends LandingLocationSettings, LandingCategoryAppearance, LandingBackgroundSettings, InstructionGroupSettings {
   button_text?: string
   button_url?: string
   background_color?: string
@@ -136,16 +138,24 @@ function ResponsiveImage({ desktopSrc, mobileSrc, alt, className, settings }: { 
   </picture>
 }
 
+function instructionIcon(type: string): IconName {
+  return type === 'instructions' ? 'chat' : type === 'pickup_instructions' ? 'store' : type === 'saved_lists_instructions' ? 'document' : 'cart'
+}
+
 function LandingBlockRenderer({
   section,
   categories,
   products,
-  businessSettings
+  businessSettings,
+  instructionSections = [],
+  embedded = false,
 }: {
   section: LandingSection
   categories: CategoryForLanding[]
   products: ProductWithDiscount[]
   businessSettings: BusinessSettings | null
+  instructionSections?: LandingSection[]
+  embedded?: boolean
 }) {
   const instructionDefaults = section.block_type === 'order_instructions' ? ORDER_INSTRUCTIONS_CONTENT.settings : section.block_type === 'pickup_instructions' ? PICKUP_INSTRUCTIONS_CONTENT.settings : section.block_type === 'saved_lists_instructions' ? SAVED_LISTS_INSTRUCTIONS_CONTENT.settings : {}
   const settings: LandingSectionSettings = { ...instructionDefaults, ...(section.settings || {}) }
@@ -163,6 +173,14 @@ function LandingBlockRenderer({
     '--landing-body-weight': settings.body_weight || '400',
   } as CSSProperties
   const sectionStyle = { ...fontStyle, backgroundColor: landingBackgroundColor(section.block_type, settings) }
+  if (section.block_type === 'instruction_group') {
+    return <LandingInstructionAccordion title={heading} subtitle={section.subtitle} description={section.description} settings={settings} items={instructionSections.map(instruction => ({
+      id: instruction.id,
+      title: settings.instruction_row_titles?.[instruction.id]?.trim() || instruction.title || instruction.section_name,
+      icon: instructionIcon(instruction.block_type),
+      content: <LandingBlockRenderer section={instruction} categories={categories} products={products} businessSettings={businessSettings} embedded />,
+    }))} />
+  }
   const categoryIconStyle = {
     '--category-icon-size-mobile': `${settings.category_icon_size_mobile || 44}px`,
     '--category-icon-size-desktop': `${settings.category_icon_size_desktop || 44}px`,
@@ -228,12 +246,12 @@ function LandingBlockRenderer({
           ...sectionStyle,
           backgroundImage: settings.instruction_texture_enabled === false ? 'none' : INSTRUCTION_BACKGROUND_TEXTURE,
         }}
-        className={`landing-section px-4 py-14 text-[#21170f] sm:px-6 sm:py-16 ${responsiveTextClasses(settings, 'left')}`}
+        className={`landing-section ${embedded ? 'px-3 py-6 sm:px-6 sm:py-8' : 'px-4 py-14 sm:px-6 sm:py-16'} text-[#21170f] ${responsiveTextClasses(settings, 'left')}`}
       >
         <div className="mx-auto max-w-7xl">
           <div className={responsiveTextClasses(settings, 'left')}>
-            <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.28em]" style={{ color: settings.instruction_eyebrow_color || '#706b45' }}>Rápido <span className="mx-2" style={{ color: settings.instruction_accent_color || '#b58b5d' }}>/</span> Simple <span className="mx-2" style={{ color: settings.instruction_accent_color || '#b58b5d' }}>/</span> Sin complicaciones</p>
-            <h2 className="max-w-4xl text-4xl font-bold leading-[1.05] sm:text-5xl lg:text-6xl" style={{ color: settings.instruction_heading_color || '#241a12' }}>{heading}</h2>
+            {!embedded && <><p className="mb-3 text-[11px] font-bold uppercase tracking-[0.28em]" style={{ color: settings.instruction_eyebrow_color || '#706b45' }}>Rápido <span className="mx-2" style={{ color: settings.instruction_accent_color || '#b58b5d' }}>/</span> Simple <span className="mx-2" style={{ color: settings.instruction_accent_color || '#b58b5d' }}>/</span> Sin complicaciones</p>
+            <h2 className="max-w-4xl text-4xl font-bold leading-[1.05] sm:text-5xl lg:text-6xl" style={{ color: settings.instruction_heading_color || '#241a12' }}>{heading}</h2></>}
             {section.subtitle && <p className="mt-4 max-w-3xl text-lg font-semibold sm:text-xl" style={{ color: settings.instruction_subtitle_color || '#5d573b' }}>{section.subtitle}</p>}
             {section.description && <p className="mt-2 max-w-3xl whitespace-pre-line text-base leading-7 sm:text-lg" style={{ color: settings.instruction_description_color || '#39332c' }}>{section.description}</p>}
             <div className="mt-4 h-[2px] w-14 rounded-full" style={{ backgroundColor: settings.instruction_accent_color || '#68663e' }} />
@@ -444,7 +462,7 @@ export default function LandingContent({ initialHero }: { initialHero: HeroSlide
         supabase.from('website_settings').select('phone_number,email,address,business_hours').single()
       ])
 
-      if (sectionsRes.data) setLandingSections((sectionsRes.data as LandingSection[]).filter(section => section.is_visible))
+      if (sectionsRes.data) setLandingSections(sectionsRes.data as LandingSection[])
       if (categoriesRes.data) setCategories(categoriesRes.data as CategoryForLanding[])
       if (settingsRes.data) setBusinessSettings(settingsRes.data as BusinessSettings)
 
@@ -452,7 +470,6 @@ export default function LandingContent({ initialHero }: { initialHero: HeroSlide
       const productSections = visibleSections.filter(section => section.block_type === 'product_grid')
       if (productSections.length === 0) return
 
-      setLandingSections(visibleSections)
       const productLimit = Math.min(24, Math.max(1, ...productSections.map(section => section.settings?.limit || 5)))
       const hasDiscountSection = productSections.some(section => section.settings?.mode === 'discounts')
 
@@ -494,9 +511,13 @@ export default function LandingContent({ initialHero }: { initialHero: HeroSlide
       <HeroSlider initialData={initialHero} />
 
       {/* BLOQUES EDITABLES DE LANDING */}
-      {landingSections.map(section => (
-        <LandingBlockRenderer key={section.id} section={section} categories={categories} products={products} businessSettings={businessSettings} />
-      ))}
+      {instructionLandingLayout(landingSections).map(({ section, instructions }) => {
+        const block: LandingSection = section || {
+          id: 'automatic-catalog-instructions', ...INSTRUCTION_GROUP_CONTENT,
+          subtitle: null, image_url: null, is_visible: true, block_type: 'instruction_group', order_position: 0, settings: {},
+        }
+        return <LandingBlockRenderer key={block.id} section={block} instructionSections={instructions} categories={categories} products={products} businessSettings={businessSettings} />
+      })}
 
     </div>
     </PublicLayout>
