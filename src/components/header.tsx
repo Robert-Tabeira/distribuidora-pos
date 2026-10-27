@@ -11,7 +11,7 @@ import { MobileMenuPanel } from '@/components/mobile-menu-panel'
 import type { MobileMenuSettings } from '@/lib/mobile-menu-settings'
 import { headerNavigationColors } from '@/lib/header-navigation'
 import { HeaderUsageMenu } from '@/components/header-usage-menu'
-import { catalogUsageLink, type CatalogUsageLink } from '@/lib/catalog-usage-navigation'
+import { catalogUsageLink, resolveUsageMenuSettings, usageMenuLinks, type CatalogUsageLink } from '@/lib/catalog-usage-navigation'
 import { INSTRUCTION_BLOCK_TYPES } from '@/lib/landing-background'
 
 interface WebsiteSettings {
@@ -194,6 +194,7 @@ export function Header() {
   const siteName = settings?.site_name || 'Los Primos'
   const siteTagline = settings?.site_tagline || 'Distribuidora Oficial Sarubbi'
   const visibleMenuLinks = menuLinks.filter(link => settings?.customer_orders_enabled === true || !/^\/cliente(?:\/|$)/.test(link.url))
+  const hasUsageLinks = usageMenuLinks(usageLinks, resolveUsageMenuSettings(headerSettings.mobile_menu_settings?.usage_menu)).length > 0
   const isLandingPage = pathname === '/landing' || pathname === '/'
   const isCatalogPage = pathname === '/catalogo' || pathname.startsWith('/catalogo/')
   const landingHeaderAtTop = isLandingPage && !isScrolled
@@ -307,7 +308,7 @@ export function Header() {
                 </Link>
               )
             })}
-            <HeaderUsageMenu links={usageLinks} settings={headerSettings.mobile_menu_settings} uppercase={headerSettings.nav_uppercase} showIcon={headerSettings.nav_show_icons === true} triggerStyle={{ color: navTextColor, letterSpacing: LETTER_SPACING_MAP[headerSettings.nav_letter_spacing], fontWeight: headerSettings.nav_font_weight, fontFamily: navFontFamily }} onOpen={() => setShowInfo(false)} />
+            <HeaderUsageMenu links={usageLinks} settings={headerSettings.mobile_menu_settings} uppercase={headerSettings.nav_uppercase} showIcon={headerSettings.nav_show_icons === true} overHero={landingHeaderAtTop} triggerStyle={{ color: navTextColor, letterSpacing: LETTER_SPACING_MAP[headerSettings.nav_letter_spacing], fontWeight: headerSettings.nav_font_weight, fontFamily: navFontFamily }} onOpen={() => setShowInfo(false)} />
           </nav>
 
           <div className="flex items-center gap-2">
@@ -336,7 +337,7 @@ export function Header() {
             </div>
 
             {/* Menú hamburguesa - Mobile */}
-            {(visibleMenuLinks.length > 0 || usageLinks.length > 0 || hasBusinessInfo) && (
+            {(visibleMenuLinks.length > 0 || hasUsageLinks || hasBusinessInfo) && (
               <button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
                 aria-label={showMobileMenu ? 'Cerrar menú principal' : 'Abrir menú principal'}
@@ -360,13 +361,13 @@ export function Header() {
         </div>
 
         {/* Menú - Mobile: tarjeta con links + info del negocio */}
-        {showMobileMenu && (visibleMenuLinks.length > 0 || usageLinks.length > 0 || hasBusinessInfo) && (
+        {showMobileMenu && (visibleMenuLinks.length > 0 || hasUsageLinks || hasBusinessInfo) && (
           <MobileMenuPanel
             id="public-mobile-menu"
             className="lg:hidden mt-3"
             settings={headerSettings.mobile_menu_settings}
             links={visibleMenuLinks.map(link => ({ ...link, active: isActive(link.url), icon: safeIconName(link.icon, defaultMenuIcon(link.url)) }))}
-            usageLinks={usageLinks}
+            usageLinks={hasUsageLinks ? usageLinks : []}
             fontFamily={navFontFamily}
             fontWeight={headerSettings.nav_font_weight}
             letterSpacing={LETTER_SPACING_MAP[headerSettings.nav_letter_spacing]}

@@ -23,6 +23,8 @@ import { INSTRUCTION_BACKGROUND_TEXTURE, isInstructionBlock, landingBackgroundKe
 import { MobileMenuPanel } from '@/components/mobile-menu-panel'
 import { headerNavigationColors } from '@/lib/header-navigation'
 import { DEFAULT_MOBILE_MENU_SETTINGS, MOBILE_MENU_COLOR_FIELDS, resolveMobileMenuSettings, type MobileMenuSettings } from '@/lib/mobile-menu-settings'
+import { HeaderUsageEditor } from '@/components/header-usage-editor'
+import { DEFAULT_USAGE_MENU_SETTINGS } from '@/lib/catalog-usage-navigation'
 
 interface ColorSwatch {
   name: string
@@ -2125,14 +2127,15 @@ export default function WebsiteEditionPage() {
     if (!headerSettings) return
     setSavingHeaderSettings(true)
     try {
+      const savedForm = { ...headerForm, mobile_menu_settings: resolveMobileMenuSettings(headerForm.mobile_menu_settings) }
       let { error } = await supabase
         .from('header_settings')
-        .update({ ...headerForm, updated_at: new Date().toISOString() })
+        .update({ ...savedForm, updated_at: new Date().toISOString() })
         .eq('id', headerSettings.id)
         .select('id')
         .single()
 
-      const { mobile_menu_settings, ...desktopForm } = headerForm
+      const { mobile_menu_settings, ...desktopForm } = savedForm
       let mobileSettingsSaved = true
       // A pending mobile migration must not prevent saving existing desktop fields.
       if (error && ['PGRST204', '42703'].includes(error.code) && error.message.includes('mobile_menu_settings')) {
@@ -2149,12 +2152,12 @@ export default function WebsiteEditionPage() {
       setHeaderSettings({ ...headerSettings, ...(mobileSettingsSaved ? { ...desktopForm, mobile_menu_settings } : desktopForm) })
       alert(mobileSettingsSaved
         ? '✅ Estilo guardado correctamente'
-        : '✅ Se guardó el estilo de escritorio. Los colores personalizados del menú móvil todavía no se guardaron: ejecutá supabase/migrations/202610210001_mobile_menu_colors.sql en Supabase y después volvé a guardar.')
+        : '✅ Se guardó el estilo de escritorio. La configuración de Modo de uso y los colores del menú móvil todavía no se guardaron: ejecutá supabase/migrations/202610210001_mobile_menu_colors.sql en Supabase y después volvé a guardar.')
     } catch (error) {
       console.error('Error saving header settings:', error)
       const details = error instanceof Error ? error.message : (error as { message?: string })?.message || 'Error desconocido'
       if (details.includes('mobile_menu_settings')) {
-        alert('❌ Para guardar los colores del menú móvil, ejecutá primero el archivo supabase/migrations/202610210001_mobile_menu_colors.sql en el SQL Editor de Supabase. Después volvé a guardar.')
+        alert('❌ Para guardar Modo de uso y los colores del menú móvil, ejecutá primero el archivo supabase/migrations/202610210001_mobile_menu_colors.sql en el SQL Editor de Supabase. Después volvé a guardar.')
       } else {
         alert(`❌ No se pudo guardar el estilo del header: ${details}`)
       }
@@ -2335,6 +2338,8 @@ export default function WebsiteEditionPage() {
       setSavingBarSettings(false)
     }
   }
+
+  const usageMenuForm = { ...DEFAULT_USAGE_MENU_SETTINGS, ...headerForm.mobile_menu_settings.usage_menu }
 
   if (loading) {
     return (
@@ -3231,6 +3236,32 @@ export default function WebsiteEditionPage() {
                   />
                   <p className="mt-3 text-xs text-text-muted">La tipografía y el grosor se toman de «Texto del menú». El bloque de datos del negocio usa los colores de «Pestaña Info».</p>
                 </div>
+              </CollapsibleCard>
+
+              <CollapsibleCard icon="document" title="Modo de uso" subtitle="Nombre, instructivos, orden, iconos, tipografías y colores" defaultOpen>
+                <HeaderUsageEditor
+                  value={usageMenuForm}
+                  onChange={value => setHeaderForm(current => ({ ...current, mobile_menu_settings: { ...current.mobile_menu_settings, usage_menu: value } }))}
+                  sections={sections}
+                  fonts={[...BUILT_IN_FONT_OPTIONS, ...customFonts.map(font => ({ value: `custom:${font.id}`, label: `${font.name} (personalizada)` }))]}
+                  weights={FONT_WEIGHT_OPTIONS}
+                  mobileSettings={headerForm.mobile_menu_settings}
+                  showIcons={headerForm.nav_show_icons}
+                  navStyle={{ color: headerNavigationColors(headerForm, false).text, fontFamily: getSiteFontFamily(headerForm.nav_font_family || headerForm.font_family), fontWeight: headerForm.nav_font_weight, letterSpacing: { normal: 'normal', wide: '0.025em', wider: '0.05em' }[headerForm.nav_letter_spacing], textTransform: headerForm.nav_uppercase ? 'uppercase' : 'none' }}
+                  transparentColor={headerNavigationColors(headerForm, true).text}
+                  fallbackColors={{
+                    desktop_text_color: headerNavigationColors(headerForm, false).text,
+                    transparent_text_color: headerNavigationColors(headerForm, true).text,
+                    mobile_text_color: headerForm.mobile_menu_settings.text,
+                    panel_background: headerForm.mobile_menu_settings.background,
+                    panel_text_color: headerForm.mobile_menu_settings.text,
+                    panel_title_color: usageMenuForm.panel_text_color || headerForm.mobile_menu_settings.text,
+                    hover_background: headerForm.mobile_menu_settings.hover_background,
+                    hover_text_color: headerForm.mobile_menu_settings.hover_text,
+                    border_color: headerForm.mobile_menu_settings.border,
+                  }}
+                  renderColor={(label, color, onChange) => <ColorPicker label={label} value={color} onChange={onChange} palette={palette} />}
+                />
               </CollapsibleCard>
 
               <CollapsibleCard icon="info" title="Pestaña Info" subtitle="Iconos, datos, tipografía y colores">

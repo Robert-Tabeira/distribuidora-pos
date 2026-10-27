@@ -1,4 +1,7 @@
+import { resolveUsageMenuSettings, type CatalogUsageSettings } from '@/lib/catalog-usage-navigation'
+
 export interface MobileMenuSettings {
+  usage_menu?: Partial<CatalogUsageSettings>
   background: string
   text: string
   active_text: string
@@ -34,5 +37,6 @@ export function resolveMobileMenuSettings(settings?: Partial<MobileMenuSettings>
     const color = settings?.[key]
     if (typeof color === 'string' && /^#[\da-f]{6}$/i.test(color)) resolved[key] = color
   }
+  resolved.usage_menu = resolveUsageMenuSettings(settings?.usage_menu)
   return resolved
 }
