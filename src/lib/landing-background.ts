@@ -26,7 +26,7 @@ export function landingBackgroundKey(type: string): 'background_color' | 'instru
 }
 
 export function landingBackgroundColor(type: string, settings: LandingBackgroundSettings): string {
-  const fallback = isInstructionBlock(type) ? '#f3ecde' : type === 'categories' ? '#f8f3e9' : type === 'location_map' ? '#f6f0e5' : type === 'banner' ? '#fff7ed' : type === 'business_info' ? '#f6efe5' : type === 'product_grid' ? '#fbf7f0' : '#fffdf9'
+  const fallback = isInstructionBlock(type) ? '#f3ecde' : ['categories', 'weekly_hours'].includes(type) ? '#f8f3e9' : type === 'location_map' ? '#f6f0e5' : type === 'banner' ? '#fff7ed' : type === 'business_info' ? '#f6efe5' : type === 'product_grid' ? '#fbf7f0' : '#fffdf9'
   return settings[landingBackgroundKey(type)] || settings.background_color || fallback
 }
 
@@ -38,9 +38,9 @@ export function landingCardBackgroundKey(type: string): 'card_background_color' 
 }
 
 export function landingCardBackgroundColor(type: string, settings: LandingBackgroundSettings): string {
-  return settings[landingCardBackgroundKey(type)] || (isInstructionBlock(type) || ['categories', 'location_map'].includes(type) ? '#fffdf8' : '#ffffff')
+  return settings[landingCardBackgroundKey(type)] || (isInstructionBlock(type) || ['categories', 'location_map', 'weekly_hours'].includes(type) ? '#fffdf8' : '#ffffff')
 }
 
 export function hasLandingCards(type: string): boolean {
-  return isInstructionBlock(type) || ['categories', 'location_map', 'banner', 'feature_cards', 'business_info', 'product_grid'].includes(type)
+  return isInstructionBlock(type) || ['categories', 'location_map', 'weekly_hours', 'banner', 'feature_cards', 'business_info', 'product_grid'].includes(type)
 }

@@ -21,13 +21,15 @@ import { SAVED_LISTS_INSTRUCTIONS_CONTENT } from '@/lib/landing-saved-lists-inst
 import { INSTRUCTION_BACKGROUND_TEXTURE, isInstructionBlock, landingBackgroundColor, type LandingBackgroundSettings } from '@/lib/landing-background'
 import { ExpandableInstructionImage } from '@/components/expandable-instruction-image'
 import { instructionAnchor, INSTRUCTION_ANCHOR_PREFIX } from '@/lib/catalog-usage-navigation'
+import { LandingHours } from '@/components/landing-hours'
+import type { LandingHoursSettings } from '@/lib/landing-hours'
 
 interface ProductWithDiscount extends Pick<Product, 'id' | 'name' | 'gallery'> {
   discount?: Discount
 }
 
-type LandingBlockType = 'content' | 'categories' | 'banner' | 'feature_cards' | 'instructions' | 'order_instructions' | 'pickup_instructions' | 'saved_lists_instructions' | 'business_info' | 'location_map' | 'image_carousel' | 'product_grid'
-interface LandingSectionSettings extends LandingLocationSettings, LandingCategoryAppearance, LandingBackgroundSettings {
+type LandingBlockType = 'content' | 'categories' | 'banner' | 'feature_cards' | 'instructions' | 'order_instructions' | 'pickup_instructions' | 'saved_lists_instructions' | 'business_info' | 'location_map' | 'weekly_hours' | 'image_carousel' | 'product_grid'
+interface LandingSectionSettings extends LandingLocationSettings, LandingCategoryAppearance, LandingBackgroundSettings, LandingHoursSettings {
   button_text?: string
   button_url?: string
   background_color?: string
@@ -376,6 +378,10 @@ function LandingBlockRenderer({
 
   if (section.block_type === 'location_map') {
     return <LandingLocation title={heading} subtitle={section.subtitle} description={section.description} settings={{ ...settings, map_section_bg: landingBackgroundColor(section.block_type, settings) }} business={businessSettings} />
+  }
+
+  if (section.block_type === 'weekly_hours') {
+    return <LandingHours title={heading} subtitle={section.subtitle} description={section.description} settings={settings} />
   }
 
   if (section.block_type === 'image_carousel') {

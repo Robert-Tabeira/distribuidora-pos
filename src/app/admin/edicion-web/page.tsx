@@ -26,6 +26,9 @@ import { DEFAULT_MOBILE_MENU_SETTINGS, MOBILE_MENU_COLOR_FIELDS, resolveMobileMe
 import { HeaderUsageEditor } from '@/components/header-usage-editor'
 import { DEFAULT_USAGE_MENU_SETTINGS } from '@/lib/catalog-usage-navigation'
 import { googleMapsLocationLink } from '@/lib/google-maps-link'
+import { LandingHours } from '@/components/landing-hours'
+import { LandingHoursEditor } from '@/components/landing-hours-editor'
+import { HOURS_CONTENT, defaultHoursSettings, normalizeWeeklyHours, weeklyHoursError, type LandingHoursSettings } from '@/lib/landing-hours'
 
 interface ColorSwatch {
   name: string
@@ -200,7 +203,7 @@ interface LandingSection {
   settings: LandingSectionSettings
 }
 
-type LandingBlockType = 'content' | 'categories' | 'banner' | 'feature_cards' | 'instructions' | 'order_instructions' | 'pickup_instructions' | 'saved_lists_instructions' | 'business_info' | 'location_map' | 'image_carousel' | 'product_grid'
+type LandingBlockType = 'content' | 'categories' | 'banner' | 'feature_cards' | 'instructions' | 'order_instructions' | 'pickup_instructions' | 'saved_lists_instructions' | 'business_info' | 'location_map' | 'weekly_hours' | 'image_carousel' | 'product_grid'
 
 interface LandingFeatureCard {
   title: string
@@ -298,7 +301,7 @@ function ProductDestinationSelect({
   )
 }
 
-interface LandingSectionSettings extends LandingLocationSettings, LandingCategoryAppearance, LandingBackgroundSettings {
+interface LandingSectionSettings extends LandingLocationSettings, LandingCategoryAppearance, LandingBackgroundSettings, LandingHoursSettings {
   button_text?: string
   button_url?: string
   background_color?: string
@@ -401,6 +404,7 @@ const LANDING_BLOCK_LABELS: Record<LandingBlockType, string> = {
   saved_lists_instructions: 'Cómo repetir pedidos con listas guardadas',
   business_info: 'Información del local',
   location_map: 'Ubicación en mapa',
+  weekly_hours: 'Horarios de atención · toda la semana',
   image_carousel: 'Carrusel de imágenes',
   product_grid: 'Productos u ofertas'
 }
@@ -458,6 +462,7 @@ function defaultLandingSettings(type: LandingBlockType): LandingSectionSettings 
   }
   if (type === 'business_info') return { ...typography, show_phone: true, show_email: true, show_address: true, show_business_hours: true }
   if (type === 'location_map') return { ...typography, ...DEFAULT_LOCATION_SETTINGS }
+  if (type === 'weekly_hours') return { ...typography, ...defaultHoursSettings() }
   if (type === 'categories') return {
     ...typography,
     ...CATEGORY_APPEARANCE_DEFAULTS,
@@ -1601,6 +1606,11 @@ export default function WebsiteEditionPage() {
     }
 
     let savedSettings = sectionForm.settings
+    if (sectionForm.block_type === 'weekly_hours') {
+      const error = weeklyHoursError(sectionForm.settings.weekly_hours_days)
+      if (error) { alert(error); return }
+      savedSettings = { ...savedSettings, weekly_hours_days: normalizeWeeklyHours(savedSettings.weekly_hours_days) }
+    }
     if (sectionForm.block_type === 'location_map') {
       const embedInput = sectionForm.settings.map_embed_url?.trim() || ''
       const directionsInput = sectionForm.settings.map_link_url?.trim() || ''
@@ -4234,7 +4244,7 @@ export default function WebsiteEditionPage() {
       {/* Section Modal */}
       {showSectionModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50" onClick={() => setShowSectionModal(false)}>
-          <div className={`bg-surface w-full ${sectionForm.block_type === 'location_map' ? 'max-w-3xl' : 'max-w-lg'} rounded-t-3xl p-6 animate-slide-up max-h-[90vh] overflow-auto`} onClick={e => e.stopPropagation()}>
+          <div className={`bg-surface w-full ${['location_map', 'weekly_hours'].includes(sectionForm.block_type) ? 'max-w-3xl' : 'max-w-lg'} rounded-t-3xl p-6 animate-slide-up max-h-[90vh] overflow-auto`} onClick={e => e.stopPropagation()}>
             <div className="w-12 h-1.5 bg-border rounded-full mx-auto mb-6" />
 
             <h3 className="font-bold text-xl mb-6">{editingSection ? 'Editar bloque' : 'Nuevo bloque de landing'}</h3>
@@ -4258,7 +4268,7 @@ export default function WebsiteEditionPage() {
                   value={sectionForm.block_type}
                   onChange={(e) => {
                     const block_type = e.target.value as LandingBlockType
-                    const instructionContent = block_type === 'order_instructions' ? ORDER_INSTRUCTIONS_CONTENT : block_type === 'pickup_instructions' ? PICKUP_INSTRUCTIONS_CONTENT : block_type === 'saved_lists_instructions' ? SAVED_LISTS_INSTRUCTIONS_CONTENT : null
+                    const instructionContent = block_type === 'weekly_hours' ? HOURS_CONTENT : block_type === 'order_instructions' ? ORDER_INSTRUCTIONS_CONTENT : block_type === 'pickup_instructions' ? PICKUP_INSTRUCTIONS_CONTENT : block_type === 'saved_lists_instructions' ? SAVED_LISTS_INSTRUCTIONS_CONTENT : null
                     setSectionForm(current => ({
                       ...current,
                       ...(instructionContent ? {
@@ -4346,7 +4356,7 @@ export default function WebsiteEditionPage() {
                   </select>
                 </label>
                 <p className="text-xs text-text-muted sm:col-span-2">Sugerencia para el estilo del local: Lora en títulos y DM Sans en textos.</p>
-                <p className="text-sm font-semibold text-text sm:col-span-2">{sectionForm.block_type === 'location_map' ? 'Alineación del encabezado por dispositivo' : 'Alineación del texto por dispositivo'}</p>
+                <p className="text-sm font-semibold text-text sm:col-span-2">{['location_map', 'weekly_hours'].includes(sectionForm.block_type) ? 'Alineación del encabezado por dispositivo' : 'Alineación del texto por dispositivo'}</p>
                 {(['desktop', 'mobile'] as const).map(device => {
                   const key = device === 'desktop' ? 'desktop_text_alignment' : 'mobile_text_alignment'
                   return <label key={key} className="block text-sm font-medium text-text-muted">{device === 'desktop' ? 'Escritorio' : 'Móvil'}
@@ -4355,7 +4365,7 @@ export default function WebsiteEditionPage() {
                     </select>
                   </label>
                 })}
-                {sectionForm.block_type !== 'location_map' && <>
+                {!['location_map', 'weekly_hours'].includes(sectionForm.block_type) && <>
                 <p className="text-sm font-semibold text-text sm:col-span-2">Encuadre de imágenes por dispositivo</p>
                 {(['desktop', 'mobile'] as const).map(device => {
                   const key = device === 'desktop' ? 'desktop_image_position' : 'mobile_image_position'
@@ -4682,6 +4692,13 @@ export default function WebsiteEditionPage() {
                   <p className="text-xs text-text-muted">Los valores se toman de Configuración del negocio.</p>
                 </div>
               )}
+
+              {sectionForm.block_type === 'weekly_hours' && <div className="space-y-4">
+                <LandingHoursEditor settings={sectionForm.settings} onChange={updateLandingSettings} renderColor={(label, value, onChange) => <ColorPicker label={label} value={value} onChange={onChange} palette={palette} />} />
+                <CollapsibleCard icon="clock" title="Vista previa de los horarios" subtitle="Se actualiza mientras editás">
+                  <div className="mt-4 overflow-hidden rounded-2xl border border-border"><LandingHours title={sectionForm.title || HOURS_CONTENT.title} subtitle={sectionForm.subtitle} description={sectionForm.description} settings={sectionForm.settings} /></div>
+                </CollapsibleCard>
+              </div>}
 
               {sectionForm.block_type === 'location_map' && (
                 <div className="space-y-4">

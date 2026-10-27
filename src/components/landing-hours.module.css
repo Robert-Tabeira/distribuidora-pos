@@ -1,0 +1,20 @@
+.section { padding: 56px 16px; color: var(--hours-text); }
+.layout { display: grid; gap: 28px; max-width: 1152px; margin: 0 auto; }
+.intro { text-align: var(--hours-mobile-align); }
+.icon { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; margin-bottom: 20px; border-radius: 18px; color: var(--hours-icon); background: var(--hours-icon-bg); }
+.eyebrow { margin-bottom: 12px; color: var(--hours-icon); font-size: 11px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; }
+.title { font-size: 32px; line-height: 1.12; color: var(--hours-heading); overflow-wrap: anywhere; }
+.subtitle { margin-top: 16px; font-size: 18px; line-height: 1.6; color: var(--hours-heading); white-space: pre-line; }
+.description { margin-top: 12px; font-size: 15px; line-height: 1.8; white-space: pre-line; }
+.note { display: flex; gap: 12px; margin-top: 24px; padding: 16px; border-radius: 16px; background: var(--hours-note-bg); font-size: 13px; line-height: 1.7; text-align: left; white-space: pre-line; overflow-wrap: anywhere; }
+.schedule { min-width: 0; padding: 8px 20px; border: 1px solid var(--hours-border); border-radius: 28px; background: var(--hours-card-bg); box-shadow: 0 10px 32px rgb(72 54 31 / 6%); }
+.row { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--hours-border); }
+.row:last-child { border-bottom: 0; }
+.day { color: var(--hours-day); font-size: 14px; }
+.times { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; min-width: 0; text-align: right; font-size: 14px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+.period { white-space: nowrap; }
+.closed { color: var(--hours-closed); }
+.pending { font-size: 12px; overflow-wrap: anywhere; }
+@media (min-width: 640px) { .section { padding: 64px 24px; } .title { font-size: 40px; } .schedule { padding: 8px 28px; } }
+@media (min-width: 768px) { .layout { grid-template-columns: minmax(0, .85fr) minmax(0, 1.2fr); gap: 40px; align-items: start; } }
+@media (min-width: 1024px) { .intro { text-align: var(--hours-desktop-align); } .title { font-size: 46px; } .layout { gap: 64px; } .times { flex-direction: row; flex-wrap: wrap; justify-content: flex-end; column-gap: 16px; } }
