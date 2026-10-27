@@ -13,7 +13,6 @@ export interface LandingLocationSettings {
   map_phone_text?: string
   map_side?: 'left' | 'right'
   map_mobile_order?: 'first' | 'last'
-  map_load_on_click?: boolean
   map_height_mobile?: number
   map_height_tablet?: number
   map_height_desktop?: number
@@ -47,7 +46,6 @@ export const DEFAULT_LOCATION_SETTINGS = {
   map_phone_text: '',
   map_side: 'right',
   map_mobile_order: 'last',
-  map_load_on_click: false,
   map_height_mobile: 300,
   map_height_tablet: 360,
   map_height_desktop: 440,

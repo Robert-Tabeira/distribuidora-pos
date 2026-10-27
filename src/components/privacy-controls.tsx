@@ -17,19 +17,17 @@ export function PrivacyControls() {
   const [notice, setNotice] = useState(false)
   const [open, setOpen] = useState(false)
   const [analytics, setAnalytics] = useState(false)
-  const [maps, setMaps] = useState(false)
   const [blocked, setBlocked] = useState(false)
   const [feedback, setFeedback] = useState('')
   const dialog = useRef<HTMLDivElement>(null)
   const lastFocus = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
-    const sync = () => { setNotice(!readPrivacyPreferences()); setBlocked(browserRejectsAnalytics()) }
+    const sync = () => { setNotice(SITE_ANALYTICS_ENABLED && !readPrivacyPreferences()); setBlocked(browserRejectsAnalytics()) }
     const show = () => {
       lastFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
       const choice = readPrivacyPreferences()
       setAnalytics(choice?.analytics === true && !browserRejectsAnalytics())
-      setMaps(choice?.externalMaps === true)
       setBlocked(browserRejectsAnalytics())
       setOpen(true)
     }
@@ -60,35 +58,34 @@ export function PrivacyControls() {
     return () => { document.body.style.overflow = previous; window.removeEventListener('keydown', key); lastFocus.current?.focus({ preventScroll: true }) }
   }, [open])
 
-  function choose(allowAnalytics: boolean, allowMaps: boolean) {
-    const choice = savePrivacyPreferences(allowAnalytics, allowMaps)
+  function choose(allowAnalytics: boolean) {
+    savePrivacyPreferences(allowAnalytics)
     setOpen(false)
     setNotice(false)
-    setFeedback(choice.analytics || choice.externalMaps ? 'Preferencias de privacidad guardadas.' : 'Se guardó tu elección: solo almacenamiento necesario.')
+    setFeedback('Preferencias de privacidad guardadas.')
   }
 
   return <>
     <p role="status" className="sr-only">{feedback}</p>
     {notice && !open && <aside className={styles.notice} aria-label="Preferencias de privacidad">
       <h2 className={styles.heading}>Tu privacidad, tu elección</h2>
-      <p className={styles.copy}>Usamos almacenamiento para tus listas y tu cuenta. Podés permitir mapas de Google o mantenerlos apagados y seguir usando la web. <Link href="/privacidad" className={styles.link}>Política de privacidad</Link>.</p>
+      <p className={styles.copy}>Usamos almacenamiento para tus listas y tu cuenta. Podés elegir si permitís las estadísticas opcionales. <Link href="/privacidad" className={styles.link}>Política de privacidad</Link>.</p>
       <div className={styles.actions}>
-        <button type="button" className={styles.button} onClick={() => choose(false,false)}>Solo necesarios</button>
+        <button type="button" className={styles.button} onClick={() => choose(false)}>Solo necesarios</button>
         <button type="button" className={styles.button} onClick={openPrivacySettings}>Configurar</button>
-        {LEGAL_READY && <button type="button" className={styles.button} onClick={() => choose(false,true)}>Permitir mapas</button>}
       </div>
       {!LEGAL_READY && <p className={styles.copy}>Las funciones opcionales permanecen apagadas mientras se completa la información de privacidad del negocio.</p>}
     </aside>}
     {open && <div className={styles.overlay} onClick={() => setOpen(false)}>
       <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby="privacy-title" tabIndex={-1} className={styles.dialog} onClick={event => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-3"><h2 id="privacy-title" className={styles.heading}>Preferencias de privacidad</h2><button type="button" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" aria-label="Cerrar preferencias" onClick={() => setOpen(false)}>✕</button></div>
-        <p className={styles.copy}>Elegí qué funciones opcionales permitís. Podés cambiar tu elección desde el pie de página.</p>
-        <div className={styles.option}><span aria-hidden="true">✓</span><div><strong>Necesarios · Siempre activos</strong><small>Carrito, lista de consultas, acceso a la cuenta y guardado de esta elección.</small></div></div>
+        <p className={styles.copy}>{SITE_ANALYTICS_ENABLED ? 'Elegí si permitís las estadísticas opcionales. Podés cambiar tu elección desde el pie de página.' : 'Usamos almacenamiento para el carrito, las listas de consultas y el acceso a tu cuenta. Las estadísticas internas están deshabilitadas.'}</p>
+        <div className={styles.option}><span aria-hidden="true">✓</span><div><strong>Necesarios · Siempre activos</strong><small>Carrito, lista de consultas y acceso a la cuenta.</small></div></div>
         {SITE_ANALYTICS_ENABLED && <label className={styles.option}><input type="checkbox" checked={analytics} disabled={blocked || !LEGAL_READY} onChange={event => setAnalytics(event.target.checked)} /><span><strong>Estadísticas para mejorar la web</strong><small>Visitas, búsquedas, productos abiertos y acciones en listas y WhatsApp, con un identificador del navegador. Ayudan a conocer qué productos interesan y mejorar la navegación. Son de uso interno y no se usan para publicidad.</small>{blocked && <small>Tu navegador solicita no ser rastreado. Las estadísticas permanecen apagadas.</small>}</span></label>}
-        <label className={styles.option}><input type="checkbox" checked={maps} disabled={!LEGAL_READY} onChange={event => setMaps(event.target.checked)} /><span><strong>Mapas externos de Google</strong><small>Permite cargar el mapa interactivo y establecer una conexión con Google. Sin permiso podés seguir leyendo la dirección y abrir el mapa en otra pestaña.</small></span></label>
-        {!LEGAL_READY && <p className={styles.copy}>Las opciones se habilitarán cuando esté completa la información de privacidad del negocio.</p>}
-        <div className={styles.actions}><button type="button" className={styles.button} onClick={() => choose(false,false)}>Solo necesarios</button><button type="button" className={`${styles.button} ${styles.primary}`} onClick={() => choose(analytics,maps)}>Guardar elección</button></div>
-        <p className={styles.copy}>La elección se recuerda hasta 180 días en este navegador. <Link href="/privacidad#cookies" onClick={() => setOpen(false)} className={styles.link}>Almacenamiento y preferencias</Link>.</p>
+        <div className={styles.option}><span aria-hidden="true">↗</span><div><strong>Mapa de ubicación de Google</strong><small>Se carga automáticamente al acercarte a la sección de ubicación y establece una conexión con Google para mostrar el local.</small></div></div>
+        {SITE_ANALYTICS_ENABLED && !LEGAL_READY && <p className={styles.copy}>Las opciones se habilitarán cuando esté completa la información de privacidad del negocio.</p>}
+        <div className={styles.actions}>{SITE_ANALYTICS_ENABLED ? <><button type="button" className={styles.button} onClick={() => choose(false)}>Solo necesarios</button><button type="button" className={`${styles.button} ${styles.primary}`} onClick={() => choose(analytics)}>Guardar elección</button></> : <button type="button" className={`${styles.button} ${styles.primary}`} onClick={() => setOpen(false)}>Cerrar</button>}</div>
+        <p className={styles.copy}>{SITE_ANALYTICS_ENABLED && 'La elección se recuerda hasta 180 días en este navegador. '}<Link href="/privacidad#cookies" onClick={() => setOpen(false)} className={styles.link}>Almacenamiento y preferencias</Link>.</p>
       </div>
     </div>}
   </>

@@ -1,9 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { Icon } from '@/components/ui/icon'
 import { getSiteFontFamily } from '@/lib/site-fonts'
-import { PRIVACY_CHANGED, PRIVACY_STORAGE_KEY, externalMapsConsentGranted, openPrivacySettings } from '@/lib/privacy-preferences'
 import { DEFAULT_LOCATION_SETTINGS as defaults, locationBlockData, locationNumber, type LandingLocationSettings, type LocationBusinessInfo } from '@/lib/landing-location'
 
 interface LocationSectionSettings extends LandingLocationSettings {
@@ -26,39 +25,8 @@ interface LocationSectionProps {
 
 export function LandingLocation({ title, subtitle, description, settings, business, preview = false }: LocationSectionProps) {
   const data = locationBlockData(settings, business)
-  const mapRef = useRef<HTMLDivElement>(null)
-  const [mapRequested, setMapRequested] = useState(false)
-  const [mapLoaded, setMapLoaded] = useState(false)
-  const [mapsAllowed, setMapsAllowed] = useState(false)
-  const manual = settings.map_load_on_click === true
-
-  useEffect(() => {
-    const sync = () => setMapsAllowed(externalMapsConsentGranted())
-    const storage = (event: StorageEvent) => { if (event.key === PRIVACY_STORAGE_KEY || event.key === null) sync() }
-    sync()
-    window.addEventListener(PRIVACY_CHANGED, sync)
-    window.addEventListener('storage', storage)
-    window.addEventListener('focus', sync)
-    return () => { window.removeEventListener(PRIVACY_CHANGED, sync); window.removeEventListener('storage', storage); window.removeEventListener('focus', sync) }
-  }, [])
-
-  useEffect(() => {
-    setMapRequested(false)
-    setMapLoaded(false)
-    if (preview || !mapsAllowed || manual || !mapRef.current) return
-    if (typeof IntersectionObserver === 'undefined') {
-      if (externalMapsConsentGranted()) setMapRequested(true)
-      return
-    }
-    const observer = new IntersectionObserver(entries => {
-      if (entries.some(entry => entry.isIntersecting)) {
-        if (externalMapsConsentGranted()) setMapRequested(true)
-        observer.disconnect()
-      }
-    }, { rootMargin: '200px' })
-    observer.observe(mapRef.current)
-    return () => observer.disconnect()
-  }, [data.embedUrl, manual, preview, mapsAllowed])
+  const [loadedEmbedUrl, setLoadedEmbedUrl] = useState('')
+  const mapLoaded = loadedEmbedUrl === data.embedUrl
 
   const headingFont = settings.heading_font && settings.heading_font !== 'inherit' ? settings.heading_font : 'lora'
   const bodyFont = settings.body_font && settings.body_font !== 'inherit' ? settings.body_font : 'dm_sans'
@@ -113,16 +81,14 @@ export function LandingLocation({ title, subtitle, description, settings, busine
             {(settings.map_link_text ?? defaults.map_link_text) && <a href={data.mapUrl} target="_blank" rel="noopener noreferrer" className="mt-7 inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-full px-6 py-3 font-semibold shadow-sm transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 sm:w-fit" style={buttonStyle}><Icon aria-hidden="true" name="compass" className="h-5 w-5 shrink-0" />{settings.map_link_text ?? defaults.map_link_text}<span aria-hidden="true">↗</span></a>}
           </div>
 
-          <div ref={mapRef} className={`location-map-frame relative min-w-0 overflow-hidden ${mobileFirst ? 'order-1' : 'order-2'} ${mapFirst ? 'md:order-1' : 'md:order-2'}`} style={{ backgroundColor: settings.map_icon_bg || defaults.map_icon_bg }} aria-busy={mapsAllowed && mapRequested && !mapLoaded}>
-            <div aria-hidden={!preview && mapsAllowed && mapLoaded} className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center" style={{ backgroundImage: 'linear-gradient(135deg, transparent 44%, rgba(255,255,255,0.6) 44%, rgba(255,255,255,0.6) 46%, transparent 46%), linear-gradient(35deg, transparent 55%, rgba(255,255,255,0.5) 55%, rgba(255,255,255,0.5) 57%, transparent 57%)' }}>
+          <div className={`location-map-frame relative min-w-0 overflow-hidden ${mobileFirst ? 'order-1' : 'order-2'} ${mapFirst ? 'md:order-1' : 'md:order-2'}`} style={{ backgroundColor: settings.map_icon_bg || defaults.map_icon_bg }} aria-busy={!preview && !mapLoaded}>
+            <div aria-hidden={!preview && mapLoaded} className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center" style={{ backgroundImage: 'linear-gradient(135deg, transparent 44%, rgba(255,255,255,0.6) 44%, rgba(255,255,255,0.6) 46%, transparent 46%), linear-gradient(35deg, transparent 55%, rgba(255,255,255,0.5) 55%, rgba(255,255,255,0.5) 57%, transparent 57%)' }}>
               <span className="mb-4 flex h-16 w-16 items-center justify-center rounded-full shadow-sm" style={{ ...iconStyle, backgroundColor: settings.map_card_bg || defaults.map_card_bg }}><Icon aria-hidden="true" name="location" className="h-8 w-8" /></span>
               <p className="font-serif text-xl font-semibold" style={headingStyle}>{preview ? 'Vista previa del mapa' : 'Encontranos acá'}</p>
               <p className="mt-2 max-w-xs text-sm leading-relaxed">{data.address}</p>
-              {preview ? <p className="mt-4 text-xs opacity-75">El mapa interactivo se muestra en la landing.</p> : mapsAllowed && !mapRequested && <button type="button" onClick={() => externalMapsConsentGranted() ? setMapRequested(true) : openPrivacySettings()} className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition hover:brightness-110" style={buttonStyle}><Icon aria-hidden="true" name="location" className="h-4 w-4" />Ver mapa interactivo</button>}
-              {!preview && !mapsAllowed && <><p className="mt-3 text-sm">El mapa de Google permanece apagado hasta que lo permitas.</p><button type="button" onClick={openPrivacySettings} className="mt-5 rounded-full px-5 py-3 text-sm font-semibold" style={buttonStyle}>Configurar privacidad</button></>}
-              {!preview && mapsAllowed && mapRequested && !mapLoaded && <p role="status" className="mt-4 text-sm">Cargando mapa…</p>}
+              {preview ? <p className="mt-4 text-xs opacity-75">El mapa interactivo se muestra en la landing.</p> : !mapLoaded && <p role="status" className="mt-4 text-sm">Cargando mapa…</p>}
             </div>
-            {!preview && mapsAllowed && mapRequested && <iframe key={data.embedUrl} title={`Mapa de ubicación: ${data.address}`} src={data.embedUrl} className={`absolute inset-0 h-full w-full border-0 transition-opacity duration-300 ${mapLoaded ? 'opacity-100' : 'opacity-0'}`} loading="lazy" referrerPolicy="no-referrer-when-downgrade" allowFullScreen onLoad={() => setMapLoaded(true)} />}
+            {!preview && <iframe key={data.embedUrl} title={`Mapa de ubicación: ${data.address}`} src={data.embedUrl} className={`absolute inset-0 h-full w-full border-0 transition-opacity duration-300 ${mapLoaded ? 'opacity-100' : 'opacity-0'}`} loading="lazy" referrerPolicy="no-referrer-when-downgrade" allowFullScreen onLoad={() => setLoadedEmbedUrl(data.embedUrl)} />}
           </div>
         </div>
       </div>

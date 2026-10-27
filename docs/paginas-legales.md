@@ -3,11 +3,11 @@
 ## Entregado
 
 - Dos páginas principales: `/privacidad` y `/terminos` (Términos de uso), con textos breves sobre el funcionamiento real del sitio.
-- `/privacidad` adopta el formato breve del ejemplo aportado por el usuario: presentación, referencia a la Ley 18.331, finalidades, servicios de soporte, contacto y un apartado breve de almacenamiento y mapa opcional en `/privacidad#cookies`. Las estadísticas internas siguen deshabilitadas; no se ofrecen como finalidad ni permiso en el documento.
+- `/privacidad` adopta el formato breve del ejemplo aportado por el usuario: presentación, referencia a la Ley 18.331, finalidades, servicios de soporte, contacto y un apartado breve de almacenamiento y mapa automático en `/privacidad#cookies`. Las estadísticas internas siguen deshabilitadas; no se ofrecen como finalidad ni permiso en el documento.
 - `/terminos` utiliza el formato numerado del ejemplo aportado: uso, registro, listas y WhatsApp, confirmación de pedidos y precios, coordinación de entrega/retiro, datos personales, contenidos, normativa y domicilio. La cotización definitiva, facturación y cobros quedan fuera de la web.
 - La ruta anterior `/cookies` redirige permanentemente a `/privacidad#cookies` para conservar enlaces existentes; ya no es una tercera página de contenido ni figura en la navegación legal.
 - Enlaces permanentes en el footer y aviso informativo en el formulario de registro.
-- Preferencias para permitir el mapa externo o mantenerlo apagado, con cambio posterior desde el footer. La opción de estadísticas está oculta y bloqueada por configuración.
+- El mapa externo se carga automáticamente, sin solicitar permiso. El acceso de privacidad del footer muestra información; no se presenta un aviso automático mientras las estadísticas están deshabilitadas.
 - Publicación habilitada por solicitud del usuario el 24 de octubre de 2026. El aviso de borrador deja de mostrarse y las páginas permiten indexación.
 
 ## Publicación y mantenimiento de la información
@@ -21,7 +21,7 @@ Editar `src/lib/legal-details.ts` con información confirmada por la dueña:
 5. Revisar permisos de acceso a datos de clientes y las obligaciones de inscripción y documentación del negocio ante la URCDP con su asesor.
 6. La publicación se controla con `published`, actualmente `true` por solicitud del usuario. Es un control editorial del proyecto, no una certificación de cumplimiento legal. `retentionDetails` e `internationalTransfers` son campos de texto ampliado y ya no bloquean la publicación cuando están vacíos; no se inventa su contenido.
 
-Con `published: true`, razón social, domicilio y contacto completos, las páginas se muestran sin aviso de borrador y permiten indexación. Las preferencias habilitan elegir el mapa, que sigue sin cargarse hasta obtener permiso. Las estadísticas están deshabilitadas de forma independiente: publicar las páginas no las reactiva. El catálogo, listas, acceso y enlaces externos continúan disponibles.
+Con `published: true`, razón social, domicilio y contacto completos, las páginas se muestran sin aviso de borrador y permiten indexación. El mapa se carga automáticamente. Las estadísticas están deshabilitadas de forma independiente: publicar las páginas no las reactiva. El catálogo, listas, acceso y enlaces externos continúan disponibles.
 
 ## Contacto de privacidad sin correo
 
@@ -58,19 +58,20 @@ Los términos se adaptan al servicio de listas y comunicación por WhatsApp. No 
 
 1. Aplicar `supabase/migrations/202610230002_disable_site_analytics.sql` para cerrar recepción y consulta de métricas desde clientes anteriores. No requiere instalar las migraciones antiguas si las métricas nunca se habilitaron.
 2. Publicar el código en Vercel. La configuración del código bloquea las estadísticas aun si existen preferencias antiguas o se completa la revisión legal.
-3. La publicación ya está habilitada en el código. El visitante puede permitir el mapa desde las preferencias; publicar los documentos no lo autoriza automáticamente.
+3. La publicación ya está habilitada en el código. El mapa se carga automáticamente sin depender de las preferencias.
 
 No se agregan secretos ni variables de entorno. No se ejecutaron migraciones remotas en esta entrega.
 
 ## Comportamiento del consentimiento
 
 - Las estadísticas están bloqueadas por `SITE_ANALYTICS_ENABLED = false`, sin depender del consentimiento. El componente público borra el identificador local anterior sin recopilar actividad.
-- La preferencia se guarda localmente con su fecha, versión y vencimiento de 180 días, plazo elegido por el proyecto. Si el almacenamiento está bloqueado se mantiene únicamente una elección temporal en memoria.
-- La versión de preferencias usa `LEGAL_VERSION` y el sufijo `-draft` solo si no está publicada. Al pasar de borrador a publicada, se vuelve a solicitar la elección del mapa. Las estadísticas permanecen bloqueadas.
+- El código de preferencias de estadísticas se conserva inactivo. Si se habilitara expresamente en el futuro, guardaría la elección con fecha, versión y vencimiento de 180 días; con almacenamiento bloqueado, solo en memoria. El panel informativo actual no guarda una elección al cerrarse.
+- La versión de preferencias usa `LEGAL_VERSION` y el sufijo `-draft` solo si no está publicada. No condiciona la carga del mapa. Las estadísticas permanecen bloqueadas.
 - Los nuevos guardados de preferencias fuerzan `analytics: false`; los valores anteriores se interpretan como falsos mientras la funcionalidad esté deshabilitada.
 - Deshabilitar la recopilación no elimina eventos previos en la base. El procedimiento de acceso/supresión debe contemplar los identificadores y los registros que razonablemente puedan identificarse, sin recolectar datos excesivos para esa verificación.
-- No se carga el iframe de Google Maps sin permiso. Al retirar mapas se desmonta. Los enlaces externos que la persona decide abrir siguen disponibles.
-- La tipografía de Google utilizada por el diseño está alojada en el propio proyecto; permitir mapas no implica permitir otros servicios no incluidos.
+- El iframe de Google Maps se monta directamente con `loading="lazy"`: el navegador inicia su carga al acercarse a la sección. Las preferencias antiguas y el antiguo ajuste `map_load_on_click` no bloquean el mapa. La vista previa del editor conserva una representación sin iframe.
+- El editor ya no ofrece carga del mapa al pulsar. La política y el panel informativo explican la conexión automática con Google y los datos técnicos que puede recibir. No se agregan dependencias ni migraciones SQL. No se ejecutaron pruebas ni build; revisión estática del diff.
+- La tipografía de Google utilizada por el diseño está alojada en el propio proyecto.
 - Las decisiones se sincronizan entre pestañas cuando el navegador comunica cambios de almacenamiento.
 
 ## Versiones, eventos anteriores y proveedores

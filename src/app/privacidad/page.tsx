@@ -24,7 +24,7 @@ export default function PrivacyPage() {
     <h2>Contacto y derechos</h2>
     <p>Podés solicitar acceso, rectificación, actualización o supresión de tus datos mediante el contacto de privacidad: {LEGAL_DETAILS.privacyContactHref ? <a href={LEGAL_DETAILS.privacyContactHref}>{LEGAL_DETAILS.privacyContact}</a> : LEGAL_DETAILS.privacyContact} Domicilio: {LEGAL_DETAILS.registeredAddress}.</p>
     <h2 id="cookies">Almacenamiento y preferencias</h2>
-    <p>El navegador recuerda tus listas y el acceso hasta que los elimines o cierres sesión, según corresponda, y tus preferencias por hasta 180 días. Borrar el almacenamiento puede eliminar listas locales. El mapa integrado de Google se carga únicamente si lo permitís; podés cambiar esa elección desde «Configurar privacidad».</p>
+    <p>El navegador recuerda tus listas y el acceso hasta que los elimines o cierres sesión, según corresponda. Borrar el almacenamiento puede eliminar listas locales. El mapa integrado se carga automáticamente al acercarte a la sección de ubicación y establece una conexión con Google, que puede recibir datos técnicos de conexión. Las estadísticas internas están deshabilitadas.</p>
     <PrivacySettingsButton className={styles.preferences} />
   </LegalPage>
 }

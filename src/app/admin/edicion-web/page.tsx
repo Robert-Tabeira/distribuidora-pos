@@ -4703,10 +4703,7 @@ export default function WebsiteEditionPage() {
                           ['map_height_desktop', 'Altura mínima en escritorio', 300, 720],
                         ] as const).map(([key, label, min, max]) => <label key={key} className="block text-sm text-text-muted">{label}: {sectionForm.settings[key] ?? DEFAULT_LOCATION_SETTINGS[key]} px<input type="range" min={min} max={max} step="10" className="mt-2 w-full" value={sectionForm.settings[key] ?? DEFAULT_LOCATION_SETTINGS[key]} onChange={e => updateLandingSettings({ [key]: Number(e.target.value) })} /></label>)}
                       </div>
-                      <label className="block text-sm font-medium text-text-muted">Cuándo cargar el mapa interactivo
-                        <select className="input mt-1" value={sectionForm.settings.map_load_on_click ? 'click' : 'nearby'} onChange={e => updateLandingSettings({ map_load_on_click: e.target.value === 'click' })}><option value="nearby">Cuando el visitante se acerca a esta sección</option><option value="click">Al pulsar “Ver mapa interactivo”</option></select>
-                        <span className="mt-1 block text-xs">Cargarlo al pulsar reduce las descargas de Google Maps y evita que el mapa interrumpa el desplazamiento en celular.</span>
-                      </label>
+                      <p className="text-xs text-text-muted">El mapa se carga automáticamente al acercarse a esta sección, sin solicitar permiso ni pulsar un botón.</p>
                       <label className="block text-sm font-medium text-text-muted">Mapa de Google personalizado (opcional)
                         <textarea className="input mt-1 min-h-20 font-mono text-xs" value={sectionForm.settings.map_embed_url || ''} onChange={e => updateLandingSettings({ map_embed_url: e.target.value })} placeholder={'https://www.google.com/maps/embed?pb=… o el código <iframe …>'} aria-invalid={Boolean(sectionForm.settings.map_embed_url && !googleMapsEmbedSource(sectionForm.settings.map_embed_url))} />
                         <span className="mt-1 block text-xs">En Google Maps: Compartir → Insertar un mapa → Copiar HTML. Si lo dejás vacío, se usa la dirección escrita arriba.</span>
