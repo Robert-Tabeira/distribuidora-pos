@@ -608,7 +608,7 @@ export default function CatalogPage() {
     }
   }, [categories, groupedSections, landingCategoryTarget])
 
-  const cartTotal = cartItems.reduce((sum, item) => sum + item.quantity, 0)
+  const cartProductCount = cartProducts.length
   const activeFilterCount = selectedCategories.length + (showOnlyDiscounts ? 1 : 0) + (showOnlyRecentlyAdded ? 1 : 0)
 
   const toggleCategory = (categoryId: string) => {
@@ -688,7 +688,7 @@ export default function CatalogPage() {
           <div><p className={styles.eyebrow}>Los Primos · Por mayor y menor</p><h1 className={styles.title}>Nuestro catálogo</h1><p className={styles.introText}>Encontrá lo que necesitás, armá tu consulta y preguntanos los precios por WhatsApp.</p></div>
           <div className={styles.actions}>
             <button type="button" onClick={() => setShowPriceInquiry(true)} className={styles.primaryButton}><Icon name="document" className="h-4 w-4 shrink-0" />Consulta de precios<span className={styles.count}>{priceInquiryProductIds.length}</span></button>
-            {customerOrderingEnabled && <button type="button" onClick={() => setShowCart(true)} className={styles.secondaryButton}><Icon name="cart" className="h-4 w-4 shrink-0" />Mi pedido ({cartTotal})</button>}
+            {customerOrderingEnabled && <button type="button" onClick={() => setShowCart(true)} className={styles.secondaryButton}><Icon name="cart" className="h-4 w-4 shrink-0" />Mi pedido ({cartProductCount})</button>}
           </div>
         </header>
         <div className={styles.layout}>
@@ -1073,7 +1073,7 @@ export default function CatalogPage() {
       {customerOrderingEnabled && showCart && (
         <div className="fixed inset-0 z-[60] bg-black/60 flex items-end sm:items-center justify-center sm:p-4" onClick={() => setShowCart(false)}>
           <section className="bg-white w-full sm:max-w-xl rounded-t-3xl sm:rounded-3xl max-h-[90vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="p-5 border-b flex items-center justify-between"><div><h2 className={styles.modalTitle}>Mi pedido</h2><p className="text-sm text-[#817565]">{cartTotal} producto{cartTotal !== 1 ? 's' : ''}</p></div><button onClick={() => setShowCart(false)} className="text-2xl text-[#817565]" aria-label="Cerrar">×</button></div>
+            <div className="p-5 border-b flex items-center justify-between"><div><h2 className={styles.modalTitle}>Mi pedido</h2><p className="text-sm text-[#817565]">{cartProductCount} producto{cartProductCount !== 1 ? 's' : ''}</p></div><button onClick={() => setShowCart(false)} className="text-2xl text-[#817565]" aria-label="Cerrar">×</button></div>
             <div className="p-5 overflow-y-auto flex-1">
               {orderAccess.status !== 'approved' && <div className="mb-4 rounded-2xl border border-[#d6c9aa] bg-[#f7f2e6] p-4 text-[#514738]">
                 <div className="flex items-start gap-3"><Icon name="store" className="mt-0.5 h-5 w-5 shrink-0 text-[#686f43]" /><div><h3 className="font-bold">Solo retiro en mostrador</h3><p className="mt-1 text-sm leading-6">Podés hacer tu pedido sin registrarte. Sin una cuenta de empresa aprobada, solamente podés retirarlo en el local; no incluye envío.</p><p className="mt-2 text-xs leading-5 text-[#817565]">Guardar listas en una cuenta está disponible únicamente para empresas aprobadas. Este carrito se conserva en tu navegador.</p></div></div>
