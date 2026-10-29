@@ -172,6 +172,8 @@ interface HeroSlide {
   mobile_image_fit?: 'cover' | 'contain' | null
   title_font?: string | null
   body_font?: string | null
+  cta_font?: string | null
+  cta_font_weight?: number | null
   title_font_weight?: number | null
   body_font_weight?: number | null
   title_size_desktop?: number | null
@@ -822,7 +824,7 @@ export default function WebsiteEditionPage() {
   // Hero Slides
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([])
   const [editingHero, setEditingHero] = useState<HeroSlide | null>(null)
-  const [heroForm, setHeroForm] = useState({ internal_name: '', title: '', description: '', cta_text: '', cta_url: '', cta_bottom_offset: null as number | null, show_title_mobile: true, show_title_desktop: true, show_description_mobile: true, show_description_desktop: true, image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain' as 'cover' | 'contain', mobile_image_fit: 'contain' as 'cover' | 'contain', image_darkness: 18, title_font: 'lora', body_font: 'dm_sans', title_font_weight: 900, body_font_weight: 400, title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
+  const [heroForm, setHeroForm] = useState({ internal_name: '', title: '', description: '', cta_text: '', cta_url: '', cta_bottom_offset: null as number | null, show_title_mobile: true, show_title_desktop: true, show_description_mobile: true, show_description_desktop: true, image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain' as 'cover' | 'contain', mobile_image_fit: 'contain' as 'cover' | 'contain', image_darkness: 18, title_font: 'lora', body_font: 'dm_sans', cta_font: '', cta_font_weight: 0, title_font_weight: 900, body_font_weight: 400, title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
   const [savingHero, setSavingHero] = useState(false)
   const [heroAutoplaySeconds, setHeroAutoplaySeconds] = useState(5)
   const [savingHeroAutoplay, setSavingHeroAutoplay] = useState(false)
@@ -1395,6 +1397,8 @@ export default function WebsiteEditionPage() {
             image_darkness: heroForm.image_darkness,
             title_font: heroForm.title_font,
             body_font: heroForm.body_font,
+            cta_font: heroForm.cta_font || null,
+            cta_font_weight: heroForm.cta_font_weight || null,
             title_font_weight: heroForm.title_font_weight,
             body_font_weight: heroForm.body_font_weight,
             title_size_desktop: heroForm.title_size_desktop,
@@ -1432,6 +1436,8 @@ export default function WebsiteEditionPage() {
                 image_darkness: heroForm.image_darkness,
                 title_font: heroForm.title_font,
                 body_font: heroForm.body_font,
+                cta_font: heroForm.cta_font || null,
+                cta_font_weight: heroForm.cta_font_weight || null,
                 title_font_weight: heroForm.title_font_weight,
                 body_font_weight: heroForm.body_font_weight,
                 title_size_desktop: heroForm.title_size_desktop,
@@ -1468,6 +1474,8 @@ export default function WebsiteEditionPage() {
             image_darkness: heroForm.image_darkness,
             title_font: heroForm.title_font,
             body_font: heroForm.body_font,
+            cta_font: heroForm.cta_font || null,
+            cta_font_weight: heroForm.cta_font_weight || null,
             title_font_weight: heroForm.title_font_weight,
             body_font_weight: heroForm.body_font_weight,
             title_size_desktop: heroForm.title_size_desktop,
@@ -1490,7 +1498,7 @@ export default function WebsiteEditionPage() {
     } catch (error) {
       console.error('Error saving hero:', error)
       const details = error instanceof Error ? error.message : JSON.stringify(error)
-      alert(`❌ Error al guardar el slide: ${details}. Si el error menciona columnas de tamaño, aplicá primero la migración de tamaño de texto del hero en Supabase.`)
+      alert(`❌ Error al guardar el slide: ${details}. Si el error menciona cta_font o cta_font_weight, ejecutá en Supabase la migración 202610290001_hero_cta_typography.sql. Si menciona columnas de tamaño, aplicá la migración de tamaño de texto del hero.`)
     } finally {
       setSavingHero(false)
     }
@@ -1534,6 +1542,8 @@ export default function WebsiteEditionPage() {
         image_darkness: hero.image_darkness ?? 18,
         title_font: hero.title_font || 'lora',
         body_font: hero.body_font || 'dm_sans',
+        cta_font: hero.cta_font || '',
+        cta_font_weight: hero.cta_font_weight ?? 0,
         title_font_weight: hero.title_font_weight ?? 900,
         body_font_weight: hero.body_font_weight ?? 400,
         title_size_desktop: hero.title_size_desktop || 72,
@@ -1545,7 +1555,7 @@ export default function WebsiteEditionPage() {
       setMobileHeroPreview(hero.mobile_image_url || '')
     } else {
       setEditingHero(null)
-      setHeroForm({ internal_name: '', title: '', description: '', cta_text: '', cta_url: '', cta_bottom_offset: null, show_title_mobile: true, show_title_desktop: true, show_description_mobile: true, show_description_desktop: true, image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain', mobile_image_fit: 'contain', image_darkness: 18, title_font: 'lora', body_font: 'dm_sans', title_font_weight: 900, body_font_weight: 400, title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
+      setHeroForm({ internal_name: '', title: '', description: '', cta_text: '', cta_url: '', cta_bottom_offset: null, show_title_mobile: true, show_title_desktop: true, show_description_mobile: true, show_description_desktop: true, image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain', mobile_image_fit: 'contain', image_darkness: 18, title_font: 'lora', body_font: 'dm_sans', cta_font: '', cta_font_weight: 0, title_font_weight: 900, body_font_weight: 400, title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
       setImagePreview('')
       setMobileHeroPreview('')
     }
@@ -4135,7 +4145,7 @@ export default function WebsiteEditionPage() {
                     <option value="lora">Lora (recomendada)</option><option value="dm_sans">DM Sans</option><option value="fira_sans">Fira Sans</option><option value="georgia">Georgia</option>{customFonts.map(font => <option key={font.id} value={`custom:${font.id}`}>{font.name} (personalizada)</option>)}
                   </select>
                 </label>
-                <label className="block text-sm font-medium text-text-muted">Descripción y botón
+                <label className="block text-sm font-medium text-text-muted">Descripción
                   <select className="input mt-1" value={heroForm.body_font} onChange={e => setHeroForm(current => ({ ...current, body_font: e.target.value }))}>
                     <option value="dm_sans">DM Sans (recomendada)</option><option value="fira_sans">Fira Sans</option><option value="lora">Lora</option><option value="georgia">Georgia</option>{customFonts.map(font => <option key={font.id} value={`custom:${font.id}`}>{font.name} (personalizada)</option>)}
                   </select>
@@ -4145,7 +4155,7 @@ export default function WebsiteEditionPage() {
                     {FONT_WEIGHT_OPTIONS.map(weight => <option key={weight.value} value={weight.value}>{weight.label}</option>)}
                   </select>
                 </label>
-                <label className="block text-sm font-medium text-text-muted">Grosor de la descripción y el botón
+                <label className="block text-sm font-medium text-text-muted">Grosor de la descripción
                   <select className="input mt-1" value={heroForm.body_font_weight} onChange={e => setHeroForm(current => ({ ...current, body_font_weight: Number(e.target.value) }))}>
                     {FONT_WEIGHT_OPTIONS.map(weight => <option key={weight.value} value={weight.value}>{weight.label}</option>)}
                   </select>
@@ -4165,6 +4175,26 @@ export default function WebsiteEditionPage() {
                     <input type="range" min={min} max={max} step={1} value={heroForm[key]} onChange={e => setHeroForm(current => ({ ...current, [key]: Number(e.target.value) }))} className="mt-2 w-full" />
                   </label>
                 ))}
+              </div>
+
+              <div className="grid gap-3 rounded-xl border border-border p-4 sm:grid-cols-2">
+                <p className="text-sm font-semibold text-text sm:col-span-2">Tipografía del botón</p>
+                <label className="block text-sm font-medium text-text-muted">Fuente del botón
+                  <select className="input mt-1" value={heroForm.cta_font} onChange={e => setHeroForm(current => ({ ...current, cta_font: e.target.value }))}>
+                    <option value="">Usar la de la descripción</option>
+                    <option value="dm_sans">DM Sans</option><option value="fira_sans">Fira Sans</option><option value="lora">Lora</option><option value="georgia">Georgia</option>
+                    {customFonts.map(font => <option key={font.id} value={`custom:${font.id}`}>{font.name} (personalizada)</option>)}
+                  </select>
+                </label>
+                <label className="block text-sm font-medium text-text-muted">Grosor del botón
+                  <select className="input mt-1" value={heroForm.cta_font_weight} onChange={e => setHeroForm(current => ({ ...current, cta_font_weight: Number(e.target.value) }))}>
+                    <option value={0}>Usar el de la descripción</option>
+                    {FONT_WEIGHT_OPTIONS.map(weight => <option key={weight.value} value={weight.value}>{weight.label}</option>)}
+                  </select>
+                </label>
+                <div className="rounded-lg bg-stone-900 p-4 text-center sm:col-span-2">
+                  <span className="inline-block rounded-xl bg-[#f8efe2] px-8 py-4 text-lg text-[#4b2e20]" style={{ fontFamily: getSiteFontFamily(heroForm.cta_font || heroForm.body_font, customFonts), fontWeight: heroForm.cta_font_weight || heroForm.body_font_weight }}>{heroForm.cta_text || 'Vista previa del botón'}</span>
+                </div>
               </div>
 
               <div>

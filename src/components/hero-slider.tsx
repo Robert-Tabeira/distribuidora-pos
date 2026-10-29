@@ -26,6 +26,8 @@ export interface HeroSlide {
   mobile_image_fit?: 'cover' | 'contain' | null
   title_font?: string | null
   body_font?: string | null
+  cta_font?: string | null
+  cta_font_weight?: number | null
   title_font_weight?: number | null
   body_font_weight?: number | null
   title_size_desktop?: number | null
@@ -190,6 +192,10 @@ export function HeroSlider({ initialData }: { initialData?: HeroSliderInitialDat
   }
 
   const currentSlideData = slides[currentSlide] || slides[0] || DEFAULT_SLIDES[0]
+  const ctaStyle: CSSProperties = {
+    fontFamily: getSiteFontFamily(currentSlideData.cta_font || currentSlideData.body_font || 'dm_sans'),
+    fontWeight: currentSlideData.cta_font_weight ?? currentSlideData.body_font_weight ?? 400,
+  }
 
   return (
     <div
@@ -240,7 +246,7 @@ export function HeroSlider({ initialData }: { initialData?: HeroSliderInitialDat
             {currentSlideData.cta_text && currentSlideData.cta_url && currentSlideData.cta_bottom_offset == null && (
               <button
                 onClick={() => router.push(currentSlideData.cta_url!)}
-                style={{ fontFamily: getSiteFontFamily(currentSlideData.body_font || 'dm_sans'), fontWeight: currentSlideData.body_font_weight || 400 }}
+                style={ctaStyle}
                 className="pointer-events-auto inline-block px-8 py-4 bg-[#f8efe2] text-[#4b2e20] rounded-xl font-bold hover:bg-white transition-all text-lg animate-fade-in-delay-2 shadow-lg"
               >
                 {currentSlideData.cta_text}
@@ -257,7 +263,7 @@ export function HeroSlider({ initialData }: { initialData?: HeroSliderInitialDat
           <div className={`mx-auto flex w-full max-w-7xl ${HORIZONTAL_POSITION[currentSlideData.mobile_text_position || 'left']} ${DESKTOP_HORIZONTAL_POSITION[currentSlideData.desktop_text_position || 'left']}`}>
             <button
               onClick={() => router.push(currentSlideData.cta_url!)}
-              style={{ fontFamily: getSiteFontFamily(currentSlideData.body_font || 'dm_sans'), fontWeight: currentSlideData.body_font_weight || 400 }}
+              style={ctaStyle}
               className="pointer-events-auto inline-block rounded-xl bg-[#f8efe2] px-8 py-4 text-lg font-bold text-[#4b2e20] shadow-lg transition-all hover:bg-white animate-fade-in-delay-2"
             >
               {currentSlideData.cta_text}
