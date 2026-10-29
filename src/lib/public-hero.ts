@@ -25,8 +25,6 @@ export async function loadPublicHero(): Promise<HeroSliderInitialData | null> {
     const rows: unknown = await slidesResult.value.json()
     if (!Array.isArray(rows)) return null
     const slides = rows.filter((row): row is HeroSlide => Boolean(row && typeof row.image_url === 'string' && row.image_url.trim()))
-    if (!slides.length) return null
-
     let autoPlaySeconds = 5
     if (settingsResult.status === 'fulfilled' && settingsResult.value.ok) {
       const settings = await settingsResult.value.json()

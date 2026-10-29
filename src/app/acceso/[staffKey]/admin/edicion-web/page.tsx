@@ -160,6 +160,8 @@ interface Popup {
 interface HeroSlide {
   id: string
   internal_name: string
+  show_on_mobile?: boolean | null
+  show_on_desktop?: boolean | null
   cta_bottom_offset?: number | null
   order_position: number
   image_url: string
@@ -824,7 +826,7 @@ export default function WebsiteEditionPage() {
   // Hero Slides
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([])
   const [editingHero, setEditingHero] = useState<HeroSlide | null>(null)
-  const [heroForm, setHeroForm] = useState({ internal_name: '', title: '', description: '', cta_text: '', cta_url: '', cta_bottom_offset: null as number | null, show_title_mobile: true, show_title_desktop: true, show_description_mobile: true, show_description_desktop: true, image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain' as 'cover' | 'contain', mobile_image_fit: 'contain' as 'cover' | 'contain', image_darkness: 18, title_font: 'lora', body_font: 'dm_sans', cta_font: '', cta_font_weight: 0, title_font_weight: 900, body_font_weight: 400, title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
+  const [heroForm, setHeroForm] = useState({ internal_name: '', title: '', description: '', cta_text: '', cta_url: '', cta_bottom_offset: null as number | null, show_on_mobile: true, show_on_desktop: true, show_title_mobile: true, show_title_desktop: true, show_description_mobile: true, show_description_desktop: true, image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain' as 'cover' | 'contain', mobile_image_fit: 'contain' as 'cover' | 'contain', image_darkness: 18, title_font: 'lora', body_font: 'dm_sans', cta_font: '', cta_font_weight: 0, title_font_weight: 900, body_font_weight: 400, title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
   const [savingHero, setSavingHero] = useState(false)
   const [heroAutoplaySeconds, setHeroAutoplaySeconds] = useState(5)
   const [savingHeroAutoplay, setSavingHeroAutoplay] = useState(false)
@@ -1379,6 +1381,8 @@ export default function WebsiteEditionPage() {
             internal_name: heroForm.internal_name.trim(),
             title: heroForm.title.trim() || null,
             cta_bottom_offset: heroForm.cta_bottom_offset,
+            show_on_mobile: heroForm.show_on_mobile,
+            show_on_desktop: heroForm.show_on_desktop,
             show_title_mobile: heroForm.show_title_mobile,
             show_title_desktop: heroForm.show_title_desktop,
             show_description_mobile: heroForm.show_description_mobile,
@@ -1418,6 +1422,8 @@ export default function WebsiteEditionPage() {
                 internal_name: heroForm.internal_name.trim(),
                 title: heroForm.title.trim() || null,
                 cta_bottom_offset: heroForm.cta_bottom_offset,
+                show_on_mobile: heroForm.show_on_mobile,
+                show_on_desktop: heroForm.show_on_desktop,
                 show_title_mobile: heroForm.show_title_mobile,
                 show_title_desktop: heroForm.show_title_desktop,
                 show_description_mobile: heroForm.show_description_mobile,
@@ -1456,6 +1462,8 @@ export default function WebsiteEditionPage() {
             internal_name: heroForm.internal_name.trim(),
             title: heroForm.title.trim() || null,
             cta_bottom_offset: heroForm.cta_bottom_offset,
+            show_on_mobile: heroForm.show_on_mobile,
+            show_on_desktop: heroForm.show_on_desktop,
             show_title_mobile: heroForm.show_title_mobile,
             show_title_desktop: heroForm.show_title_desktop,
             show_description_mobile: heroForm.show_description_mobile,
@@ -1498,7 +1506,7 @@ export default function WebsiteEditionPage() {
     } catch (error) {
       console.error('Error saving hero:', error)
       const details = error instanceof Error ? error.message : JSON.stringify(error)
-      alert(`❌ Error al guardar el slide: ${details}. Si el error menciona cta_font o cta_font_weight, ejecutá en Supabase la migración 202610290001_hero_cta_typography.sql. Si menciona columnas de tamaño, aplicá la migración de tamaño de texto del hero.`)
+      alert(`❌ Error al guardar el slide: ${details}. Si el error menciona show_on_mobile o show_on_desktop, ejecutá en Supabase la migración 202610290002_hero_device_visibility.sql. Si el error menciona cta_font o cta_font_weight, ejecutá en Supabase la migración 202610290001_hero_cta_typography.sql. Si menciona columnas de tamaño, aplicá la migración de tamaño de texto del hero.`)
     } finally {
       setSavingHero(false)
     }
@@ -1523,6 +1531,8 @@ export default function WebsiteEditionPage() {
       setHeroForm({
         internal_name: hero.internal_name || hero.title || `Hero ${hero.order_position}`,
         title: hero.title || '',
+        show_on_mobile: hero.show_on_mobile !== false,
+        show_on_desktop: hero.show_on_desktop !== false,
         cta_bottom_offset: hero.cta_bottom_offset ?? null,
         show_title_mobile: hero.show_title_mobile !== false,
         show_title_desktop: hero.show_title_desktop !== false,
@@ -1555,7 +1565,7 @@ export default function WebsiteEditionPage() {
       setMobileHeroPreview(hero.mobile_image_url || '')
     } else {
       setEditingHero(null)
-      setHeroForm({ internal_name: '', title: '', description: '', cta_text: '', cta_url: '', cta_bottom_offset: null, show_title_mobile: true, show_title_desktop: true, show_description_mobile: true, show_description_desktop: true, image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain', mobile_image_fit: 'contain', image_darkness: 18, title_font: 'lora', body_font: 'dm_sans', cta_font: '', cta_font_weight: 0, title_font_weight: 900, body_font_weight: 400, title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
+      setHeroForm({ internal_name: '', title: '', description: '', cta_text: '', cta_url: '', cta_bottom_offset: null, show_on_mobile: true, show_on_desktop: true, show_title_mobile: true, show_title_desktop: true, show_description_mobile: true, show_description_desktop: true, image_url: '', mobile_image_url: '', desktop_text_position: 'left', mobile_text_position: 'left', desktop_image_position: 'center', mobile_image_position: 'center', desktop_image_fit: 'contain', mobile_image_fit: 'contain', image_darkness: 18, title_font: 'lora', body_font: 'dm_sans', cta_font: '', cta_font_weight: 0, title_font_weight: 900, body_font_weight: 400, title_size_desktop: 72, title_size_mobile: 48, body_size_desktop: 24, body_size_mobile: 20 })
       setImagePreview('')
       setMobileHeroPreview('')
     }
@@ -3399,6 +3409,7 @@ export default function WebsiteEditionPage() {
                     )}
                     <div className="flex-1">
                       <h4 className="font-bold text-text">{hero.internal_name || `Hero ${idx + 1}`}</h4>
+                      <p className="mt-1 text-xs font-medium text-text-muted">{!hero.is_active ? 'Desactivado' : hero.show_on_mobile === false && hero.show_on_desktop === false ? 'Oculto en todos los dispositivos' : [hero.show_on_mobile !== false ? 'Móvil' : '', hero.show_on_desktop !== false ? 'Escritorio / tablet' : ''].filter(Boolean).join(' · ')}</p>
                       <p className="text-sm text-text-muted">{hero.title || 'Sin título visible'}</p>
                       <p className="text-sm text-text-muted line-clamp-2">{hero.description}</p>
                       <p className="text-xs text-primary mt-2">{hero.cta_text}</p>
@@ -4093,6 +4104,15 @@ export default function WebsiteEditionPage() {
                 />
                 <p className="mt-1 text-xs text-text-muted">Solo aparece en este editor para identificar el slide.</p>
               </div>
+
+              <fieldset className="rounded-xl border border-border p-4">
+                <legend className="px-1 text-sm font-semibold text-text">Mostrar este hero en</legend>
+                <div className="flex flex-wrap gap-x-6 gap-y-3">
+                  <label className="flex items-center gap-2 text-sm text-text-muted"><input type="checkbox" checked={heroForm.show_on_mobile} onChange={e => setHeroForm(current => ({ ...current, show_on_mobile: e.target.checked }))} className="h-5 w-5 rounded border-gray-300" />Móvil</label>
+                  <label className="flex items-center gap-2 text-sm text-text-muted"><input type="checkbox" checked={heroForm.show_on_desktop} onChange={e => setHeroForm(current => ({ ...current, show_on_desktop: e.target.checked }))} className="h-5 w-5 rounded border-gray-300" />Escritorio / tablet</label>
+                </div>
+                <p className="mt-3 text-xs text-text-muted">Móvil: menos de 768 px. Escritorio / tablet: desde 768 px. Si desmarcás ambos, este hero queda oculto sin eliminarlo.</p>
+              </fieldset>
 
               <div>
                 <label className="block text-sm font-semibold text-text-muted mb-2">Título visible (opcional)</label>

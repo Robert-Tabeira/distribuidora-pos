@@ -15,6 +15,8 @@ export interface HeroSlide {
   cta_url: string | null
   cta_bottom_offset?: number | null
   is_active: boolean
+  show_on_mobile?: boolean | null
+  show_on_desktop?: boolean | null
   order_position: number
   image_url: string
   mobile_image_url?: string | null
@@ -95,17 +97,13 @@ const DEFAULT_SLIDES: HeroSlide[] = [
 ]
 
 export function HeroSlider({ initialData }: { initialData?: HeroSliderInitialData | null }) {
-  const router = useRouter()
   const [slides, setSlides] = useState<HeroSlide[]>(initialData?.slides || DEFAULT_SLIDES)
-  const [currentSlide, setCurrentSlide] = useState(0)
-  const [isAutoPlay, setIsAutoPlay] = useState(true)
-  const [loading, setLoading] = useState(!initialData?.slides.length)
+  const [loading, setLoading] = useState(!initialData)
   const [autoPlaySeconds, setAutoPlaySeconds] = useState(initialData?.autoPlaySeconds || 5)
-  const touchStartX = useRef<number | null>(null)
   const slideRequestId = useRef(0)
 
   useEffect(() => {
-    if (!initialData?.slides.length) {
+    if (!initialData) {
       loadSlides()
       loadAutoPlaySettings()
     }
@@ -145,14 +143,9 @@ export function HeroSlider({ initialData }: { initialData?: HeroSliderInitialDat
       if (requestId !== slideRequestId.current) return
       if (error) {
         console.error('Error loading slides:', error)
-      } else if (data && data.length > 0) {
-        const validSlides = data.filter((slide): slide is HeroSlide => Boolean(slide && typeof slide.image_url === 'string' && slide.image_url.trim()))
-        const nextSlides = validSlides.length ? validSlides : DEFAULT_SLIDES
-        setSlides(nextSlides)
-        setCurrentSlide(index => Math.min(Math.max(index, 0), nextSlides.length - 1))
       } else {
-        setSlides(DEFAULT_SLIDES)
-        setCurrentSlide(0)
+        const validSlides = (data || []).filter((slide): slide is HeroSlide => Boolean(slide && typeof slide.image_url === 'string' && slide.image_url.trim()))
+        setSlides(validSlides)
       }
     } catch (error) {
       if (requestId === slideRequestId.current) console.error('Error loading hero slides:', error)
@@ -161,15 +154,42 @@ export function HeroSlider({ initialData }: { initialData?: HeroSliderInitialDat
     }
   }
 
+  if (loading) {
+    return <div className="flex h-screen w-full items-center justify-center bg-[#211811]" aria-busy="true"><span className="sr-only" role="status">Cargando portada</span></div>
+  }
+
+  return <>
+    <HeroSliderViewport device="mobile" slides={slides.filter(slide => slide.is_active && slide.show_on_mobile !== false)} autoPlaySeconds={autoPlaySeconds} />
+    <HeroSliderViewport device="desktop" slides={slides.filter(slide => slide.is_active && slide.show_on_desktop !== false)} autoPlaySeconds={autoPlaySeconds} />
+  </>
+}
+
+function HeroSliderViewport({ device, slides, autoPlaySeconds }: { device: 'mobile' | 'desktop'; slides: HeroSlide[]; autoPlaySeconds: number }) {
+  const router = useRouter()
+  const [slideIndex, setCurrentSlide] = useState(0)
+  const [isAutoPlay, setIsAutoPlay] = useState(true)
+  const [viewportActive, setViewportActive] = useState(false)
+  const touchStartX = useRef<number | null>(null)
+  const currentSlide = slides.length ? slideIndex % slides.length : 0
+  const visibilityClass = device === 'mobile' ? 'block md:hidden' : 'hidden md:block'
+
   useEffect(() => {
-    if (loading || !isAutoPlay || slides.length <= 1) return
+    const media = window.matchMedia('(min-width: 768px)')
+    const update = () => setViewportActive(device === 'desktop' ? media.matches : !media.matches)
+    update()
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [device])
+
+  useEffect(() => {
+    if (!viewportActive || !isAutoPlay || slides.length <= 1) return
 
     const interval = setInterval(() => {
       setCurrentSlide(prev => (prev + 1) % slides.length)
     }, autoPlaySeconds * 1000)
 
     return () => clearInterval(interval)
-  }, [loading, isAutoPlay, slides.length, autoPlaySeconds])
+  }, [viewportActive, isAutoPlay, slides.length, autoPlaySeconds])
 
   const goToSlide = (index: number) => {
     setCurrentSlide(Math.max(0, Math.min(index, slides.length - 1)))
@@ -183,15 +203,10 @@ export function HeroSlider({ initialData }: { initialData?: HeroSliderInitialDat
     setCurrentSlide(prev => slides.length > 1 ? (prev - 1 + slides.length) % slides.length : 0)
   }
 
-  if (loading || slides.length === 0) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-[#211811]" aria-busy="true">
-        <span className="sr-only" role="status">Cargando portada</span>
-      </div>
-    )
-  }
+  // Keep a background behind the transparent header when this device has no heroes.
+  if (!slides.length) return <div className={`${visibilityClass} h-[72px] bg-stone-900`} aria-hidden="true" />
 
-  const currentSlideData = slides[currentSlide] || slides[0] || DEFAULT_SLIDES[0]
+  const currentSlideData = slides[currentSlide] || slides[0]
   const ctaStyle: CSSProperties = {
     fontFamily: getSiteFontFamily(currentSlideData.cta_font || currentSlideData.body_font || 'dm_sans'),
     fontWeight: currentSlideData.cta_font_weight ?? currentSlideData.body_font_weight ?? 400,
@@ -199,19 +214,21 @@ export function HeroSlider({ initialData }: { initialData?: HeroSliderInitialDat
 
   return (
     <div
-      className="group relative h-screen w-full overflow-hidden bg-stone-900 transition-all duration-1000"
+      className={`${visibilityClass} group relative h-screen w-full overflow-hidden bg-stone-900 transition-all duration-1000`}
       onTouchStart={event => { touchStartX.current = event.changedTouches[0]?.clientX ?? null }}
       onTouchEnd={event => {
         const startX = touchStartX.current
         touchStartX.current = null
-        if (startX === null) return
+        if (startX === null || slides.length <= 1) return
         const distance = event.changedTouches[0].clientX - startX
         if (Math.abs(distance) < 50) return
         setCurrentSlide(index => (index + (distance < 0 ? 1 : -1) + slides.length) % slides.length)
       }}
     >
       <picture className="absolute inset-0 block">
-        {currentSlideData.mobile_image_url && <source media="(max-width: 767px)" sizes="100vw" data-original-src={currentSlideData.mobile_image_url} srcSet={optimizedImageSourceSet(currentSlideData.mobile_image_url, [384, 640, 750, 828, 1080])} />}
+        {/* The hidden viewport must not download its hero image. */}
+        <source media={device === 'mobile' ? '(min-width: 768px)' : 'not all and (min-width: 768px)'} srcSet="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" />
+        {device === 'mobile' && currentSlideData.mobile_image_url && <source media="(max-width: 767px)" sizes="100vw" data-original-src={currentSlideData.mobile_image_url} srcSet={optimizedImageSourceSet(currentSlideData.mobile_image_url, [384, 640, 750, 828, 1080])} />}
         <SiteImage
           src={currentSlideData.image_url}
           alt=""
@@ -272,7 +289,7 @@ export function HeroSlider({ initialData }: { initialData?: HeroSliderInitialDat
         </div>
       )}
 
-      {/* Navigation Arrows */}
+      {slides.length > 1 && <>
       <button
         onClick={prevSlide}
         aria-label="Imagen anterior del hero"
@@ -320,6 +337,7 @@ export function HeroSlider({ initialData }: { initialData?: HeroSliderInitialDat
           Auto
         </div>
       )}
+      </>}
     </div>
   )
 }
