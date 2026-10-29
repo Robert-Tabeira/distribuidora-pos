@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
 // Tipo sin PIN para seguridad
@@ -13,12 +12,12 @@ type EmployeePublic = {
 }
 
 export default function LoginPage() {
-  const router = useRouter()
   const [employees, setEmployees] = useState<EmployeePublic[]>([])
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeePublic | null>(null)
   const [pin, setPin] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [verifying, setVerifying] = useState(false)
 
   useEffect(() => {
     loadEmployees()
@@ -41,6 +40,7 @@ export default function LoginPage() {
   }
 
   function handlePinInput(digit: string) {
+    if (verifying) return
     if (pin.length < 4) {
       const newPin = pin + digit
       setPin(newPin)
@@ -55,24 +55,23 @@ export default function LoginPage() {
   }
 
   function handleBackspace() {
+    if (verifying) return
     setPin(pin.slice(0, -1))
     setError('')
   }
 
   async function verifyPin(enteredPin: string) {
-    if (!selectedEmployee) return
-
+    if (!selectedEmployee || verifying) return
+    setVerifying(true)
     try {
-      // Verificar PIN usando función segura con bloqueo
-      const { data, error } = await supabase
-        .rpc('verify_pin_secure', {
-          p_employee_id: selectedEmployee.id,
-          p_pin_attempt: enteredPin
-        })
-
-      if (error) {
-        console.error('Error verificando PIN:', error)
-        setError('Error al verificar')
+      const response = await fetch('/api/staff-session', {
+        method: 'POST', credentials: 'same-origin', cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employee_id: selectedEmployee.id, pin: enteredPin }),
+      })
+      const data = await response.json()
+      if (data.error) {
+        setError(data.error)
         setPin('')
         return
       }
@@ -84,16 +83,9 @@ export default function LoginPage() {
         return
       }
 
-      if (data.success) {
-        localStorage.setItem('employee', JSON.stringify(selectedEmployee))
-        
-        if (selectedEmployee.role === 'caja') {
-          router.push('/caja')
-        } else if (selectedEmployee.role === 'admin') {
-          router.push('/admin')
-        } else {
-          router.push('/mostrador')
-        }
+      if (response.ok && data.success && data.employee) {
+        localStorage.setItem('employee', JSON.stringify(data.employee))
+        window.location.replace(data.destination)
       } else {
         const remaining = data.attempts_remaining
         if (remaining !== undefined && remaining <= 2) {
@@ -105,10 +97,9 @@ export default function LoginPage() {
         if (navigator.vibrate) navigator.vibrate([100, 50, 100])
       }
     } catch (err) {
-      console.error('Error:', err)
       setError('Error de conexión')
       setPin('')
-    }
+    } finally { setVerifying(false) }
   }
 
   const getRoleColor = (role: string) => {
@@ -195,6 +186,7 @@ export default function LoginPage() {
             /* Ingreso de PIN */
             <div className="card-elevated p-6 animate-scale-in">
               <button
+                disabled={verifying}
                 onClick={() => {
                   setSelectedEmployee(null)
                   setPin('')
@@ -237,6 +229,7 @@ export default function LoginPage() {
                   {error}
                 </div>
               )}
+              {verifying && <p role="status" className="mb-4 text-center text-sm text-text-muted">Verificando acceso…</p>}
 
               {/* Teclado numérico moderno */}
               <div className="grid grid-cols-3 gap-3">
@@ -247,7 +240,7 @@ export default function LoginPage() {
                       if (key === 'back') handleBackspace()
                       else if (key !== null) handlePinInput(key.toString())
                     }}
-                    disabled={key === null}
+                    disabled={key === null || verifying}
                     className={`h-16 rounded-2xl text-2xl font-bold transition-all active:scale-95 select-none ${
                       key === null
                         ? 'invisible'

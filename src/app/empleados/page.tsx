@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
 
 type EmployeePublic = {
   id: string
@@ -41,15 +40,13 @@ export default function EmpleadosPage() {
   }, [router])
 
   async function loadEmployees() {
-    const { data, error } = await supabase
-      .from('employees')
-      .select('id, name, role, created_at')
-      .order('name')
-
-    if (!error && data) {
-      setEmployees(data)
-    }
-    setLoading(false)
+    try {
+      const response = await fetch('/api/staff-employees', { cache: 'no-store', credentials: 'same-origin' })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'No pudimos cargar los empleados.')
+      setEmployees(result.employees || [])
+    } catch (error) { alert(error instanceof Error ? error.message : 'No pudimos cargar los empleados.') }
+    finally { setLoading(false) }
   }
 
   function openNewModal() {
@@ -70,7 +67,7 @@ export default function EmpleadosPage() {
 
   async function saveEmployee() {
     if (!formName.trim()) return
-    if (!editingEmployee && formPin.length !== 4) {
+    if ((!editingEmployee && !/^\d{4}$/.test(formPin)) || (formPin && !/^\d{4}$/.test(formPin))) {
       alert('El PIN debe tener 4 dígitos')
       return
     }
@@ -78,52 +75,20 @@ export default function EmpleadosPage() {
     setSaving(true)
 
     try {
-      if (editingEmployee) {
-        // Actualizar empleado existente
-        const updateData: { name: string; role: string; pin?: string } = {
-          name: formName.trim(),
-          role: formRole,
-        }
-
-        // Si se ingresó un nuevo PIN, hashearlo
-        if (formPin.length === 4) {
-          const { data: hashData } = await supabase.rpc('hash_pin', { pin: formPin })
-          if (hashData) {
-            updateData.pin = hashData
-          }
-        }
-
-        const { error } = await supabase
-          .from('employees')
-          .update(updateData)
-          .eq('id', editingEmployee.id)
-
-        if (error) throw error
-      } else {
-        // Crear nuevo empleado
-        const { data: hashData } = await supabase.rpc('hash_pin', { pin: formPin })
-        
-        if (!hashData) {
-          throw new Error('Error al generar PIN')
-        }
-
-        const { error } = await supabase
-          .from('employees')
-          .insert({
-            name: formName.trim(),
-            role: formRole,
-            pin: hashData,
-          })
-
-        if (error) throw error
-      }
+      const response = await fetch('/api/staff-employees', {
+        method: editingEmployee ? 'PATCH' : 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editingEmployee?.id, name: formName.trim(), role: formRole, pin: formPin }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'No pudimos guardar el empleado.')
+      if (result.reauthenticate) { window.location.replace('/login'); return }
 
       setShowModal(false)
       loadEmployees()
       if (navigator.vibrate) navigator.vibrate(50)
     } catch (error) {
-      console.error('Error:', error)
-      alert('Error al guardar')
+      alert(error instanceof Error ? error.message : 'Error al guardar')
     } finally {
       setSaving(false)
     }
@@ -145,18 +110,13 @@ export default function EmpleadosPage() {
 
     if (!confirm(`¿Eliminar a ${emp.name}?`)) return
 
-    const { error } = await supabase
-      .from('employees')
-      .delete()
-      .eq('id', emp.id)
-
-    if (error) {
-      console.error('Error:', error)
-      alert('Error al eliminar')
-    } else {
+    try {
+      const response = await fetch(`/api/staff-employees?id=${encodeURIComponent(emp.id)}`, { method: 'DELETE', credentials: 'same-origin' })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'No pudimos eliminar el empleado.')
       loadEmployees()
       if (navigator.vibrate) navigator.vibrate(50)
-    }
+    } catch (error) { alert(error instanceof Error ? error.message : 'Error al eliminar') }
   }
 
   function getRoleColor(role: string) {

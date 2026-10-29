@@ -4,10 +4,11 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import type { Employee, Order, OrderItem } from '@/types/database'
+import { endStaffSession } from '@/lib/staff-auth'
 
 type OrderWithDetails = Order & {
   items: OrderItem[]
-  employee: Employee | null
+  employee: Pick<Employee, 'id' | 'name' | 'role' | 'created_at'> | null
 }
 
 export default function CajaPage() {
@@ -80,7 +81,7 @@ export default function CajaPage() {
         const [itemsRes, employeeRes] = await Promise.all([
           supabase.from('order_items').select('*').eq('order_id', order.id),
           order.employee_id 
-            ? supabase.from('employees').select('*').eq('id', order.employee_id).single()
+            ? supabase.from('employees').select('id,name,role,created_at').eq('id', order.employee_id).single()
             : Promise.resolve({ data: null })
         ])
 
@@ -96,9 +97,9 @@ export default function CajaPage() {
     setLoading(false)
   }
 
-  function logout() {
-    localStorage.removeItem('employee')
-    router.push('/login')
+  async function logout() {
+    try { await endStaffSession(); window.location.replace('/login') }
+    catch { alert('No pudimos cerrar la sesión. Revisá la conexión e intentá de nuevo.') }
   }
 
   async function completeOrder(order: OrderWithDetails) {

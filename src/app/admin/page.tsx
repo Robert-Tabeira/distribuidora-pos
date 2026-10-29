@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { Icon } from '@/components/ui/icon'
 import { clearAnalyticsAccess } from '@/lib/analytics-admin'
 import { SITE_ANALYTICS_ENABLED } from '@/lib/analytics-config'
+import { endStaffSession } from '@/lib/staff-auth'
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -94,7 +95,7 @@ export default function AdminDashboard() {
 
         {/* LOGOUT */}
         <div className="mt-12 text-center">
-          <button onClick={() => { void clearAnalyticsAccess(); localStorage.removeItem('employee'); router.push('/login') }} className="px-8 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 font-bold text-lg transition-all">
+          <button onClick={async () => { try { await endStaffSession(); void clearAnalyticsAccess(); window.location.replace('/login') } catch { alert('No pudimos cerrar la sesión. Revisá la conexión e intentá de nuevo.') } }} className="px-8 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 font-bold text-lg transition-all">
             <span className="inline-flex items-center justify-center gap-2"><Icon name="logout" className="w-5 h-5" />Cerrar Sesión</span>
           </button>
         </div>

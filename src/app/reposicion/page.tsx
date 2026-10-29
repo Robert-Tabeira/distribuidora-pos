@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import type { Product } from '@/types/database'
+import { endStaffSession } from '@/lib/staff-auth'
 
 type ReposicionItem = {
   id: string
@@ -60,9 +61,9 @@ export default function ReposicionPage() {
     setLoading(false)
   }
 
-  function logout() {
-    localStorage.removeItem('employee')
-    router.push('/login')
+  async function logout() {
+    try { await endStaffSession(); window.location.replace('/login') }
+    catch { alert('No pudimos cerrar la sesión. Revisá la conexión e intentá de nuevo.') }
   }
 
   // Búsqueda de productos

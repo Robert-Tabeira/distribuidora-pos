@@ -7,7 +7,7 @@ import type { Employee, Order, OrderItem } from '@/types/database'
 
 type OrderWithDetails = Order & {
   items: OrderItem[]
-  employee: Employee | null
+  employee: Pick<Employee, 'id' | 'name' | 'role' | 'created_at'> | null
 }
 
 type GroupedOrders = {
@@ -79,7 +79,7 @@ export default function HistorialPage() {
         const [itemsRes, employeeRes] = await Promise.all([
           supabase.from('order_items').select('*').eq('order_id', order.id),
           order.employee_id 
-            ? supabase.from('employees').select('*').eq('id', order.employee_id).single()
+            ? supabase.from('employees').select('id,name,role,created_at').eq('id', order.employee_id).single()
             : Promise.resolve({ data: null })
         ])
 

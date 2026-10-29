@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import type { Category, Product, Employee, CartItem } from '@/types/database'
+import { endStaffSession } from '@/lib/staff-auth'
 
 type CartItemWithCheck = CartItem & { checked: boolean }
 
@@ -93,11 +94,13 @@ export default function MostradorPage() {
     setLoading(false)
   }
 
-  function logout() {
-    localStorage.removeItem('employee')
-    localStorage.removeItem('cartDraft')
-    localStorage.removeItem('cartDraftCustomer')
-    router.push('/login')
+  async function logout() {
+    try {
+      await endStaffSession()
+      localStorage.removeItem('cartDraft')
+      localStorage.removeItem('cartDraftCustomer')
+      window.location.replace('/login')
+    } catch { alert('No pudimos cerrar la sesión. Revisá la conexión e intentá de nuevo.') }
   }
 
   const filteredProducts = products.filter(p => {
