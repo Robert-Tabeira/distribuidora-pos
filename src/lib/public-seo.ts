@@ -24,7 +24,7 @@ export function publicCanonical(path: PublicPath): string {
 
 export function publicPageMetadata(path: PublicPath): Metadata {
   const landing = path === '/landing'
-  const title = landing ? 'Los Primos | Distribuidora en Las Toscas, Canelones' : 'Catálogo de productos | Los Primos'
+  const title = landing ? 'Distribuidora Los Primos | Las Toscas' : 'Catálogo de productos | Los Primos'
   const description = landing
     ? 'Distribuidora Los Primos en Las Toscas, Canelones. Explorá el catálogo, consultá precios y armá tu pedido por WhatsApp para coordinarlo con el local.'
     : 'Explorá los productos de Los Primos, prepará una consulta de precios o armá tu pedido y envialo por WhatsApp. Atención en Las Toscas, Canelones.'

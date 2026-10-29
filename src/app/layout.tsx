@@ -9,7 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const favicon = await loadPublicFavicon()
   return {
     metadataBase: new URL(publicSiteOrigin()),
-    title: 'Los Primos | Distribuidora en Las Toscas',
+    title: 'Distribuidora Los Primos | Las Toscas',
     description: 'Catálogo de Los Primos, consultas de precios y pedidos por WhatsApp. Las Toscas, Canelones, Uruguay.',
     applicationName: 'Los Primos',
     robots: { index: false, follow: true },
