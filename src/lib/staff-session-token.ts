@@ -16,9 +16,14 @@ function encode(bytes: Uint8Array): string {
   return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
-function decode(value: string): Uint8Array {
+function decode(value: string): ArrayBuffer {
   const base64 = value.replace(/-/g, '+').replace(/_/g, '/')
-  return Uint8Array.from(atob(base64 + '='.repeat((4 - base64.length % 4) % 4)), letter => letter.charCodeAt(0))
+  const binary = atob(base64 + '='.repeat((4 - base64.length % 4) % 4))
+  // Use an owned ArrayBuffer so Web Crypto never receives a SharedArrayBuffer view.
+  const buffer = new ArrayBuffer(binary.length)
+  const bytes = new Uint8Array(buffer)
+  for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index)
+  return buffer
 }
 
 async function signingKey() {
