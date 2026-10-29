@@ -4,7 +4,8 @@ async function compressForWeb(file: File, folder: string, preset: 'default' | 'c
   // No rasterizar SVG ni animaciones: se preserva el original.
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return file
 
-  const maxDimension = preset === 'category-icon' ? 384 : folder === 'logo' ? 900 : folder === 'hero-images' ? 2200 : 1800
+  const isFavicon = folder === 'favicons'
+  const maxDimension = isFavicon ? 512 : preset === 'category-icon' ? 384 : folder === 'logo' ? 900 : folder === 'hero-images' ? 2200 : 1800
   const quality = preset === 'category-icon' || folder === 'logo' ? 0.9 : 0.82
 
   try {
@@ -20,11 +21,12 @@ async function compressForWeb(file: File, folder: string, preset: 'default' | 'c
     context.drawImage(bitmap, 0, 0, width, height)
     bitmap.close()
 
-    const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/webp', quality))
-    if (!blob || blob.type !== 'image/webp' || blob.size >= file.size) return file
+    const outputType = isFavicon ? 'image/png' : 'image/webp'
+    const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, outputType, quality))
+    if (!blob || blob.type !== outputType || (blob.size >= file.size && (!isFavicon || scale === 1))) return file
 
     const baseName = file.name.replace(/\.[^.]+$/, '')
-    return new File([blob], `${baseName}.webp`, { type: 'image/webp', lastModified: file.lastModified })
+    return new File([blob], `${baseName}.${isFavicon ? 'png' : 'webp'}`, { type: outputType, lastModified: file.lastModified })
   } catch (error) {
     console.warn('No se pudo optimizar la imagen en este navegador; se subirá el original.', error)
     return file

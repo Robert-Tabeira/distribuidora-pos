@@ -2007,7 +2007,7 @@ export default function WebsiteEditionPage() {
       if (saveError) throw new Error(`El archivo se subió, pero no se guardó su URL: ${saveError.message}`)
       setLogoForm(current => ({ ...current, favicon_url: url }))
       setSettings(current => current ? { ...current, favicon_url: url } : current)
-      alert('✅ Favicon guardado. Puede tardar unos segundos en actualizarse en la pestaña del navegador.')
+      alert('✅ Favicon guardado. Puede tardar unos minutos en actualizarse en la pestaña del navegador. Google lo actualiza cuando vuelve a rastrear el sitio.')
     } catch (error) {
       console.error('Error uploading/saving favicon:', error)
       alert(`❌ No se pudo guardar el favicon. ${error instanceof Error ? error.message : String(error)}`)
@@ -3058,7 +3058,7 @@ export default function WebsiteEditionPage() {
 
                 <div className="mb-5 rounded-xl border border-border p-4">
                   <label className="mb-2 block text-sm font-semibold text-text">Favicon del sitio</label>
-                  <p className="mb-3 text-xs text-text-muted">Es el icono pequeño que aparece en la pestaña del navegador. Recomendado: imagen cuadrada en PNG o SVG (32×32 o 64×64 px).</p>
+                  <p className="mb-3 text-xs text-text-muted">Es el icono pequeño de la pestaña y puede aparecer en Google. Recomendado para búsquedas: PNG cuadrado de 96×96 o 192×192 px, con el logo legible en tamaño pequeño. Los PNG se conservan en ese formato. Google puede tardar en actualizarlo después de volver a rastrear el sitio.</p>
                   <div className="flex flex-wrap items-center gap-3">
                     <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-border bg-white p-2">
                       {logoForm.favicon_url ? <img src={logoForm.favicon_url} alt="Vista previa del favicon" className="h-full w-full object-contain" /> : <Icon name="image" className="h-6 w-6 text-text-muted" />}
