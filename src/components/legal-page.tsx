@@ -6,7 +6,7 @@ import { LEGAL_DATE_LABEL, LEGAL_DETAILS, LEGAL_LINKS, LEGAL_READY } from '@/lib
 import styles from './legal-page.module.css'
 
 export function legalMetadata(title: string): Metadata {
-  return { title: `${title} | ${LEGAL_DETAILS.tradingName}`, description: `${title} del sitio de ${LEGAL_DETAILS.tradingName}.`, robots: { index: LEGAL_READY, follow: true } }
+  return { title: `${title} | ${LEGAL_DETAILS.tradingName}`, description: `${title} del sitio de ${LEGAL_DETAILS.tradingName}.`, robots: { index: false, follow: true } }
 }
 
 export function LegalPage({ title, introduction, children }: { title: string; introduction: string; children: ReactNode }) {

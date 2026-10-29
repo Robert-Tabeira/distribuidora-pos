@@ -3,6 +3,7 @@ import { staffArea, staffCanOpen, staffHome } from '@/lib/staff-access-policy'
 import { readStaffToken, staffCredentialRevision, staffServerConfigured, STAFF_COOKIE_NAME } from '@/lib/staff-session-token'
 import { staffInternalPath, staffPathKey, withStaffPath, STAFF_PATH_PREFIX } from '@/lib/staff-paths'
 import { staffPathKeyAllowed } from '@/lib/staff-private-path.server'
+import { publicRequestIndexable } from '@/lib/public-seo'
 
 function privateResponse(response: NextResponse) {
   response.headers.set('X-Robots-Tag', 'noindex, nofollow')
@@ -19,6 +20,11 @@ function login(request: NextRequest, accessKey: string) {
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
+  if (pathname === '/landing' || pathname === '/catalogo') {
+    const response = NextResponse.next()
+    response.headers.set('X-Robots-Tag', publicRequestIndexable(request.nextUrl) ? 'index, follow' : 'noindex, follow')
+    return response
+  }
   if (staffArea(pathname) || pathname === '/login' || pathname.startsWith('/login/')) return privateResponse(NextResponse.redirect(new URL('/landing', request.url)))
   const accessKey = staffPathKey(pathname)
   const internalPath = staffInternalPath(pathname)
@@ -51,5 +57,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/acceso/:path*', '/login/:path*', '/admin/:path*', '/productos/:path*', '/empleados/:path*', '/descuentos/:path*', '/ubicaciones/:path*', '/precios/:path*', '/mostrador/:path*', '/reposicion/:path*', '/caja/:path*', '/historial/:path*'],
+  matcher: ['/landing', '/catalogo', '/acceso/:path*', '/login/:path*', '/admin/:path*', '/productos/:path*', '/empleados/:path*', '/descuentos/:path*', '/ubicaciones/:path*', '/precios/:path*', '/mostrador/:path*', '/reposicion/:path*', '/caja/:path*', '/historial/:path*'],
 }

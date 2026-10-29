@@ -3,10 +3,15 @@ import './globals.css'
 import './google-fonts.css'
 import { SiteFontLoader } from '@/components/site-font-loader'
 import { SiteFaviconLoader } from '@/components/site-favicon-loader'
+import { publicSiteOrigin } from '@/lib/public-seo'
 
 export const metadata: Metadata = {
-  title: 'Distribuidora POS',
-  description: 'Sistema de punto de venta para distribuidora',
+  metadataBase: new URL(publicSiteOrigin()),
+  title: 'Los Primos | Distribuidora en Las Toscas',
+  description: 'Catálogo de Los Primos, consultas de precios y pedidos por WhatsApp. Las Toscas, Canelones, Uruguay.',
+  applicationName: 'Los Primos',
+  robots: { index: false, follow: true },
+  verification: { google: process.env.GOOGLE_SITE_VERIFICATION?.trim() || undefined },
   manifest: '/manifest.json',
 }
 

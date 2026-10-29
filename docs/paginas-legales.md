@@ -8,7 +8,7 @@
 - La ruta anterior `/cookies` redirige permanentemente a `/privacidad#cookies` para conservar enlaces existentes; ya no es una tercera página de contenido ni figura en la navegación legal.
 - Enlaces permanentes en el footer y aviso informativo en el formulario de registro.
 - El mapa externo se carga automáticamente, sin solicitar permiso. El acceso de privacidad del footer muestra información; no se presenta un aviso automático mientras las estadísticas están deshabilitadas.
-- Publicación habilitada por solicitud del usuario el 24 de octubre de 2026. El aviso de borrador deja de mostrarse y las páginas permiten indexación.
+- Publicación habilitada por solicitud del usuario el 24 de octubre de 2026. El aviso de borrador deja de mostrarse. La configuración posterior de SEO limita la indexación a landing y catálogo; las páginas legales quedan públicas con `noindex`.
 
 ## Publicación y mantenimiento de la información
 
@@ -21,7 +21,7 @@ Editar `src/lib/legal-details.ts` con información confirmada por la dueña:
 5. Revisar permisos de acceso a datos de clientes y las obligaciones de inscripción y documentación del negocio ante la URCDP con su asesor.
 6. La publicación se controla con `published`, actualmente `true` por solicitud del usuario. Es un control editorial del proyecto, no una certificación de cumplimiento legal. `retentionDetails` e `internationalTransfers` son campos de texto ampliado y ya no bloquean la publicación cuando están vacíos; no se inventa su contenido.
 
-Con `published: true`, razón social, domicilio y contacto completos, las páginas se muestran sin aviso de borrador y permiten indexación. El mapa se carga automáticamente. Las estadísticas están deshabilitadas de forma independiente: publicar las páginas no las reactiva. El catálogo, listas, acceso y enlaces externos continúan disponibles.
+Con `published: true`, razón social, domicilio y contacto completos, las páginas se muestran sin aviso de borrador. Su metadato `noindex` las excluye de la indexación solicitada para landing y catálogo. El mapa se carga automáticamente. Las estadísticas están deshabilitadas de forma independiente: publicar las páginas no las reactiva. El catálogo, listas, acceso y enlaces externos continúan disponibles.
 
 ## Contacto de privacidad sin correo
 
