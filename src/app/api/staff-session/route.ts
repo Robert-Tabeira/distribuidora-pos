@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { isStaffRole, staffHome } from '@/lib/staff-access-policy'
 import { STAFF_COOKIE_NAME, staffServerConfigured } from '@/lib/staff-session-token'
 import { clearStaffSession, getStaffSession, setStaffSession, staffProfile, staffServerClient } from '@/lib/staff-server-session'
+import { privateStaffPath, staffPathKeyAllowed } from '@/lib/staff-private-path.server'
 
 export const dynamic = 'force-dynamic'
 const UUID = /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i
@@ -16,6 +17,7 @@ function sameOrigin(request: NextRequest): boolean {
 }
 
 export async function GET(request: NextRequest) {
+  if (!staffPathKeyAllowed(request.headers.get('x-staff-access-key'))) return reply({ error: 'No disponible.' }, 404)
   if (!staffServerConfigured()) return reply({ error: 'El acceso del personal requiere configuración del local.' }, 503)
   try {
     const employee = await getStaffSession(request.cookies.get(STAFF_COOKIE_NAME)?.value)
@@ -29,6 +31,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  if (!staffPathKeyAllowed(request.headers.get('x-staff-access-key'))) return reply({ error: 'No disponible.' }, 404)
   if (!sameOrigin(request)) return reply({ error: 'Solicitud inválida.' }, 403)
   if (!staffServerConfigured()) return reply({ error: 'El acceso del personal requiere configuración del local.' }, 503)
   let input
@@ -43,13 +46,14 @@ export async function POST(request: NextRequest) {
     const { data: employee, error: profileError } = await client.from('employees').select('id,name,role,created_at,pin').eq('id', input.employee_id).maybeSingle()
     if (profileError) throw profileError
     if (!employee || !isStaffRole(employee.role) || typeof employee.pin !== 'string') return reply({ error: 'No se pudo confirmar el acceso del empleado.' }, 403)
-    const response = reply({ success: true, employee: staffProfile(employee), destination: staffHome(employee.role) })
+    const response = reply({ success: true, employee: staffProfile(employee), destination: privateStaffPath(staffHome(employee.role)) })
     await setStaffSession(response, employee)
     return response
   } catch { return reply({ error: 'No pudimos verificar el acceso. Intentá de nuevo.' }, 503) }
 }
 
 export async function DELETE(request: NextRequest) {
+  if (!staffPathKeyAllowed(request.headers.get('x-staff-access-key'))) return reply({ error: 'No disponible.' }, 404)
   if (!sameOrigin(request)) return reply({ error: 'Solicitud inválida.' }, 403)
   const response = reply({ success: true })
   clearStaffSession(response)

@@ -3,7 +3,7 @@
 ## Publicación
 
 1. Comprobar en el entorno de servidor/Vercel que estén configurados `NEXT_PUBLIC_SUPABASE_URL` y **`SUPABASE_SERVICE_ROLE_KEY`**. Esta última es privada, no debe tener prefijo `NEXT_PUBLIC_` ni compartirse en el navegador. Ya es la variable utilizada por el guardado privado de listas de clientes.
-2. Publicar el código y entrar a `/login` con el empleado y PIN habituales. Las sesiones viejas guardadas únicamente en el navegador ya no dan acceso.
+2. Publicar el código y entrar a `/acceso/9a87a1b3ee06514e995bd3d1e10ac1fc/login` con el empleado y PIN habituales. Las sesiones viejas guardadas únicamente en el navegador ya no dan acceso. Si se configura `STAFF_ACCESS_PATH_KEY`, se reemplaza el identificador de esa dirección por su valor.
 3. Aplicar **todo** `supabase/migrations/202610280001_private_staff_access.sql` en el SQL Editor de Supabase. Este paso es necesario para cerrar los permisos directos sobre empleados y sus credenciales. El código nuevo ya utiliza las rutas privadas del servidor; las versiones anteriores de la aplicación dejarán de poder crear o editar empleados o verificar PIN directamente al aplicar este SQL.
 
 No se ejecutó SQL remoto, no se configuraron secretos ni se publicaron cambios desde esta conversación. El despliegue completo requiere tanto código como SQL. Si la clave privada falta, la aplicación deniega las rutas internas con un aviso de configuración; no vuelve al acceso anterior.
@@ -12,12 +12,12 @@ No se ejecutó SQL remoto, no se configuraron secretos ni se publicaron cambios 
 
 ## Funcionamiento
 
-- `/login` sigue siendo la entrada del personal desde cualquier conexión. Conserva la selección de empleado y el PIN de cuatro dígitos. El PIN se verifica con el procedimiento existente `verify_pin_secure`, incluyendo sus intentos y bloqueo; esta actualización no cambia la credencial por una contraseña.
+- La entrada del personal está dentro de `/acceso/IDENTIFICADOR/login`, desde cualquier conexión. Conserva la selección de empleado y el PIN de cuatro dígitos. El PIN se verifica con el procedimiento existente `verify_pin_secure`, incluyendo sus intentos y bloqueo; esta actualización no cambia la credencial por una contraseña.
 - Tras verificar el PIN, el servidor consulta el empleado y crea una cookie firmada HMAC, `HttpOnly`, `SameSite=Lax`, `Secure` en producción y con vencimiento absoluto de 12 horas. No guarda el PIN ni su hash en la cookie ni los devuelve al cliente.
 - Middleware y layouts del servidor validan la sesión y consultan el empleado actual antes de servir el área. La autorización no utiliza el rol que alguien escriba en `localStorage`. Cambiar el PIN o rol, o eliminar al empleado, invalida la sesión al comprobarla otra vez.
 - La copia local del perfil existe por compatibilidad con las pantallas actuales: el servidor la sincroniza antes de montarlas. La sesión se vuelve a comprobar al navegar, volver a la pestaña y cada minuto mientras está visible.
 - Cerrar sesión borra la cookie del navegador mediante el servidor y recarga el login. Si falla la conexión al cerrar, se muestra el error. Las cookies firmadas son stateless: una copia extraída fuera del navegador no se revoca individualmente por cerrar sesión; vence a las 12 horas y se invalida también al cambiar PIN, rol o secreto.
-- Sin acceso, las rutas internas redirigen a `/login`; un rol sin permiso vuelve a su propia pantalla inicial. Si la base de datos no permite verificar la sesión, se deniega la petición con un aviso temporal.
+- Dentro de la dirección válida, las rutas sin sesión redirigen al login con el mismo identificador; un rol sin permiso vuelve a su propia pantalla inicial. Las rutas simples antiguas y las direcciones con identificadores incorrectos llevan a la landing. Si la base de datos no permite verificar la sesión, se deniega la petición con un aviso temporal.
 - El login, las áreas privadas y sus API de acceso usan `noindex`. Las respuestas internas no se almacenan en cachés compartidas. No se agregan estas URLs a ningún sitemap.
 - Landing, catálogo, páginas legales y `/cliente/*` mantienen sus flujos públicos. No se reactivan estadísticas.
 
@@ -30,7 +30,7 @@ No se ejecutó SQL remoto, no se configuraron secretos ni se publicaron cambios 
 | Mostrador, precios y reposición | Sí | Sí | No |
 | Caja e historial | Sí | No | Sí |
 
-El mapa está definido en `src/lib/staff-access-policy.ts`. Protege también las rutas hijas. Los endpoints de gestión de empleados vuelven a comprobar la sesión y el rol de administrador antes de cada operación.
+El mapa está definido en `src/lib/staff-access-policy.ts`; la tabla muestra los nombres lógicos de las áreas, que ahora se abren dentro de `/acceso/IDENTIFICADOR`. Protege también las rutas hijas. Los endpoints de gestión de empleados vuelven a comprobar la sesión y el rol de administrador antes de cada operación.
 
 ## Empleados y SQL
 

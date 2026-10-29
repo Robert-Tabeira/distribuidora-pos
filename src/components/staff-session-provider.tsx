@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
 import type { StaffProfile } from '@/lib/staff-access-policy'
+import { staffFetch, staffLoginUrl } from '@/lib/staff-navigation'
 
 /** Keeps legacy screens synchronized with the profile validated on the server. */
 export function StaffSessionProvider({ employee, children }: { employee: StaffProfile; children: ReactNode }) {
@@ -22,9 +23,9 @@ export function StaffSessionProvider({ employee, children }: { employee: StaffPr
       if (pending || document.visibilityState === 'hidden') return
       pending = true
       try {
-        const response = await fetch('/api/staff-session', { cache: 'no-store', credentials: 'same-origin' })
+        const response = await staffFetch('/api/staff-session', { cache: 'no-store', credentials: 'same-origin' })
         if (!active) return
-        if (response.status === 401) { try { localStorage.removeItem('employee') } catch {} window.location.replace('/login'); return }
+        if (response.status === 401 || response.status === 404) { try { localStorage.removeItem('employee') } catch {} window.location.replace(response.status === 404 ? '/landing' : staffLoginUrl()); return }
         if (!response.ok) return
         const result = await response.json()
         if (!active) return

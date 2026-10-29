@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { isStaffRole, type StaffProfile } from '@/lib/staff-access-policy'
 import { STAFF_COOKIE_NAME, staffServerConfigured } from '@/lib/staff-session-token'
 import { clearStaffSession, getStaffSession, staffServerClient } from '@/lib/staff-server-session'
+import { staffPathKeyAllowed } from '@/lib/staff-private-path.server'
 
 export const dynamic = 'force-dynamic'
 const UUID = /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i
@@ -9,6 +10,7 @@ const PROFILE_FIELDS = 'id,name,role,created_at'
 function reply(body: object, status = 200) { return NextResponse.json(body, { status, headers: { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex, nofollow' } }) }
 
 async function access(request: NextRequest): Promise<StaffProfile | NextResponse> {
+  if (!staffPathKeyAllowed(request.headers.get('x-staff-access-key'))) return reply({ error: 'No disponible.' }, 404)
   if (!staffServerConfigured()) return reply({ error: 'El acceso del personal requiere configuración del local.' }, 503)
   const employee = await getStaffSession(request.cookies.get(STAFF_COOKIE_NAME)?.value)
   if (!employee) return reply({ error: 'Volvé a iniciar sesión.' }, 401)
