@@ -8,6 +8,7 @@ import { FOOTER_COLOR_FIELDS, normalizeFooterSettings, safeFooterLink, type Foot
 import styles from './footer-design.module.css'
 import { PrivacySettingsButton } from '@/components/privacy-controls'
 import { LEGAL_LINKS } from '@/lib/legal-details'
+import { publicNavigationHref } from '@/lib/public-seo'
 
 export function FooterDesign({ settings, business, preview = false }: {
   settings?: Partial<FooterSettings> | null
@@ -24,9 +25,9 @@ export function FooterDesign({ settings, business, preview = false }: {
     if (footer.show_email && business?.email) contacts.push({ icon: 'mail', label: business.email, href: `mailto:${business.email.trim()}` })
     if (footer.show_address && business?.address) contacts.push({ icon: 'location', label: business.address, href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}` })
   }
-  const links = footer.show_navigation ? footer.links.map(link => ({ ...link, href: safeFooterLink(link.url) })).filter(link => link.label.trim() && link.href) : []
+  const links = footer.show_navigation ? footer.links.map(link => ({ ...link, href: publicNavigationHref(safeFooterLink(link.url)) })).filter(link => link.label.trim() && link.href) : []
   const showHours = footer.show_hours && business?.business_hours?.trim()
-  const ctaHref = safeFooterLink(footer.cta_url)
+  const ctaHref = publicNavigationHref(safeFooterLink(footer.cta_url))
   const logoUrl = safeFooterLink(footer.logo_url)
   const extraColumns = Number(contacts.length > 0) + Number(links.length > 0) + Number(Boolean(showHours))
   const style = {

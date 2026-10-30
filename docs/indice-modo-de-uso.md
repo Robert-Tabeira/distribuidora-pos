@@ -4,7 +4,7 @@ El menú público muestra **Modo de uso** cuando existe al menos un instructivo 
 
 - Incluye los bloques de consulta de precios, pedidos, retiro en mostrador y listas guardadas que estén creados y visibles.
 - De forma predeterminada toma sus títulos y orden desde **Edición web → Bloques de Landing**. Ocultar un bloque también lo excluye del índice al volver a cargar la página.
-- Cada destino usa `/landing#instructivo-ID`, basado en el identificador del bloque. Cambiar su título u orden conserva el enlace; eliminarlo y crear otro genera un identificador nuevo.
+- Cada destino usa `/#instructivo-ID`, basado en el identificador del bloque. Los enlaces antiguos `/landing#instructivo-ID` siguen llegando mediante la redirección a la portada. Cambiar su título u orden conserva el enlace; eliminarlo y crear otro genera un identificador nuevo.
 - Funciona desde la landing y desde otras páginas públicas. Al abrir una URL con ese fragmento, la landing espera a que las secciones estén disponibles y desplaza la vista al instructivo. El destino recibe foco y tiene margen superior para el header fijo.
 - Se abre por clic o toque y admite teclado. Se cierra con Escape, al pulsar afuera, al salir con Tab o al elegir un destino. En móvil, elegir un enlace también cierra el menú principal.
 - De forma predeterminada, el botón de escritorio utiliza la tipografía, peso, mayúsculas y color de los enlaces del header, incluyendo su estado transparente. El panel y la versión móvil utilizan los colores personalizados del menú móvil. Los controles propios permiten cambiar estos valores para el índice.

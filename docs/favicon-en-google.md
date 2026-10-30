@@ -12,7 +12,7 @@ Se retiró el cargador de favicon del navegador para evitar enlaces duplicados y
 - Si un favicon anterior quedó guardado como WebP por el optimizador, **volver a subir el PNG original** después de publicar este cambio. No se transformaron archivos remotos ya existentes.
 - Cambiar el favicon no requiere editar código ni SQL. Su enlace queda estable mientras no se reemplace o elimine la imagen.
 
-Después de publicar el cambio y subir el PNG si corresponde, se puede solicitar una nueva indexación de la página principal desde Search Console. La raíz del dominio redirige al catálogo, donde también se incluye el favicon. Google procesa esa imagen por separado: puede tardar días o semanas, y no garantiza que aparezca aunque cumpla las directrices.
+Después de publicar el cambio y subir el PNG si corresponde, se puede solicitar una nueva indexación de la página principal desde Search Console. La raíz del dominio muestra ahora la landing; tanto la portada como el catálogo incluyen el favicon. Google procesa esa imagen por separado: puede tardar días o semanas, y no garantiza que aparezca aunque cumpla las directrices.
 
 No se ejecutaron pruebas, build ni cambios remotos. Revisión estática del diff. No se pudo comprobar el archivo configurado en el sitio publicado desde esta entrega, por lo que el formato y las dimensiones actuales no se afirman como verificados.
 

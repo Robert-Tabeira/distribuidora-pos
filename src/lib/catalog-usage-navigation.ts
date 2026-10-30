@@ -108,7 +108,7 @@ export function catalogUsageLink(section: { id: string; title: string | null; se
   return {
     id: section.id,
     label: section.title?.trim() || section.section_name,
-    url: `/landing#${encodeURIComponent(instructionAnchor(section.id))}`,
+    url: `/#${encodeURIComponent(instructionAnchor(section.id))}`,
     icon: section.block_type === 'instructions' ? 'chat' : section.block_type === 'pickup_instructions' ? 'store' : section.block_type === 'saved_lists_instructions' ? 'document' : 'cart',
   }
 }

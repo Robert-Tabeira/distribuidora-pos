@@ -20,7 +20,7 @@ function login(request: NextRequest, accessKey: string) {
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
-  if (pathname === '/landing' || pathname === '/catalogo') {
+  if (pathname === '/' || pathname === '/catalogo') {
     const response = NextResponse.next()
     response.headers.set('X-Robots-Tag', publicRequestIndexable(request.nextUrl) ? 'index, follow' : 'noindex, follow')
     return response
@@ -57,5 +57,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/landing', '/catalogo', '/acceso/:path*', '/login/:path*', '/admin/:path*', '/productos/:path*', '/empleados/:path*', '/descuentos/:path*', '/ubicaciones/:path*', '/precios/:path*', '/mostrador/:path*', '/reposicion/:path*', '/caja/:path*', '/historial/:path*'],
+  matcher: ['/', '/catalogo', '/acceso/:path*', '/login/:path*', '/admin/:path*', '/productos/:path*', '/empleados/:path*', '/descuentos/:path*', '/ubicaciones/:path*', '/precios/:path*', '/mostrador/:path*', '/reposicion/:path*', '/caja/:path*', '/historial/:path*'],
 }

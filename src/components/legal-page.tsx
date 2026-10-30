@@ -11,7 +11,7 @@ export function legalMetadata(title: string): Metadata {
 
 export function LegalPage({ title, introduction, children }: { title: string; introduction: string; children: ReactNode }) {
   return <PublicLayout><main className={styles.page}><div className={styles.inner}>
-    <Link href="/landing" className="text-sm text-[#687049]">← Volver a Los Primos</Link>
+    <Link href="/" className="text-sm text-[#687049]">← Volver a Los Primos</Link>
     <p className={styles.eyebrow}>Información del sitio</p><h1 className={styles.title}>{title}</h1>
     <p className="mt-4 max-w-3xl text-sm leading-7 text-[#776b5b]">{introduction}</p>
     <p className="mt-3 text-xs text-[#847966]">Versión: {LEGAL_DATE_LABEL}</p>

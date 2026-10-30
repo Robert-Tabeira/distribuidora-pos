@@ -14,6 +14,7 @@ import { HeaderUsageMenu } from '@/components/header-usage-menu'
 import { catalogUsageLink, resolveUsageMenuSettings, usageMenuLinks, type CatalogUsageLink } from '@/lib/catalog-usage-navigation'
 import { INSTRUCTION_BLOCK_TYPES } from '@/lib/landing-background'
 import { googleMapsLocationLink } from '@/lib/google-maps-link'
+import { publicNavigationHref } from '@/lib/public-seo'
 
 interface WebsiteSettings {
   phone_number: string | null
@@ -132,7 +133,10 @@ export function Header() {
   const router = useRouter()
   const pathname = usePathname()
   const [settings, setSettings] = useState<WebsiteSettings | null>(null)
-  const [menuLinks, setMenuLinks] = useState<MenuLink[]>([])
+  const [menuLinks, setMenuLinks] = useState<MenuLink[]>([
+    { id: 'default-home', label: 'Inicio', url: '/', order_position: 0, is_active: true },
+    { id: 'default-catalog', label: 'Catálogo', url: '/catalogo', order_position: 1, is_active: true },
+  ])
   const [usageLinks, setUsageLinks] = useState<CatalogUsageLink[]>([])
   const [headerSettings, setHeaderSettings] = useState<HeaderSettings>(DEFAULT_HEADER_SETTINGS)
   const [loading, setLoading] = useState(true)
@@ -164,7 +168,7 @@ export function Header() {
       ])
 
       if (settingsRes.data) setSettings(settingsRes.data as WebsiteSettings)
-      if (menuRes.data) setMenuLinks(menuRes.data as MenuLink[])
+      if (menuRes.data) setMenuLinks((menuRes.data as MenuLink[]).map(link => ({ ...link, url: publicNavigationHref(link.url) })))
       if (headerRes.data) setHeaderSettings(headerRes.data as HeaderSettings)
     } catch (error) {
       console.error('Error loading header data:', error)
@@ -250,7 +254,7 @@ export function Header() {
       <div className={`max-w-7xl mx-auto px-4 sm:px-6 ${isLandingPage && (isScrolled || transparentLandingHeader) ? 'h-full' : ''}`}>
         <div className={`relative flex items-center justify-between ${isLandingPage && (isScrolled || transparentLandingHeader) ? 'h-full' : ''}`}>
           {/* Logo */}
-          <Link href={settings?.logo_link_url || '/landing'} className="absolute left-1/2 z-10 flex max-w-[calc(100vw-7rem)] -translate-x-1/2 items-center justify-center gap-3 lg:static lg:max-w-none lg:translate-x-0">
+          <Link href={publicNavigationHref(settings?.logo_link_url || '/')} className="absolute left-1/2 z-10 flex max-w-[calc(100vw-7rem)] -translate-x-1/2 items-center justify-center gap-3 lg:static lg:max-w-none lg:translate-x-0">
             {settings?.use_logo_image && activeLogoUrl ? (
               <span className="relative block shrink-0" style={{ width: `${activeLogoWidth}px`, height: isScrolled ? '48px' : '64px' }}>
                 <SiteImage

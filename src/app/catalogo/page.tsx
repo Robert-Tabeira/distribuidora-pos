@@ -683,7 +683,7 @@ export default function CatalogPage() {
     <PublicLayout>
     <div className={styles.catalog}>
       <div className={styles.container}>
-        <nav className={styles.breadcrumb} aria-label="Ruta de navegación"><Link href="/landing">Inicio</Link><span aria-hidden="true">/</span><span aria-current="page">Catálogo</span></nav>
+        <nav className={styles.breadcrumb} aria-label="Ruta de navegación"><Link href="/">Inicio</Link><span aria-hidden="true">/</span><span aria-current="page">Catálogo</span></nav>
         <header className={styles.intro}>
           <div><p className={styles.eyebrow}>Los Primos · Por mayor y menor</p><h1 className={styles.title}>Nuestro catálogo</h1><p className={styles.introText}>Encontrá lo que necesitás, armá tu consulta y preguntanos los precios por WhatsApp.</p></div>
           <div className={styles.actions}>

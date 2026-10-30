@@ -62,7 +62,7 @@ export const DEFAULT_FOOTER_SETTINGS: FooterSettings = {
   heading_font: 'lora', body_font: 'dm_sans', heading_weight: '700', body_weight: '400',
   eyebrow: 'Por mayor y menor', logo_url: '', logo_width: 180, logo_width_mobile: 150,
   show_navigation: true, navigation_title: 'Explorá Los Primos',
-  links: [{ label: 'Inicio', url: '/landing' }, { label: 'Catálogo', url: '/catalogo' }],
+  links: [{ label: 'Inicio', url: '/' }, { label: 'Catálogo', url: '/catalogo' }],
   show_cta: false, cta_title: 'Todo para tu próxima compra',
   cta_description: 'Explorá el catálogo y armá tu lista de consulta.', cta_label: 'Explorar catálogo', cta_url: '/catalogo',
   background_color: '#292d23', heading_color: '#fffaf0', text_color: '#d6d2c5', accent_color: '#c9b68c',
