@@ -53,6 +53,9 @@ export async function uploadImageToSupabase(
     }
 
     const uploadFile = await compressForWeb(file, folder, preset)
+    if (folder === 'favicons' && uploadFile.size > 2 * 1024 * 1024) {
+      return { url: '', error: 'El favicon no puede pesar más de 2MB después de optimizarlo. Usá un PNG pequeño o un SVG más liviano.' }
+    }
 
     // Crear nombre único para el archivo
     const timestamp = Date.now()
