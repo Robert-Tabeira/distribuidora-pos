@@ -520,8 +520,8 @@ export default function ProductImagesPage() {
                     ))}
                   </div>
 
-                  <div className="absolute w-3/4 h-3/4 border-3 border-orange-500 rounded pointer-events-none shadow-lg">
-                    <div className="absolute inset-0 bg-orange-500 opacity-10" />
+                  <div className="absolute w-3/4 h-3/4 border-[3px] border-orange-500 rounded pointer-events-none shadow-lg">
+                    <div className="absolute inset-0 bg-orange-500 opacity-30" />
                   </div>
 
                   {(() => {
