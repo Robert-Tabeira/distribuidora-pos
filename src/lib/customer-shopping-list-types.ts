@@ -1,9 +1,13 @@
+import type { ProductVariant } from '@/lib/product-variants'
+
 export interface ShoppingListItem {
   product_id: string
   product_name: string
   quantity: number
   unit?: string
   notes?: string
+  variant_id?: string | null
+  variant_name?: string
   units_per_box?: number | null
   image_url?: string | null
 }
@@ -22,6 +26,7 @@ export interface ListCatalogProduct {
   units: string[]
   units_per_box: number | null
   image_url: string | null
+  variants?: ProductVariant[]
 }
 
 export function listProductUnits(product: ListCatalogProduct): string[] {

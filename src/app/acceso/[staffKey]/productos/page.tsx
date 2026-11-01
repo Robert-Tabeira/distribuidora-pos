@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import type { Employee, Product } from '@/types/database'
 import { uploadImageToSupabase } from '@/lib/image-upload-helper'
 import { MAX_UNITS_PER_BOX, isMissingBoxUnitsColumn } from '@/lib/product-packaging'
+import { productVariants, productVariantsError, isMissingVariantsColumn, MAX_PRODUCT_VARIANTS, MAX_VARIANT_NAME, type ProductVariant } from '@/lib/product-variants'
 
 // Normaliza texto para comparar sin importar tildes/diacríticos
 // ("azucar" debe coincidir con "azúcar")
@@ -98,6 +99,8 @@ export default function ProductosPage() {
   const [editName, setEditName] = useState('')
   const [editUnits, setEditUnits] = useState<string[]>(['unidad'])
   const [editUnitsPerBox, setEditUnitsPerBox] = useState('')
+  const [editVariants, setEditVariants] = useState<ProductVariant[]>([])
+  const variantsError = productVariantsError(editVariants)
   const invalidBoxUnits = editUnits.includes('caja') && editUnitsPerBox.trim() !== '' && (!/^\d+$/.test(editUnitsPerBox.trim()) || Number(editUnitsPerBox) < 1 || Number(editUnitsPerBox) > MAX_UNITS_PER_BOX)
   const editedUnitsPerBox = editUnits.includes('caja') && editUnitsPerBox.trim() !== '' ? Number(editUnitsPerBox) : null
   const [editCategory, setEditCategory] = useState<string | null>(null)
@@ -263,6 +266,7 @@ export default function ProductosPage() {
   function openEditModal(product: Product) {
     setEditingProduct(product)
     setEditName(product.name)
+    setEditVariants(productVariants(product).map(variant => ({ ...variant })))
     const units = Array.isArray(product.unit) ? product.unit : [product.unit]
     setEditUnits(units.length > 0 ? units : ['unidad'])
     setEditUnitsPerBox(product.units_per_box == null ? '' : String(product.units_per_box))
@@ -463,6 +467,7 @@ export default function ProductosPage() {
   async function saveProduct() {
     if (!editingProduct || !editName.trim() || editUnits.length === 0) return
     if (invalidBoxUnits) { alert('Las unidades por caja deben ser un número entero mayor a cero.'); return }
+    if (variantsError) { alert(variantsError); return }
 
     const similar = findSimilarProducts(editName.trim(), editingProduct.id)
     
@@ -479,6 +484,7 @@ export default function ProductosPage() {
   async function performSave() {
     if (!editingProduct || !editName.trim() || editUnits.length === 0) return
     if (invalidBoxUnits) { alert('Las unidades por caja deben ser un número entero mayor a cero.'); return }
+    if (variantsError) { alert(variantsError); return }
 
     setSaving(true)
 
@@ -497,6 +503,7 @@ export default function ProductosPage() {
           description: editDescription.trim() || null,
           product_code: editProductCode.trim() || null,
           gallery: editGallery,
+          variants: editVariants.map(variant => ({ ...variant, name: variant.name.trim() })),
           status: 'complete',
         })
         .eq('id', editingProduct.id)
@@ -516,6 +523,7 @@ export default function ProductosPage() {
               description: editDescription.trim() || null,
               product_code: editProductCode.trim() || null,
               gallery: editGallery,
+              variants: editVariants.map(variant => ({ ...variant, name: variant.name.trim() })),
               status: 'complete' as const
             }
           : p
@@ -531,7 +539,7 @@ export default function ProductosPage() {
 
     } catch (error) {
       console.error('Error al guardar:', error)
-      alert(isMissingBoxUnitsColumn(error as { code?: string; message?: string }) ? 'Primero ejecutá la migración 202610250001_product_units_per_box.sql en Supabase para guardar las unidades por caja.' : 'Error al guardar el producto')
+      alert(isMissingVariantsColumn(error as { code?: string; message?: string }) ? 'Primero ejecutá la migración 202611010001_product_variants.sql en Supabase para guardar variantes.' : isMissingBoxUnitsColumn(error as { code?: string; message?: string }) ? 'Primero ejecutá la migración 202610250001_product_units_per_box.sql en Supabase para guardar las unidades por caja.' : 'Error al guardar el producto')
     } finally {
       setSaving(false)
     }
@@ -543,6 +551,7 @@ export default function ProductosPage() {
   async function replaceOldWithNew(oldProduct: Product) {
     if (!editingProduct || !editName.trim() || editUnits.length === 0) return
     if (invalidBoxUnits) { alert('Las unidades por caja deben ser un número entero mayor a cero.'); return }
+    if (variantsError) { alert(variantsError); return }
 
     setResolvingDuplicate(true)
     try {
@@ -560,6 +569,7 @@ export default function ProductosPage() {
           description: editDescription.trim() || null,
           product_code: editProductCode.trim() || null,
           gallery: editGallery,
+          variants: editVariants.map(variant => ({ ...variant, name: variant.name.trim() })),
           status: 'complete',
         })
         .eq('id', oldProduct.id)
@@ -588,6 +598,7 @@ export default function ProductosPage() {
                 description: editDescription.trim() || null,
                 product_code: editProductCode.trim() || null,
                 gallery: editGallery,
+                variants: editVariants.map(variant => ({ ...variant, name: variant.name.trim() })),
                 status: 'complete' as const
               }
             : p
@@ -604,7 +615,7 @@ export default function ProductosPage() {
       if (navigator.vibrate) navigator.vibrate(50)
     } catch (error) {
       console.error('Error al reemplazar:', error)
-      alert(isMissingBoxUnitsColumn(error as { code?: string; message?: string }) ? 'Primero ejecutá la migración 202610250001_product_units_per_box.sql en Supabase para guardar las unidades por caja.' : 'Error al reemplazar el producto')
+      alert(isMissingVariantsColumn(error as { code?: string; message?: string }) ? 'Primero ejecutá la migración 202611010001_product_variants.sql en Supabase para guardar variantes.' : isMissingBoxUnitsColumn(error as { code?: string; message?: string }) ? 'Primero ejecutá la migración 202610250001_product_units_per_box.sql en Supabase para guardar las unidades por caja.' : 'Error al reemplazar el producto')
     } finally {
       setResolvingDuplicate(false)
     }
@@ -1020,6 +1031,19 @@ export default function ProductosPage() {
               />
             </div>
 
+            <fieldset className="mb-4 rounded-xl border border-border p-4">
+              <legend className="px-1 text-sm font-semibold text-text-muted">Variantes del producto (opcional)</legend>
+              <p className="mb-3 text-xs leading-5 text-text-muted">Ej.: Chocolate blanco, negro y con leche. El cliente elegirá una variante antes de agregar el producto. Comparten las fotos, presentaciones y unidades por caja de esta ficha.</p>
+              <div className="space-y-3">{editVariants.map((variant, index) => <div key={variant.id} className="rounded-lg border border-border p-3">
+                <label htmlFor={`product-variant-${variant.id}`} className="mb-1 block text-xs font-semibold text-text-muted">Variante {index + 1}</label>
+                <input id={`product-variant-${variant.id}`} className="input" maxLength={MAX_VARIANT_NAME} value={variant.name} placeholder="Ej.: Chocolate blanco" onChange={event => setEditVariants(current => current.map(item => item.id === variant.id ? { ...item, name: event.target.value } : item))} />
+                <div className="mt-2 flex items-center justify-between gap-3"><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={variant.is_active} onChange={event => setEditVariants(current => current.map(item => item.id === variant.id ? { ...item, is_active: event.target.checked } : item))} />Disponible en el catálogo</label><button type="button" className="px-2 py-1 text-sm font-semibold text-red-600" onClick={() => setEditVariants(current => current.filter(item => item.id !== variant.id))}>Quitar</button></div>
+              </div>)}</div>
+              <button type="button" disabled={editVariants.length >= MAX_PRODUCT_VARIANTS} className="mt-3 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-primary disabled:opacity-50" onClick={() => setEditVariants(current => [...current, { id: crypto.randomUUID(), name: '', is_active: true }])}>+ Agregar variante</button>
+              {variantsError && <p role="alert" className="mt-2 text-sm text-red-600">{variantsError}</p>}
+              {editVariants.length > 0 && <p className="mt-2 text-xs text-text-muted">Para retirar una opción temporalmente, desactivala. Si todas están desactivadas, el producto no podrá agregarse al pedido ni a la consulta.</p>}
+            </fieldset>
+
             {/* Unidad */}
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
@@ -1160,7 +1184,7 @@ export default function ProductosPage() {
               </button>
               <button 
                 onClick={saveProduct} 
-                disabled={saving || !editName.trim() || invalidBoxUnits}
+                disabled={saving || !editName.trim() || invalidBoxUnits || Boolean(variantsError)}
                 className="btn btn-primary flex-1"
               >
                 {saving ? 'Guardando...' : 'Guardar'}

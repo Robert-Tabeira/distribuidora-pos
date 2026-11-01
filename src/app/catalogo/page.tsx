@@ -12,8 +12,12 @@ import styles from './catalog.module.css'
 import { normalizeSearchTerm, trackSiteEvent } from '@/lib/site-analytics'
 import { SITE_ANALYTICS_ENABLED } from '@/lib/analytics-config'
 import { getUnitsPerBox, describeBoxContents, isMissingBoxUnitsColumn } from '@/lib/product-packaging'
+import { activeProductVariants, productVariants, validProductVariant, productVariantName, isMissingVariantsColumn } from '@/lib/product-variants'
 
-interface ProductWithDiscount extends Pick<Product, 'id' | 'name' | 'unit' | 'units_per_box' | 'category_id' | 'created_at' | 'gallery' | 'description' | 'product_code'> {
+type CartEntry = { itemId: string; productId: string; quantity: number; unit: string; notes: string; variantId: string | null; variantName: string }
+type InquiryEntry = { productId: string; variantId: string | null; variantName: string }
+
+interface ProductWithDiscount extends Pick<Product, 'id' | 'name' | 'unit' | 'units_per_box' | 'variants' | 'category_id' | 'created_at' | 'gallery' | 'description' | 'product_code'> {
   discount?: Discount
   subcategory_id?: string | null
 }
@@ -58,9 +62,10 @@ export default function CatalogPage() {
   const [pendingProductId, setPendingProductId] = useState('')
   const [showOnlyDiscounts, setShowOnlyDiscounts] = useState(false)
   const [showOnlyRecentlyAdded, setShowOnlyRecentlyAdded] = useState(false)
-  const [cartItems, setCartItems] = useState<{ itemId: string; productId: string; quantity: number; unit: string; notes: string }[]>([])
+  const [cartItems, setCartItems] = useState<CartEntry[]>([])
   const [showCart, setShowCart] = useState(false)
-  const [priceInquiryProductIds, setPriceInquiryProductIds] = useState<string[]>([])
+  const [priceInquiryItems, setPriceInquiryItems] = useState<InquiryEntry[]>([])
+  const priceInquiryProductIds = priceInquiryItems.map(item => item.productId)
   const [showPriceInquiry, setShowPriceInquiry] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<ProductWithDiscount | null>(null)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
@@ -80,6 +85,9 @@ export default function CatalogPage() {
   const pickupNameRef = useRef<HTMLInputElement>(null)
   const [selectedProductUnit, setSelectedProductUnit] = useState('')
   const [productUnitError, setProductUnitError] = useState(false)
+  const [selectedProductVariant, setSelectedProductVariant] = useState('')
+  const [productVariantError, setProductVariantError] = useState(false)
+  const productVariantOptionsRef = useRef<HTMLDivElement>(null)
   const productUnitOptionsRef = useRef<HTMLDivElement>(null)
   const [productNotes, setProductNotes] = useState('')
   const [customerOrderingEnabled, setCustomerOrderingEnabled] = useState(false)
@@ -92,6 +100,8 @@ export default function CatalogPage() {
     return [...new Set(['unidad', ...(units.includes('caja') ? ['caja'] : []), ...(units.includes('funda') ? ['funda'] : [])])]
   }, [selectedProduct])
   const hasSelectedProductUnit = productSaleOptions.includes(selectedProductUnit)
+  const selectedVariants = selectedProduct ? productVariants(selectedProduct) : []
+  const availableVariants = selectedProduct ? activeProductVariants(selectedProduct) : []
 
   useEffect(() => {
     if (!SITE_ANALYTICS_ENABLED) return
@@ -219,30 +229,34 @@ export default function CatalogPage() {
       setSelectedProductUnit('')
       setProductUnitError(false)
       setProductNotes('')
+      setSelectedProductVariant('')
+      setProductVariantError(false)
       setPendingProductId('')
     }
   }, [pendingProductId, products])
 
   async function loadData() {
     try {
-      const [productsRes, categoriesRes, discountsRes] = await Promise.all([
-        supabase.from('products').select('id,name,unit,units_per_box,category_id,subcategory_id,status,created_at,product_code,gallery,description').eq('status', 'complete').eq('visible_in_catalog', true),
-        supabase.from('categories').select('*').order('order_position'),
-        supabase.from('discounts').select('*').eq('is_active', true)
+      let fields = 'id,name,unit,units_per_box,variants,category_id,subcategory_id,status,created_at,product_code,gallery,description'
+      const readProducts = () => supabase.from('products').select(fields).eq('status', 'complete').eq('visible_in_catalog', true)
+      const [firstProducts, categoriesRes, discountsRes] = await Promise.all([
+        readProducts(), supabase.from('categories').select('*').order('order_position'), supabase.from('discounts').select('*').eq('is_active', true)
       ])
-
-      let productRows = productsRes.data
-      if (isMissingBoxUnitsColumn(productsRes.error)) {
-        const legacy = await supabase.from('products').select('id,name,unit,category_id,subcategory_id,status,created_at,product_code,gallery,description').eq('status', 'complete').eq('visible_in_catalog', true)
-        productRows = legacy.data?.map(product => ({ ...product, units_per_box: null })) || null
+      let productsRes = firstProducts
+      for (let attempt = 0; attempt < 2 && (isMissingVariantsColumn(productsRes.error) || isMissingBoxUnitsColumn(productsRes.error)); attempt++) {
+        const missing = isMissingVariantsColumn(productsRes.error) ? 'variants' : 'units_per_box'
+        fields = fields.split(',').filter(field => field !== missing).join(',')
+        productsRes = await readProducts()
       }
+      if (productsRes.error) throw productsRes.error
+      const productRows = productsRes.data as unknown as ProductWithDiscount[] | null
 
       if (productRows) {
         const productIds = productRows.map(product => product.id)
         const { data: productDiscounts } = productIds.length
           ? await supabase.from('product_discounts').select('product_id,discount_id').in('product_id', productIds)
           : { data: [] }
-        const discountById = new Map((discountsRes.data || []).map(discount => [discount.id, discount]))
+        const discountById = new Map<string, Discount>((discountsRes.data || []).map(discount => [discount.id, discount]))
         const discountByProductId = new Map((productDiscounts || []).map(item => [item.product_id, discountById.get(item.discount_id)]))
         setProducts(productRows.map(product => ({ ...product, discount: discountByProductId.get(product.id) })))
       }
@@ -265,40 +279,53 @@ export default function CatalogPage() {
         productId: item.productId,
         quantity: Number(item.quantity) || 1,
         unit: item.unit || 'unidad',
-        notes: item.notes || ''
+        notes: item.notes || '',
+        variantId: typeof item.variantId === 'string' ? item.variantId : null,
+        variantName: typeof item.variantName === 'string' ? item.variantName : ''
       })))
     } catch { /* The cart can still work in memory when storage is unavailable. */ }
   }
 
   function loadPriceInquiry() {
     try {
-      const saved = localStorage.getItem('los_primos_price_inquiry')
-      if (!saved) return
-      const parsed: unknown = JSON.parse(saved)
-      if (Array.isArray(parsed)) setPriceInquiryProductIds(parsed.filter((id): id is string => typeof id === 'string'))
+      const parsed = JSON.parse(localStorage.getItem('los_primos_price_inquiry') || '[]')
+      if (Array.isArray(parsed)) setPriceInquiryItems(parsed.flatMap(item => {
+        if (typeof item === 'string') return [{ productId: item, variantId: null, variantName: '' }]
+        return item && typeof item.productId === 'string' ? [{ productId: item.productId, variantId: typeof item.variantId === 'string' ? item.variantId : null, variantName: typeof item.variantName === 'string' ? item.variantName : '' }] : []
+      }))
     } catch { /* Continue without a saved inquiry. */ }
   }
 
-  function savePriceInquiry(productIds: string[]) {
-    const uniqueIds = [...new Set(productIds)]
-    try { localStorage.setItem('los_primos_price_inquiry', JSON.stringify(uniqueIds)) } catch { /* Keep this page usable with blocked storage. */ }
-    setPriceInquiryProductIds(uniqueIds)
+  function savePriceInquiry(items: InquiryEntry[]) {
+    const uniqueItems = [...new Map(items.map(item => [JSON.stringify([item.productId, item.variantId]), item])).values()]
+    try { localStorage.setItem('los_primos_price_inquiry', JSON.stringify(uniqueItems)) } catch { /* Keep the inquiry usable in memory. */ }
+    setPriceInquiryItems(uniqueItems)
+  }
+
+  function validateSelectedVariant() {
+    if (!selectedProduct || validProductVariant(selectedProduct, selectedProductVariant || null)) return true
+    setProductVariantError(true)
+    productVariantOptionsRef.current?.querySelector('button')?.focus({ preventScroll: true })
+    productVariantOptionsRef.current?.scrollIntoView({ block: 'center' })
+    return false
   }
 
   function addToPriceInquiry(productId: string) {
-    if (!priceInquiryProductIds.includes(productId)) trackSiteEvent('inquiry_add', { product_id: productId })
-    savePriceInquiry([...priceInquiryProductIds, productId])
+    if (!selectedProduct || !validateSelectedVariant()) return
+    const variantId = selectedProductVariant || null
+    if (!priceInquiryItems.some(item => item.productId === productId && item.variantId === variantId)) trackSiteEvent('inquiry_add', { product_id: productId })
+    savePriceInquiry([...priceInquiryItems, { productId, variantId, variantName: productVariantName(selectedProduct, variantId) }])
     closeProductDetail()
     setShowPriceInquiry(true)
   }
 
-  function removeFromPriceInquiry(productId: string) {
-    savePriceInquiry(priceInquiryProductIds.filter(id => id !== productId))
+  function removeFromPriceInquiry(productId: string, variantId: string | null) {
+    savePriceInquiry(priceInquiryItems.filter(item => item.productId !== productId || item.variantId !== variantId))
   }
 
-  const priceInquiryProducts = priceInquiryProductIds.flatMap(productId => {
-    const product = products.find(item => item.id === productId)
-    return product ? [product] : []
+  const priceInquiryProducts = priceInquiryItems.flatMap(item => {
+    const product = products.find(product => product.id === item.productId)
+    return product ? [{ ...product, inquiryVariantId: item.variantId, inquiryVariantName: productVariantName(product, item.variantId, item.variantName) }] : []
   })
 
   function sendPriceInquiryToWhatsApp() {
@@ -307,8 +334,12 @@ export default function CatalogPage() {
       alert('Todavía no hay un teléfono de WhatsApp configurado para el negocio.')
       return
     }
+    if (priceInquiryProducts.some(product => !validProductVariant(product, product.inquiryVariantId))) {
+      alert('Revisá las variantes de tu consulta. Alguna ya no está disponible o necesita que elijas una opción.')
+      return
+    }
     const popup = window.open('about:blank', '_blank')
-    const lines = priceInquiryProducts.map(product => `• ${product.name}`)
+    const lines = priceInquiryProducts.map(product => `• ${product.name}${product.inquiryVariantName ? ` — ${product.inquiryVariantName}` : ''}`)
     const message = `Hola, quisiera consultar el precio de estos productos:\n\n${lines.join('\n')}`
     const url = `https://wa.me/${businessPhone}?text=${encodeURIComponent(message)}`
     trackSiteEvent('whatsapp_inquiry', { item_count: priceInquiryProducts.length })
@@ -321,15 +352,15 @@ export default function CatalogPage() {
     setCartItems(items)
   }
 
-  function addToCart(productId: string, unit: string, notes: string) {
+  function addToCart(productId: string, unit: string, notes: string, variantId: string | null, variantName: string) {
     trackSiteEvent('cart_add', { product_id: productId })
-    const existing = cartItems.find(item => item.productId === productId && item.unit === unit && item.notes === notes)
+    const existing = cartItems.find(item => item.productId === productId && item.unit === unit && item.notes === notes && item.variantId === variantId)
     if (existing) {
       saveCart(cartItems.map(item =>
         item.itemId === existing.itemId ? { ...item, quantity: item.quantity + 1 } : item
       ))
     } else {
-      saveCart([...cartItems, { itemId: `${productId}-${Date.now()}`, productId, quantity: 1, unit, notes }])
+      saveCart([...cartItems, { itemId: `${productId}-${crypto.randomUUID()}`, productId, quantity: 1, unit, notes, variantId, variantName }])
     }
   }
 
@@ -363,13 +394,14 @@ export default function CatalogPage() {
 
   function handleAddToCart() {
     if (!customerOrderingEnabled || !selectedProduct) return
+    if (!validateSelectedVariant()) return
     if (!hasSelectedProductUnit) {
       setProductUnitError(true)
       productUnitOptionsRef.current?.querySelector('button')?.focus({ preventScroll: true })
       productUnitOptionsRef.current?.scrollIntoView({ block: 'center' })
       return
     }
-    addToCart(selectedProduct.id, selectedProductUnit, productNotes.trim())
+    addToCart(selectedProduct.id, selectedProductUnit, productNotes.trim(), selectedProductVariant || null, productVariantName(selectedProduct, selectedProductVariant))
     setCartMessage('Producto agregado a tu pedido.')
     closeProductDetail()
     setShowCart(true)
@@ -396,6 +428,7 @@ export default function CatalogPage() {
 
   async function saveShoppingList() {
     if (!customerOrderingEnabled || !cartProducts.length || savingList) return
+    if (cartProducts.some(item => !validProductVariant(item.product, item.variantId))) { setCartMessage('Elegí una variante disponible para cada producto antes de guardar la lista.'); return }
     setSavingList(true)
     setCartMessage('')
     setCartNeedsLogin(false)
@@ -406,7 +439,7 @@ export default function CatalogPage() {
       const response = await fetch('/api/customer-shopping-lists', {
         method: 'POST', credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json', 'X-Customer-Id': access.customer.id },
-        body: JSON.stringify({ items: cartProducts.map(({ product, quantity, unit, notes }) => ({ product_id: product.id, quantity, unit, notes })) }),
+        body: JSON.stringify({ items: cartProducts.map(({ product, quantity, unit, notes, variantId }) => ({ product_id: product.id, quantity, unit, notes, variant_id: variantId })) }),
       })
       const result = await response.json()
       if (!response.ok) {
@@ -426,6 +459,7 @@ export default function CatalogPage() {
       setCartMessage('Agregá productos y verificá que el negocio tenga un teléfono de WhatsApp configurado.')
       return
     }
+    if (cartProducts.some(item => !validProductVariant(item.product, item.variantId))) { setCartMessage('Elegí una variante disponible para cada producto antes de enviar el pedido.'); return }
     const customerName = pickupName.replace(/\s+/g, ' ').trim().slice(0, 80)
     const requestPickupName = () => {
       setPickupNameError('Ingresá tu nombre para identificar el pedido al retirarlo.')
@@ -452,9 +486,9 @@ export default function CatalogPage() {
           requestPickupName()
           return
         }
-        const lines = cartProducts.map(({ product, quantity, unit, notes }) => {
+        const lines = cartProducts.map(({ product, quantity, unit, notes, variantId, variantName }) => {
           const contents = unit === 'caja' ? describeBoxContents(product, quantity) : null
-          return `• ${quantity} ${unit === 'caja' ? (quantity === 1 ? 'caja' : 'cajas') : unit === 'funda' ? (quantity === 1 ? 'funda' : 'fundas') : unit === 'unidad' ? (quantity === 1 ? 'unidad' : 'unidades') : unit} de ${product.name}${contents ? ` (${contents})` : ''}${notes ? `\n  Nota: ${notes}` : ''}`
+          return `• ${quantity} ${unit === 'caja' ? (quantity === 1 ? 'caja' : 'cajas') : unit === 'funda' ? (quantity === 1 ? 'funda' : 'fundas') : unit === 'unidad' ? (quantity === 1 ? 'unidad' : 'unidades') : unit} de ${product.name}${productVariantName(product, variantId, variantName) ? ` — ${productVariantName(product, variantId, variantName)}` : ''}${contents ? ` (${contents})` : ''}${notes ? `\n  Nota: ${notes}` : ''}`
         })
         const message = access.status === 'approved'
           ? `Hola, quiero hacer este pedido a nombre de ${access.customer.name}, del comercio ${access.customer.business_name}:\n\n${lines.join('\n')}`
@@ -628,6 +662,8 @@ export default function CatalogPage() {
 
   function closeProductDetail() {
     setSelectedProduct(null)
+    setSelectedProductVariant('')
+    setProductVariantError(false)
     setSelectedProductUnit('')
     setProductUnitError(false)
     const url = new URL(window.location.href)
@@ -641,6 +677,8 @@ export default function CatalogPage() {
     setSelectedProductUnit('')
     setProductUnitError(false)
     setProductNotes('')
+    setSelectedProductVariant('')
+    setProductVariantError(false)
     const url = new URL(window.location.href)
     url.searchParams.set('producto', product.id)
     window.history.pushState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`)
@@ -672,6 +710,7 @@ export default function CatalogPage() {
           <span className={`${styles.productName} line-clamp-3`}>{product.name}</span>
           {product.description && <span className="mb-2 hidden text-xs leading-relaxed text-[#776c5e] sm:line-clamp-2">{product.description}</span>}
           {product.discount && <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#9a5035] sm:text-xs"><Icon name="tag" className="h-3.5 w-3.5 shrink-0" />{product.discount.name}</span>}
+          {productVariants(product).length > 0 && <span className="mb-2 text-xs font-semibold text-[#575b36]">{activeProductVariants(product).length ? `${activeProductVariants(product).length} variantes · Elegí la tuya` : 'Sin variantes disponibles'}</span>}
           <span className="flex-1" />
           <span className={styles.productFoot}>{inInquiry ? <><span className="inline-flex items-center gap-1"><Icon name="check" className="h-3.5 w-3.5 shrink-0" />En tu consulta</span><span aria-hidden="true">→</span></> : <><span>Ver producto</span><span aria-hidden="true">↗</span></>}</span>
         </span>
@@ -687,7 +726,7 @@ export default function CatalogPage() {
         <header className={styles.intro}>
           <div><p className={styles.eyebrow}>Los Primos · Por mayor y menor</p><h1 className={styles.title}>Nuestro catálogo</h1><p className={styles.introText}>Encontrá lo que necesitás, armá tu consulta y preguntanos los precios por WhatsApp.</p></div>
           <div className={styles.actions}>
-            <button type="button" onClick={() => setShowPriceInquiry(true)} className={styles.primaryButton}><Icon name="document" className="h-4 w-4 shrink-0" />Consulta de precios<span className={styles.count}>{priceInquiryProductIds.length}</span></button>
+            <button type="button" onClick={() => setShowPriceInquiry(true)} className={styles.primaryButton}><Icon name="document" className="h-4 w-4 shrink-0" />Consulta de precios<span className={styles.count}>{priceInquiryItems.length}</span></button>
             {customerOrderingEnabled && <button type="button" onClick={() => setShowCart(true)} className={styles.secondaryButton}><Icon name="cart" className="h-4 w-4 shrink-0" />Mi pedido ({cartProductCount})</button>}
           </div>
         </header>
@@ -1050,6 +1089,15 @@ export default function CatalogPage() {
                 <p className="mb-4 inline-flex items-center gap-1 text-sm text-red-600 font-semibold"><Icon name="tag" className="h-4 w-4" />{selectedProduct.discount.name}</p>
               )}
 
+              {selectedVariants.length > 0 && <div className="mb-4">
+                <p id="catalog-variant-label" className="mb-2 text-sm font-semibold text-[#514738]">Elegí una variante <span className="font-normal text-[#817565]">(obligatorio)</span></p>
+                <div ref={productVariantOptionsRef} role="group" aria-labelledby="catalog-variant-label" className={`flex flex-wrap gap-2 rounded-xl ${productVariantError ? 'ring-2 ring-red-500 ring-offset-2' : ''}`}>
+                  {availableVariants.map(variant => <button key={variant.id} type="button" aria-pressed={selectedProductVariant === variant.id} onClick={() => { setSelectedProductVariant(variant.id); setProductVariantError(false) }} className={`rounded-xl border px-4 py-2.5 text-sm font-semibold ${selectedProductVariant === variant.id ? 'border-[#73794e] bg-[#eeeedf] text-[#575b36]' : 'border-[#d9cdb8] text-[#514738]'}`}>{variant.name}</button>)}
+                </div>
+                {!availableVariants.length && <p className="mt-2 text-sm text-red-700">Este producto no tiene variantes disponibles por el momento.</p>}
+                {productVariantError && <p role="alert" className="mt-2 text-sm font-semibold text-red-700">{availableVariants.length ? 'Primero elegí la variante que querés agregar.' : 'No se puede agregar hasta que haya una variante disponible.'}</p>}
+              </div>}
+
               {!customerOrderingEnabled && getUnitsPerBox(selectedProduct) !== null && <p className="mb-4 text-sm font-semibold text-[#575b36]">Caja cerrada: {getUnitsPerBox(selectedProduct)} {getUnitsPerBox(selectedProduct) === 1 ? 'unidad' : 'unidades'}.</p>}
               {customerOrderingEnabled && <div className="mb-4">
                 <p id="catalog-product-unit-label" className="text-sm font-semibold text-[#514738] mb-2">¿Cómo lo querés? <span className="font-normal text-[#817565]">(obligatorio)</span></p>
@@ -1063,7 +1111,7 @@ export default function CatalogPage() {
                 Agregar al pedido
               </button>}
               <button type="button" onClick={() => addToPriceInquiry(selectedProduct.id)} className={`${customerOrderingEnabled ? styles.secondaryButton : styles.primaryButton} ${customerOrderingEnabled ? 'mt-2' : 'mt-4'} w-full`}>
-                {priceInquiryProductIds.includes(selectedProduct.id) ? 'Ver mi consulta de precios' : 'Agregar a consulta de precios'}
+                {priceInquiryItems.some(item => item.productId === selectedProduct.id && item.variantId === (selectedProductVariant || null)) ? 'Ver mi consulta de precios' : 'Agregar a consulta de precios'}
               </button>
             </div>
           </div>
@@ -1084,13 +1132,21 @@ export default function CatalogPage() {
                   {pickupNameError && <p id="catalog-pickup-name-error" role="alert" className="mt-2 text-sm font-semibold text-red-700">{pickupNameError}</p>}
                 </div>
               </div>}
-              {cartProducts.length === 0 ? <p className="text-center text-[#817565] py-10">Todavía no agregaste productos.</p> : <ul className="divide-y">{cartProducts.map(({ itemId, product, quantity, unit, notes }) => <li key={itemId} className="py-3">
+              {cartProducts.length === 0 ? <p className="text-center text-[#817565] py-10">Todavía no agregaste productos.</p> : <ul className="divide-y">{cartProducts.map(({ itemId, product, quantity, unit, notes, variantId, variantName }) => <li key={itemId} className="py-3">
                 <div className="flex items-start gap-3">
                   <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#d9cdb8] bg-[#f7f2e6]">
                     {product.gallery?.[0] ? <SiteImage src={product.gallery[0]} alt="" fill sizes="64px" quality={60} loading="lazy" className="object-contain p-1" /> : <Icon name="box" className="h-8 w-8 text-[#817565]" aria-hidden="true" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="break-words font-semibold">{product.name}</p><p className="text-xs text-[#817565] capitalize">Por {unit}</p>{unit === 'caja' && getUnitsPerBox(product) !== null && <p className="mt-1 text-xs leading-5 text-[#575b36]">{describeBoxContents(product, quantity)}</p>}
+                    {(productVariants(product).length > 0 || variantId) && <label className="mt-2 block text-xs font-semibold text-[#575b36]">Variante
+                      <select value={variantId || ''} onChange={event => saveCart(cartItems.map(item => item.itemId === itemId ? { ...item, variantId: event.target.value || null, variantName: productVariantName(product, event.target.value) } : item))} className="mt-1 w-full rounded-lg border border-[#d9cdb8] bg-white px-2 py-2 text-sm">
+                        <option value="">{productVariants(product).length ? 'Elegí una variante' : 'Sin variante'}</option>
+                        {variantId && !validProductVariant(product, variantId) && <option value={variantId} disabled>{productVariantName(product, variantId, variantName)} (no disponible)</option>}
+                        {activeProductVariants(product).map(variant => <option key={variant.id} value={variant.id}>{variant.name}</option>)}
+                      </select>
+                      {!validProductVariant(product, variantId) && <span className="mt-1 block text-red-700">Elegí una variante disponible o quitá el producto.</span>}
+                    </label>}
                     {notes && <p className="text-sm text-[#706556] mt-2 break-words">Nota: {notes}</p>}
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2"><button type="button" onClick={() => updateCartQuantity(itemId, quantity - 1)} aria-label={`Reducir cantidad de ${product.name}`} className="w-9 h-9 rounded-lg border border-[#d9cdb8]">−</button><span className="min-w-6 text-center">{quantity}</span><button type="button" onClick={() => updateCartQuantity(itemId, quantity + 1)} aria-label={`Aumentar cantidad de ${product.name}`} className="w-9 h-9 rounded-lg border border-[#d9cdb8]">+</button></div>
@@ -1126,15 +1182,17 @@ export default function CatalogPage() {
                 <p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-[#706556]">Abrí un producto del catálogo y elegí “Agregar a consulta de precios” para pedir su cotización.</p>
               </div> : (
                 <ul className="divide-y">
-                  {priceInquiryProducts.map(product => <li key={product.id} className="flex items-center gap-3 py-3">
+                  {priceInquiryProducts.map(product => <li key={JSON.stringify([product.id, product.inquiryVariantId])} className="flex items-center gap-3 py-3">
                     <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#d9cdb8] bg-[#f7f2e6]">
                       {product.gallery?.[0] ? <SiteImage src={product.gallery[0]} alt={product.name} fill sizes="64px" quality={60} loading="lazy" className="object-contain p-1" /> : <Icon name="box" className="h-8 w-8 text-[#817565]" />}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold">{product.name}</p>
+                      {product.inquiryVariantName && <p className="text-sm font-medium text-[#575b36]">{product.inquiryVariantName}</p>}
+                      {!validProductVariant(product, product.inquiryVariantId) && <button type="button" className="mt-1 text-xs font-semibold text-red-700 underline" onClick={() => { setShowPriceInquiry(false); openProductDetail(product) }}>Variante pendiente o no disponible. Quitá esta línea y elegí otra.</button>}
                       <p className="text-xs text-[#817565]">Precio a consultar</p>
                     </div>
-                    <button onClick={() => removeFromPriceInquiry(product.id)} className="shrink-0 text-red-600 text-sm ml-2">Quitar</button>
+                    <button onClick={() => removeFromPriceInquiry(product.id, product.inquiryVariantId)} className="shrink-0 text-red-600 text-sm ml-2">Quitar</button>
                   </li>)}
                 </ul>
               )}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { customerServerClient, customerServerConfigured, readCustomerServerSession, clearCustomerServerSession, customerCredentialRevision } from '@/lib/customer-server-session'
 import { getUnitsPerBox, isMissingBoxUnitsColumn } from '@/lib/product-packaging'
+import { productVariants, validProductVariant, productVariantName, isMissingVariantsColumn } from '@/lib/product-variants'
 import { listProductUnits, type ListCatalogProduct, type ShoppingListItem } from '@/lib/customer-shopping-list-types'
 
 const UUID = /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i
@@ -51,37 +52,43 @@ async function catalogProducts(client: ReturnType<typeof customerServerClient>, 
     return (await Promise.all(chunks.map(chunk => catalogProducts(client, chunk)))).flat()
   }
   const term = `%${search.replace(/[\\%_]/g, '\\$&')}%`
-  const query = client.from('products').select('id,name,unit,units_per_box,gallery').eq('status', 'complete').eq('visible_in_catalog', true)
-  const result = ids ? await query.in('id', ids) : await query.ilike('name', term).order('name').limit(12)
-  let rows = result.data
-  if (isMissingBoxUnitsColumn(result.error)) {
-    const legacyQuery = client.from('products').select('id,name,unit,gallery').eq('status', 'complete').eq('visible_in_catalog', true)
-    const legacy = ids ? await legacyQuery.in('id', ids) : await legacyQuery.ilike('name', term).order('name').limit(12)
-    if (legacy.error) throw legacy.error
-    rows = (legacy.data || []).map(product => ({ ...product, units_per_box: null }))
-  } else if (result.error) throw result.error
+  let fields = 'id,name,unit,units_per_box,variants,gallery'
+  const read = async () => {
+    const query = client.from('products').select(fields).eq('status', 'complete').eq('visible_in_catalog', true)
+    return ids ? await query.in('id', ids) : await query.ilike('name', term).order('name').limit(12)
+  }
+  let result = await read()
+  for (let attempt = 0; attempt < 2 && (isMissingVariantsColumn(result.error) || isMissingBoxUnitsColumn(result.error)); attempt++) {
+    const missing = isMissingVariantsColumn(result.error) ? 'variants' : 'units_per_box'
+    fields = fields.split(',').filter(field => field !== missing).join(',')
+    result = await read()
+  }
+  if (result.error) throw result.error
+  const rows = result.data as unknown as Array<{ id: string; name: string; unit: string | string[]; units_per_box?: number | null; gallery?: string[]; variants?: unknown }> | null
   return (rows || []).map(product => ({
     id: product.id, name: product.name, units: Array.isArray(product.unit) ? product.unit : [product.unit],
-    units_per_box: getUnitsPerBox(product), image_url: product.gallery?.[0] || null,
+    units_per_box: getUnitsPerBox(product), image_url: product.gallery?.[0] || null, variants: productVariants(product),
   }))
 }
 
 async function buildSnapshots(client: ReturnType<typeof customerServerClient>, rawItems: unknown): Promise<{ items: ShoppingListItem[] } | { response: NextResponse }> {
   if (!Array.isArray(rawItems) || rawItems.length === 0 || rawItems.length > 500) return { response: reply({ error: 'La lista debe contener entre 1 y 500 artículos.' }, 400) }
-  const items: Array<{ product_id: string; quantity: number; unit: string; notes: string }> = []
+  const items: Array<{ product_id: string; quantity: number; unit: string; notes: string; variant_id: string | null }> = []
   for (const item of rawItems) {
     if (!item || typeof item.product_id !== 'string' || !UUID.test(item.product_id)
       || !Number.isSafeInteger(item.quantity) || item.quantity < 1 || item.quantity > 1_000_000
       || !['unidad', 'caja', 'funda'].includes(item.unit) || (item.notes !== undefined && typeof item.notes !== 'string')
+      || (item.variant_id !== undefined && item.variant_id !== null && (typeof item.variant_id !== 'string' || !UUID.test(item.variant_id)))
       || (item.notes?.length || 0) > 300) return { response: reply({ error: 'Revisá los productos, cantidades y presentaciones antes de guardar.' }, 400) }
-    items.push({ product_id: item.product_id, quantity: item.quantity, unit: item.unit, notes: (item.notes || '').trim() })
+    items.push({ product_id: item.product_id, quantity: item.quantity, unit: item.unit, notes: (item.notes || '').trim(), variant_id: item.variant_id || null })
   }
   const products = await catalogProducts(client, [...new Set(items.map(item => item.product_id))])
   const snapshots: ShoppingListItem[] = []
   for (const item of items) {
     const product = products.find(entry => entry.id === item.product_id)
     if (!product || !listProductUnits(product).includes(item.unit)) return { response: reply({ error: 'Un producto o su presentación ya no está disponible. Quitalo de la lista o elegí una presentación vigente.' }, 400) }
-    snapshots.push({ ...item, product_name: product.name, units_per_box: item.unit === 'caja' ? product.units_per_box : null, image_url: product.image_url })
+    if (!validProductVariant(product, item.variant_id)) return { response: reply({ error: 'Elegí una variante disponible para cada producto antes de guardar la lista.' }, 400) }
+    snapshots.push({ ...item, variant_name: productVariantName(product, item.variant_id), product_name: product.name, units_per_box: item.unit === 'caja' ? product.units_per_box : null, image_url: product.image_url })
   }
   return { items: snapshots }
 }

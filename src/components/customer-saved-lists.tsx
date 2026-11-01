@@ -6,11 +6,12 @@ import Link from 'next/link'
 import { Icon } from '@/components/ui/icon'
 import { SiteImage } from '@/components/site-image'
 import { describeBoxContents } from '@/lib/product-packaging'
+import { activeProductVariants, productVariants, validProductVariant, productVariantName } from '@/lib/product-variants'
 import { listProductUnits, shoppingListDate, shoppingListTitle, type SavedShoppingList, type ShoppingListItem, type ListCatalogProduct } from '@/lib/customer-shopping-list-types'
 import styles from '@/app/cliente/cuenta/account.module.css'
 
 type DraftItem = ShoppingListItem & { key: string }
-const serializeItems = (items: ShoppingListItem[]) => items.map(item => ({ product_id: item.product_id, quantity: item.quantity, unit: item.unit ?? 'unidad', notes: item.notes || '' }))
+const serializeItems = (items: ShoppingListItem[]) => items.map(item => ({ product_id: item.product_id, quantity: item.quantity, unit: item.unit ?? 'unidad', notes: item.notes || '', variant_id: item.variant_id || null }))
 
 function Thumbnail({ src }: { src?: string | null }) {
   return <span className={styles.productImage}>{src ? <SiteImage src={src} alt="" fill sizes="64px" quality={60} loading="lazy" className="object-contain p-1" /> : <Icon name="box" className="h-5 w-5" />}</span>
@@ -46,7 +47,7 @@ export function CustomerSavedLists({ customerId }: { customerId: string }) {
   const sequence = useRef(0)
   const pages = Math.max(1, Math.ceil(lists.length / 6))
   const dirty = Boolean(activeList && (draftName !== (activeList.name || '') || JSON.stringify(serializeItems(draftItems)) !== JSON.stringify(serializeItems(activeList.items))))
-  const invalidDraft = !draftItems.length || draftItems.some(item => !Number.isSafeInteger(item.quantity) || item.quantity < 1 || item.quantity > 1_000_000 || !products[item.product_id] || !listProductUnits(products[item.product_id]).includes(item.unit ?? 'unidad'))
+  const invalidDraft = !draftItems.length || draftItems.some(item => !Number.isSafeInteger(item.quantity) || item.quantity < 1 || item.quantity > 1_000_000 || !products[item.product_id] || !listProductUnits(products[item.product_id]).includes(item.unit ?? 'unidad') || !validProductVariant(products[item.product_id], item.variant_id))
 
   const headers = () => ({ 'X-Customer-Id': customerId })
   function resetDraft(list: SavedShoppingList) {
@@ -120,7 +121,7 @@ export function CustomerSavedLists({ customerId }: { customerId: string }) {
 
   function writeCart(list: SavedShoppingList) {
     try {
-      const items = list.items.map((item, index) => ({ itemId: `${item.product_id}-${Date.now()}-${index}`, productId: item.product_id, quantity: item.quantity, unit: item.unit || 'unidad', notes: item.notes || '' }))
+      const items = list.items.map((item, index) => ({ itemId: `${item.product_id}-${Date.now()}-${index}`, productId: item.product_id, quantity: item.quantity, unit: item.unit || 'unidad', notes: item.notes || '', variantId: item.variant_id || null, variantName: item.variant_name || '' }))
       localStorage.setItem('los_primos_cart', JSON.stringify(items))
       router.push('/catalogo?pedido=1')
     } catch { setModalError('El navegador no permitió guardar el pedido. Habilitá el almacenamiento para repetir tu lista.') }
@@ -128,8 +129,8 @@ export function CustomerSavedLists({ customerId }: { customerId: string }) {
 
   function repeatList(list: SavedShoppingList, catalog: Record<string, ListCatalogProduct>) {
     setModalError('')
-    if (!list.items.length || list.items.some(item => !catalog[item.product_id] || !listProductUnits(catalog[item.product_id]).includes(item.unit || 'unidad') || !Number.isSafeInteger(item.quantity) || item.quantity < 1)) {
-      setModalError('Hay productos o presentaciones que ya no están disponibles. Editá la lista para revisarlos antes de repetir el pedido.')
+    if (!list.items.length || list.items.some(item => !catalog[item.product_id] || !listProductUnits(catalog[item.product_id]).includes(item.unit || 'unidad') || !validProductVariant(catalog[item.product_id], item.variant_id) || !Number.isSafeInteger(item.quantity) || item.quantity < 1)) {
+      setModalError('Hay productos, presentaciones o variantes que ya no están disponibles. Editá la lista para revisarlos antes de repetir el pedido.')
       return
     }
     try {
@@ -155,7 +156,7 @@ export function CustomerSavedLists({ customerId }: { customerId: string }) {
 
   function addProduct(product: ListCatalogProduct) {
     setProducts(current => ({ ...current, [product.id]: product }))
-    setDraftItems(current => [...current, { key: `row-${++sequence.current}`, product_id: product.id, product_name: product.name, quantity: 1, unit: '', notes: '', image_url: product.image_url }])
+    setDraftItems(current => [...current, { key: `row-${++sequence.current}`, product_id: product.id, product_name: product.name, quantity: 1, unit: '', notes: '', variant_id: null, variant_name: '', image_url: product.image_url }])
     setSearch(''); setModalError('')
   }
 
@@ -240,14 +241,20 @@ export function CustomerSavedLists({ customerId }: { customerId: string }) {
             const product = products[item.product_id]
             const unit = item.unit ?? 'unidad'
             const key = editing ? (item as DraftItem).key : `view-${index}`
-            const available = product && listProductUnits(product).includes(unit)
+            const available = product && listProductUnits(product).includes(unit) && validProductVariant(product, item.variant_id)
             const contents = describeBoxContents({ unit, units_per_box: product?.units_per_box ?? item.units_per_box }, item.quantity)
-            return <article key={key} className={styles.item}><div className={styles.itemHeading}><Thumbnail src={product?.image_url || item.image_url} /><div className="min-w-0 flex-1"><h3 className="text-sm font-semibold leading-6">{product?.name || item.product_name}</h3>{!editing && <p className={styles.muted}>{item.quantity} × por {unit}</p>}{contents && unit === 'caja' && <p className="mt-1 text-xs leading-5 text-[#5c633e]">{contents}</p>}{!available && <p className="mt-1 text-xs font-semibold text-[#9a5035]">{!product ? 'Ya no está en el catálogo. Quitalo de la lista para continuar.' : 'Elegí una presentación disponible.'}</p>}</div>{editing && <button disabled={saving} onClick={() => setDraftItems(current => current.filter(row => row.key !== key))} className="min-h-11 px-2 text-xs font-semibold text-[#9a5035]" aria-label={`Quitar ${item.product_name}`}>Quitar</button>}</div>
-              {editing ? <><div className={styles.itemControls}><div><label htmlFor={`quantity-${key}`} className={styles.label}>Cantidad</label><input id={`quantity-${key}`} type="number" inputMode="numeric" min={1} max={1_000_000} step={1} value={item.quantity || ''} disabled={saving} className={styles.field} onChange={event => updateItem(key, { quantity: Number(event.target.value) })} /></div><div><label htmlFor={`unit-${key}`} className={styles.label}>Presentación</label><select id={`unit-${key}`} value={unit} disabled={saving || !product} className={styles.field} onChange={event => updateItem(key, { unit: event.target.value })}><option value="">Elegí una opción</option>{product && !listProductUnits(product).includes(unit) && unit && <option value={unit} disabled>Por {unit} (no disponible)</option>}{product && listProductUnits(product).map(option => <option key={option} value={option}>Por {option}{option === 'caja' && product.units_per_box ? ` (${product.units_per_box} unidades)` : ''}</option>)}</select></div></div><label htmlFor={`notes-${key}`} className={`${styles.label} mt-3`}>Anotación <span className="font-normal">(opcional)</span></label><textarea id={`notes-${key}`} rows={2} maxLength={300} value={item.notes || ''} disabled={saving} className={styles.field} onChange={event => updateItem(key, { notes: event.target.value })} /></> : item.notes && <p className={`${styles.muted} mt-2`}>Nota: {item.notes}</p>}
+            return <article key={key} className={styles.item}><div className={styles.itemHeading}><Thumbnail src={product?.image_url || item.image_url} /><div className="min-w-0 flex-1"><h3 className="text-sm font-semibold leading-6">{product?.name || item.product_name}</h3>{!editing && (item.variant_id || item.variant_name) && <p className="mt-1 text-sm font-medium text-[#575b36]">{productVariantName(product || {}, item.variant_id, item.variant_name)}</p>}{!editing && <p className={styles.muted}>{item.quantity} × por {unit}</p>}{contents && unit === 'caja' && <p className="mt-1 text-xs leading-5 text-[#5c633e]">{contents}</p>}{!available && <p className="mt-1 text-xs font-semibold text-[#9a5035]">{!product ? 'Ya no está en el catálogo. Quitalo de la lista para continuar.' : 'Elegí una presentación y una variante disponibles.'}</p>}</div>{editing && <button disabled={saving} onClick={() => setDraftItems(current => current.filter(row => row.key !== key))} className="min-h-11 px-2 text-xs font-semibold text-[#9a5035]" aria-label={`Quitar ${item.product_name}`}>Quitar</button>}</div>
+              {editing ? <>
+                {product && (productVariants(product).length > 0 || item.variant_id) && <div className="mt-3"><label htmlFor={`variant-${key}`} className={styles.label}>Variante</label><select id={`variant-${key}`} value={item.variant_id || ''} disabled={saving} className={styles.field} onChange={event => updateItem(key, { variant_id: event.target.value || null, variant_name: productVariantName(product, event.target.value) })}>
+                  <option value="">{productVariants(product).length ? 'Elegí una variante' : 'Sin variante'}</option>
+                  {item.variant_id && !validProductVariant(product, item.variant_id) && <option value={item.variant_id} disabled>{productVariantName(product, item.variant_id, item.variant_name)} (no disponible)</option>}
+                  {activeProductVariants(product).map(variant => <option key={variant.id} value={variant.id}>{variant.name}</option>)}
+                </select></div>}
+                <div className={styles.itemControls}><div><label htmlFor={`quantity-${key}`} className={styles.label}>Cantidad</label><input id={`quantity-${key}`} type="number" inputMode="numeric" min={1} max={1_000_000} step={1} value={item.quantity || ''} disabled={saving} className={styles.field} onChange={event => updateItem(key, { quantity: Number(event.target.value) })} /></div><div><label htmlFor={`unit-${key}`} className={styles.label}>Presentación</label><select id={`unit-${key}`} value={unit} disabled={saving || !product} className={styles.field} onChange={event => updateItem(key, { unit: event.target.value })}><option value="">Elegí una opción</option>{product && !listProductUnits(product).includes(unit) && unit && <option value={unit} disabled>Por {unit} (no disponible)</option>}{product && listProductUnits(product).map(option => <option key={option} value={option}>Por {option}{option === 'caja' && product.units_per_box ? ` (${product.units_per_box} unidades)` : ''}</option>)}</select></div></div><label htmlFor={`notes-${key}`} className={`${styles.label} mt-3`}>Anotación <span className="font-normal">(opcional)</span></label><textarea id={`notes-${key}`} rows={2} maxLength={300} value={item.notes || ''} disabled={saving} className={styles.field} onChange={event => updateItem(key, { notes: event.target.value })} /></> : item.notes && <p className={`${styles.muted} mt-2`}>Nota: {item.notes}</p>}
             </article>
           })}
           {editing && <div className="mt-6 rounded-2xl border border-[#e3d7c4] bg-[#f8f3e9] p-4"><label htmlFor="saved-list-search" className={styles.label}>Agregar otro producto</label><input id="saved-list-search" type="search" value={search} maxLength={80} disabled={saving || draftItems.length >= 500} className={styles.field} placeholder="Buscá por nombre, al menos 2 letras" onChange={event => setSearch(event.target.value)} />{searchLoading && <p role="status" className={`${styles.muted} mt-2`}>Buscando productos…</p>}{searchError && <p role="alert" className="mt-2 text-sm text-[#9a5035]">{searchError}</p>}{!searchLoading && !searchError && search.trim().length >= 2 && !searchResults.length && <p className={`${styles.muted} mt-2`}>No hay resultados para esta búsqueda.</p>}{searchResults.length > 0 && <div className="mt-2 max-h-64 overflow-y-auto rounded-xl border border-[#e3d7c4] bg-white">{searchResults.map(product => <button key={product.id} disabled={saving} onClick={() => addProduct(product)} className={styles.searchResult}><Thumbnail src={product.image_url} /><span className="min-w-0 flex-1">{product.name}</span><span className="font-bold text-[#5c633e]">+ Agregar</span></button>)}</div>}</div>}
-          {editing && invalidDraft && <p className={`${styles.muted} mt-4`}>Para guardar, dejá al menos un artículo y revisá que cada uno tenga cantidad y presentación válidas.</p>}
+          {editing && invalidDraft && <p className={`${styles.muted} mt-4`}>Para guardar, dejá al menos un artículo y revisá que cada uno tenga cantidad, presentación y variante válidas.</p>}
           {!editing && <div className="mt-6 border-t border-[#e3d7c4] pt-4"><button onClick={() => requestDelete(activeList)} className={styles.dangerButton}>Borrar lista guardada</button></div>}
         </div>
         <footer className={styles.dialogFooter}>{editing ? <><button disabled={saving} onClick={() => { if (!dirty || window.confirm('¿Descartar los cambios de esta edición?')) { resetDraft(activeList); setEditing(false) } }} className={styles.secondaryButton}>Cancelar edición</button><button disabled={saving || !dirty || invalidDraft} onClick={() => void saveChanges()} className={styles.primaryButton}>{saving ? 'Guardando…' : 'Guardar cambios'}</button></> : <><button onClick={() => { resetDraft(activeList); setEditing(true); setNotice('') }} className={styles.secondaryButton}><Icon name="edit" className="h-4 w-4" />Editar lista</button>{!replaceCart && <button onClick={() => repeatList(activeList, products)} className={styles.primaryButton}><Icon name="cart" className="h-4 w-4" />Repetir pedido</button>}</>}</footer>

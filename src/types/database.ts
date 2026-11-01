@@ -1,3 +1,5 @@
+import type { ProductVariant } from '@/lib/product-variants'
+
 export interface Category {
   id: string
   name: string
@@ -10,6 +12,7 @@ export interface Product {
   name: string
   unit: string[]
   units_per_box?: number | null
+  variants?: ProductVariant[] | null
   category_id: string | null
   location: string | null
   status: 'pending' | 'complete'
