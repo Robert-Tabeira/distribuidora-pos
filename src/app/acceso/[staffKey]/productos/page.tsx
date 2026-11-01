@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useStaffRouter as useRouter } from '@/lib/staff-navigation'
 import { supabase } from '@/lib/supabase'
 import type { Employee, Product } from '@/types/database'
@@ -106,6 +106,8 @@ export default function ProductosPage() {
   const [editDescription, setEditDescription] = useState('')
   const [editProductCode, setEditProductCode] = useState('')
   const [showLocationDropdown, setShowLocationDropdown] = useState(false)
+  const locationSelectorRef = useRef<HTMLDivElement>(null)
+  const locationInputRef = useRef<HTMLInputElement>(null)
   const [saving, setSaving] = useState(false)
 
   // Imágenes
@@ -116,12 +118,34 @@ export default function ProductosPage() {
   // Categorías y ubicaciones
   const [categories, setCategories] = useState<any[]>([])
   const [locations, setLocations] = useState<string[]>([])
+  const locationSuggestions = editLocation.trim() ? locations.filter(loc =>
+    normalizeText(loc).includes(normalizeText(editLocation)) &&
+    normalizeText(loc) !== normalizeText(editLocation)
+  ) : []
+  const locationSuggestionsVisible = showLocationDropdown && locationSuggestions.length > 0
 
   // Modal de coincidencias
   const [similarProducts, setSimilarProducts] = useState<Product[]>([])
   const [showSimilarModal, setShowSimilarModal] = useState(false)
   const [selectedDuplicateId, setSelectedDuplicateId] = useState<string | null>(null)
   const [resolvingDuplicate, setResolvingDuplicate] = useState(false)
+
+  useEffect(() => {
+    if (!showLocationDropdown) return
+    // An option may take focus before its click fires. Close only on an
+    // actual interaction outside this field, never on an input blur timer.
+    const closeOutside = (event: Event) => {
+      if (event.target instanceof Node && locationSelectorRef.current && !locationSelectorRef.current.contains(event.target)) {
+        setShowLocationDropdown(false)
+      }
+    }
+    document.addEventListener('pointerdown', closeOutside, true)
+    document.addEventListener('focusin', closeOutside, true)
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside, true)
+      document.removeEventListener('focusin', closeOutside, true)
+    }
+  }, [showLocationDropdown])
 
   useEffect(() => {
     const stored = localStorage.getItem('employee')
@@ -254,6 +278,7 @@ export default function ProductosPage() {
 
   function closeEditModal() {
     setEditingProduct(null)
+    setShowLocationDropdown(false)
     setImagePreview(null)
   }
 
@@ -1079,11 +1104,20 @@ export default function ProductosPage() {
             )}
 
             {/* Ubicación */}
-            <div className="mb-4 relative">
-              <label className="block text-sm font-semibold text-text-muted mb-2">
+            <div ref={locationSelectorRef} className="mb-4 relative" onKeyDown={event => {
+              if (event.key === 'Escape' && showLocationDropdown) {
+                event.preventDefault()
+                event.stopPropagation()
+                locationInputRef.current?.focus()
+                setShowLocationDropdown(false)
+              }
+            }}>
+              <label htmlFor="product-location" className="block text-sm font-semibold text-text-muted mb-2">
                 Ubicación <span className="text-text-light">(opcional)</span>
               </label>
               <input
+                ref={locationInputRef}
+                id="product-location"
                 type="text"
                 value={editLocation}
                 onChange={(e) => {
@@ -1091,29 +1125,19 @@ export default function ProductosPage() {
                   setShowLocationDropdown(true)
                 }}
                 onFocus={() => setShowLocationDropdown(true)}
-                onBlur={() => {
-                  setTimeout(() => setShowLocationDropdown(false), 150)
-                }}
                 placeholder="Ej: Pasillo 3, Heladera"
                 className="input"
                 autoComplete="off"
               />
-              {showLocationDropdown && editLocation.trim() && locations.filter(loc => 
-                normalizeText(loc).includes(normalizeText(editLocation)) && 
-                normalizeText(loc) !== normalizeText(editLocation)
-              ).length > 0 && (
-                <div className="absolute left-0 right-0 top-full mt-1 bg-surface border border-border rounded-xl shadow-lg z-10 overflow-hidden">
-                  {locations
-                    .filter(loc => 
-                      normalizeText(loc).includes(normalizeText(editLocation)) && 
-                      normalizeText(loc) !== normalizeText(editLocation)
-                    )
-                    .map(loc => (
+              {locationSuggestionsVisible && (
+                <div role="group" aria-label="Ubicaciones sugeridas" className="absolute left-0 right-0 top-full mt-1 bg-surface border border-border rounded-xl shadow-lg z-10 max-h-48 overflow-y-auto">
+                  {locationSuggestions.map(loc => (
                       <button
                         key={loc}
                         type="button"
                         onClick={() => {
                           setEditLocation(loc)
+                          locationInputRef.current?.focus()
                           setShowLocationDropdown(false)
                         }}
                         className="w-full px-4 py-3 text-left hover:bg-surface-hover transition-colors flex items-center gap-2"
