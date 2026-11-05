@@ -75,7 +75,7 @@ export interface Order {
 export interface OrderItem {
   id: string
   order_id: string
-  product_id: string
+  product_id: string | null
   product_name: string
   quantity: number
   weight: number | null

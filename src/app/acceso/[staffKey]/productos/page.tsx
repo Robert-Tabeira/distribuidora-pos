@@ -17,6 +17,25 @@ function normalizeText(text: string) {
     .toLowerCase()
 }
 
+function productDeletionErrorMessage(error: unknown) {
+  const details = error as { code?: string; message?: string; details?: string }
+  if (details?.code === '23503') {
+    if (`${details.message || ''} ${details.details || ''}`.includes('order_items')) {
+      return 'Este producto figura en pedidos anteriores. Ejecutá la migración 202611050001_preserve_order_items_on_product_delete.sql en Supabase para poder eliminarlo conservando esos pedidos.'
+    }
+    return 'Este producto está asociado a otros registros y no se pudo eliminar. No se borró ningún dato. Revisá el detalle del error en la consola.'
+  }
+  return 'No se pudo eliminar el producto. Revisá la conexión y tus permisos e intentá nuevamente.'
+}
+
+async function deleteProductRecord(productId: string) {
+  // Pedir la fila eliminada evita anunciar éxito cuando una política impide
+  // borrar el registro sin devolver un error explícito.
+  const { data, error } = await supabase.from('products').delete().eq('id', productId).select('id').maybeSingle()
+  if (error) throw error
+  if (!data) throw new Error('product_delete_not_confirmed')
+}
+
 // Emojis organizados por categoría, estilo selector tipo WhatsApp
 const EMOJI_CATEGORIES: { label: string; emojis: string[] }[] = [
   {
@@ -576,12 +595,7 @@ export default function ProductosPage() {
 
       if (updateError) throw updateError
 
-      const { error: deleteError } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', editingProduct.id)
-
-      if (deleteError) throw deleteError
+      await deleteProductRecord(editingProduct.id)
 
       setProducts(products
         .filter(p => p.id !== editingProduct.id)
@@ -615,6 +629,10 @@ export default function ProductosPage() {
       if (navigator.vibrate) navigator.vibrate(50)
     } catch (error) {
       console.error('Error al reemplazar:', error)
+      if ((error as { code?: string })?.code === '23503') {
+        alert(productDeletionErrorMessage(error))
+        return
+      }
       alert(isMissingVariantsColumn(error as { code?: string; message?: string }) ? 'Primero ejecutá la migración 202611010001_product_variants.sql en Supabase para guardar variantes.' : isMissingBoxUnitsColumn(error as { code?: string; message?: string }) ? 'Primero ejecutá la migración 202610250001_product_units_per_box.sql en Supabase para guardar las unidades por caja.' : 'Error al reemplazar el producto')
     } finally {
       setResolvingDuplicate(false)
@@ -628,12 +646,7 @@ export default function ProductosPage() {
 
     setResolvingDuplicate(true)
     try {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', editingProduct.id)
-
-      if (error) throw error
+      await deleteProductRecord(editingProduct.id)
 
       setProducts(products.filter(p => p.id !== editingProduct.id))
 
@@ -643,29 +656,24 @@ export default function ProductosPage() {
       if (navigator.vibrate) navigator.vibrate(50)
     } catch (error) {
       console.error('Error al eliminar el duplicado:', error)
-      alert('Error al eliminar el producto')
+      alert(productDeletionErrorMessage(error))
     } finally {
       setResolvingDuplicate(false)
     }
   }
 
   async function deleteProduct(product: Product) {
-    if (!confirm(`¿Eliminar "${product.name}"?`)) return
+    if (!confirm(`¿Eliminar "${product.name}"? Se quitará del catálogo. Los pedidos anteriores conservarán sus artículos.`)) return
 
     try {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', product.id)
+      await deleteProductRecord(product.id)
 
-      if (error) throw error
-
-      setProducts(products.filter(p => p.id !== product.id))
+      setProducts(current => current.filter(p => p.id !== product.id))
       if (navigator.vibrate) navigator.vibrate(50)
 
     } catch (error) {
       console.error('Error al eliminar:', error)
-      alert('Error al eliminar el producto')
+      alert(productDeletionErrorMessage(error))
     }
   }
 
