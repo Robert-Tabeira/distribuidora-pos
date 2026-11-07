@@ -27,12 +27,13 @@ export interface ListCatalogProduct {
   units: string[]
   units_per_box: number | null
   allow_half_box?: boolean
+  allow_half_wheel?: boolean
   image_url: string | null
   variants?: ProductVariant[]
 }
 
 export function listProductUnits(product: ListCatalogProduct): string[] {
-  return customerSaleUnits({ unit: product.units, allow_half_box: product.allow_half_box })
+  return customerSaleUnits({ unit: product.units, allow_half_box: product.allow_half_box, allow_half_wheel: product.allow_half_wheel })
 }
 
 export function shoppingListDate(value: string): string {

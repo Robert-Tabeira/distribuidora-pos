@@ -5,7 +5,7 @@ import { useStaffRouter as useRouter } from '@/lib/staff-navigation'
 import { supabase } from '@/lib/supabase'
 import type { Employee, Product } from '@/types/database'
 import { uploadImageToSupabase } from '@/lib/image-upload-helper'
-import { MAX_UNITS_PER_BOX, isMissingBoxUnitsColumn, isMissingHalfBoxColumn } from '@/lib/product-packaging'
+import { MAX_UNITS_PER_BOX, isMissingBoxUnitsColumn, isMissingHalfBoxColumn, isMissingHalfWheelColumn } from '@/lib/product-packaging'
 import { productVariants, productVariantsError, isMissingVariantsColumn, MAX_PRODUCT_VARIANTS, MAX_VARIANT_NAME, type ProductVariant } from '@/lib/product-variants'
 
 // Normaliza texto para comparar sin importar tildes/diacríticos
@@ -104,7 +104,8 @@ export default function ProductosPage() {
     { id: 'd2', value: 'kg', label: 'Kilo', icon: '⚖️', order_position: 2 },
     { id: 'd3', value: 'litro', label: 'Litro', icon: '💧', order_position: 3 },
     { id: 'd4', value: 'caja', label: 'Caja', icon: '📦', order_position: 4 },
-    { id: 'd5', value: 'funda', label: 'Funda', icon: '🛍️', order_position: 5 }
+    { id: 'd5', value: 'funda', label: 'Funda', icon: '🛍️', order_position: 5 },
+    { id: 'd6', value: 'horma', label: 'Horma', icon: '🧀', order_position: 6 }
   ]
   const [unitTypes, setUnitTypes] = useState<{ id: string; value: string; label: string; icon: string; order_position: number }[]>(DEFAULT_UNIT_TYPES)
   const [showUnitTypesModal, setShowUnitTypesModal] = useState(false)
@@ -119,6 +120,7 @@ export default function ProductosPage() {
   const [editUnits, setEditUnits] = useState<string[]>(['unidad'])
   const [editUnitsPerBox, setEditUnitsPerBox] = useState('')
   const [editAllowHalfBox, setEditAllowHalfBox] = useState(false)
+  const [editAllowHalfWheel, setEditAllowHalfWheel] = useState(false)
   const [editVariants, setEditVariants] = useState<ProductVariant[]>([])
   const variantsError = productVariantsError(editVariants)
   const invalidBoxUnits = editUnits.includes('caja') && editUnitsPerBox.trim() !== '' && (!/^\d+$/.test(editUnitsPerBox.trim()) || Number(editUnitsPerBox) < 1 || Number(editUnitsPerBox) > MAX_UNITS_PER_BOX)
@@ -291,6 +293,7 @@ export default function ProductosPage() {
     setEditUnits(units.length > 0 ? units : ['unidad'])
     setEditUnitsPerBox(product.units_per_box == null ? '' : String(product.units_per_box))
     setEditAllowHalfBox(product.allow_half_box === true)
+    setEditAllowHalfWheel(product.allow_half_wheel === true)
     setEditCategory(product.category_id)
     setEditSubcategory((product as any).subcategory_id || null)
     setEditLocation(product.location || '')
@@ -518,6 +521,7 @@ export default function ProductosPage() {
           name: editName.trim(),
           unit: editUnits,
           allow_half_box: editUnits.includes('caja') && editAllowHalfBox,
+          allow_half_wheel: editUnits.includes('horma') && editAllowHalfWheel,
           ...(editedUnitsPerBox !== null || editingProduct.units_per_box !== undefined ? { units_per_box: editedUnitsPerBox } : {}),
           category_id: editCategory,
           subcategory_id: editSubcategory,
@@ -539,6 +543,7 @@ export default function ProductosPage() {
               name: editName.trim(), 
               unit: editUnits, 
               allow_half_box: editUnits.includes('caja') && editAllowHalfBox,
+              allow_half_wheel: editUnits.includes('horma') && editAllowHalfWheel,
               ...(editedUnitsPerBox !== null || editingProduct.units_per_box !== undefined ? { units_per_box: editedUnitsPerBox } : {}),
               category_id: editCategory, 
               subcategory_id: editSubcategory,
@@ -562,6 +567,10 @@ export default function ProductosPage() {
 
     } catch (error) {
       console.error('Error al guardar:', error)
+      if (isMissingHalfWheelColumn(error as { code?: string; message?: string })) {
+        alert('Primero ejecutá la migración 202611060002_product_half_wheel.sql en Supabase para guardar la opción de media horma.')
+        return
+      }
       if (isMissingHalfBoxColumn(error as { code?: string; message?: string })) {
         alert('Primero ejecutá la migración 202611060001_product_half_box.sql en Supabase para guardar la opción de media caja.')
         return
@@ -590,6 +599,7 @@ export default function ProductosPage() {
           name: editName.trim(),
           unit: editUnits,
           allow_half_box: editUnits.includes('caja') && editAllowHalfBox,
+          allow_half_wheel: editUnits.includes('horma') && editAllowHalfWheel,
           ...(editedUnitsPerBox !== null || oldProduct.units_per_box !== undefined ? { units_per_box: editedUnitsPerBox } : {}),
           category_id: editCategory,
           subcategory_id: editSubcategory,
@@ -615,6 +625,7 @@ export default function ProductosPage() {
                 name: editName.trim(),
                 unit: editUnits,
                 allow_half_box: editUnits.includes('caja') && editAllowHalfBox,
+                allow_half_wheel: editUnits.includes('horma') && editAllowHalfWheel,
                 ...(editedUnitsPerBox !== null || oldProduct.units_per_box !== undefined ? { units_per_box: editedUnitsPerBox } : {}),
                 category_id: editCategory,
                 subcategory_id: editSubcategory,
@@ -639,6 +650,10 @@ export default function ProductosPage() {
       if (navigator.vibrate) navigator.vibrate(50)
     } catch (error) {
       console.error('Error al reemplazar:', error)
+      if (isMissingHalfWheelColumn(error as { code?: string; message?: string })) {
+        alert('Primero ejecutá la migración 202611060002_product_half_wheel.sql en Supabase para guardar la opción de media horma.')
+        return
+      }
       if (isMissingHalfBoxColumn(error as { code?: string; message?: string })) {
         alert('Primero ejecutá la migración 202611060001_product_half_box.sql en Supabase para guardar la opción de media caja.')
         return
@@ -1115,6 +1130,14 @@ export default function ProductosPage() {
               <label htmlFor="product-units-per-box" className="mb-2 block text-sm font-semibold text-text-muted">Unidades por caja cerrada <span className="font-normal">(opcional)</span></label>
               <input id="product-units-per-box" type="number" min={1} max={MAX_UNITS_PER_BOX} step={1} inputMode="numeric" value={editUnitsPerBox} onChange={event => setEditUnitsPerBox(event.target.value)} aria-invalid={invalidBoxUnits} aria-describedby="product-units-per-box-help" placeholder="Ej.: 12" className="input" />
               <p id="product-units-per-box-help" className={`mt-2 text-xs leading-relaxed ${invalidBoxUnits ? 'text-red-600' : 'text-text-muted'}`}>{invalidBoxUnits ? 'Ingresá un número entero mayor a cero.' : 'Cantidad de unidades que contiene una caja completa. Se mostrará en el catálogo y en los pedidos por caja. Dejalo vacío si todavía no tenés el dato.'}</p>
+            </div>}
+
+            {editUnits.includes('horma') && <div className="mb-4 rounded-xl border border-border bg-gray-50 p-4">
+              <label className="flex items-start gap-3 text-sm font-semibold">
+                <input type="checkbox" checked={editAllowHalfWheel} onChange={event => setEditAllowHalfWheel(event.target.checked)} className="mt-1" aria-describedby="product-half-wheel-help" />
+                Permitir pedidos de media horma
+              </label>
+              <p id="product-half-wheel-help" className="mt-2 text-xs leading-relaxed text-text-muted">Al elegir «Por horma», el cliente podrá seleccionar «1 horma» o «1/2 horma». Habilita esta opción únicamente para este producto.</p>
             </div>}
 
             {/* Categoría */}

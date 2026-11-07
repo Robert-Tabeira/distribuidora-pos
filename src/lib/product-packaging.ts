@@ -1,20 +1,24 @@
 export const MAX_UNITS_PER_BOX = 2147483647
 
-type BoxProduct = { unit: string | string[]; units_per_box?: number | null; allow_half_box?: boolean }
+type BoxProduct = { unit: string | string[]; units_per_box?: number | null; allow_half_box?: boolean; allow_half_wheel?: boolean }
 
 export function customerSaleUnits(product: BoxProduct): string[] {
   const units = Array.isArray(product.unit) ? product.unit : [product.unit]
-  return [...new Set(['unidad', ...(units.includes('caja') ? ['caja', ...(product.allow_half_box === true ? ['media_caja'] : [])] : []), ...(units.includes('funda') ? ['funda'] : [])])]
+  return [...new Set(['unidad', ...(units.includes('caja') ? ['caja', ...(product.allow_half_box === true ? ['media_caja'] : [])] : []), ...(units.includes('horma') ? ['horma', ...(product.allow_half_wheel === true ? ['media_horma'] : [])] : []), ...(units.includes('funda') ? ['funda'] : [])])]
 }
 
 export function saleUnitLabel(unit: string): string {
   if (unit === 'media_caja') return '1/2 caja'
   if (unit === 'caja') return '1 caja'
+  if (unit === 'media_horma') return '1/2 horma'
+  if (unit === 'horma') return '1 horma'
   return `Por ${unit}`
 }
 
 export function saleQuantityLabel(unit: string, quantity: number): string {
   if (unit === 'media_caja') return quantity === 1 ? 'media caja' : 'medias cajas'
+  if (unit === 'media_horma') return quantity === 1 ? 'media horma' : 'medias hormas'
+  if (unit === 'horma') return quantity === 1 ? 'horma' : 'hormas'
   if (unit === 'unidad') return quantity === 1 ? 'unidad' : 'unidades'
   if (unit === 'caja') return quantity === 1 ? 'caja' : 'cajas'
   if (unit === 'funda') return quantity === 1 ? 'funda' : 'fundas'
@@ -50,4 +54,8 @@ export function isMissingBoxUnitsColumn(error: { code?: string; message?: string
 
 export function isMissingHalfBoxColumn(error: { code?: string; message?: string } | null): boolean {
   return Boolean(error && ['42703', 'PGRST204'].includes(error.code || '') && error.message?.includes('allow_half_box'))
+}
+
+export function isMissingHalfWheelColumn(error: { code?: string; message?: string } | null): boolean {
+  return Boolean(error && ['42703', 'PGRST204'].includes(error.code || '') && error.message?.includes('allow_half_wheel'))
 }
