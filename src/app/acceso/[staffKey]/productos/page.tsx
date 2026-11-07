@@ -5,7 +5,7 @@ import { useStaffRouter as useRouter } from '@/lib/staff-navigation'
 import { supabase } from '@/lib/supabase'
 import type { Employee, Product } from '@/types/database'
 import { uploadImageToSupabase } from '@/lib/image-upload-helper'
-import { MAX_UNITS_PER_BOX, isMissingBoxUnitsColumn } from '@/lib/product-packaging'
+import { MAX_UNITS_PER_BOX, isMissingBoxUnitsColumn, isMissingHalfBoxColumn } from '@/lib/product-packaging'
 import { productVariants, productVariantsError, isMissingVariantsColumn, MAX_PRODUCT_VARIANTS, MAX_VARIANT_NAME, type ProductVariant } from '@/lib/product-variants'
 
 // Normaliza texto para comparar sin importar tildes/diacríticos
@@ -118,6 +118,7 @@ export default function ProductosPage() {
   const [editName, setEditName] = useState('')
   const [editUnits, setEditUnits] = useState<string[]>(['unidad'])
   const [editUnitsPerBox, setEditUnitsPerBox] = useState('')
+  const [editAllowHalfBox, setEditAllowHalfBox] = useState(false)
   const [editVariants, setEditVariants] = useState<ProductVariant[]>([])
   const variantsError = productVariantsError(editVariants)
   const invalidBoxUnits = editUnits.includes('caja') && editUnitsPerBox.trim() !== '' && (!/^\d+$/.test(editUnitsPerBox.trim()) || Number(editUnitsPerBox) < 1 || Number(editUnitsPerBox) > MAX_UNITS_PER_BOX)
@@ -289,6 +290,7 @@ export default function ProductosPage() {
     const units = Array.isArray(product.unit) ? product.unit : [product.unit]
     setEditUnits(units.length > 0 ? units : ['unidad'])
     setEditUnitsPerBox(product.units_per_box == null ? '' : String(product.units_per_box))
+    setEditAllowHalfBox(product.allow_half_box === true)
     setEditCategory(product.category_id)
     setEditSubcategory((product as any).subcategory_id || null)
     setEditLocation(product.location || '')
@@ -515,6 +517,7 @@ export default function ProductosPage() {
         .update({
           name: editName.trim(),
           unit: editUnits,
+          allow_half_box: editUnits.includes('caja') && editAllowHalfBox,
           ...(editedUnitsPerBox !== null || editingProduct.units_per_box !== undefined ? { units_per_box: editedUnitsPerBox } : {}),
           category_id: editCategory,
           subcategory_id: editSubcategory,
@@ -535,6 +538,7 @@ export default function ProductosPage() {
               ...p, 
               name: editName.trim(), 
               unit: editUnits, 
+              allow_half_box: editUnits.includes('caja') && editAllowHalfBox,
               ...(editedUnitsPerBox !== null || editingProduct.units_per_box !== undefined ? { units_per_box: editedUnitsPerBox } : {}),
               category_id: editCategory, 
               subcategory_id: editSubcategory,
@@ -558,6 +562,10 @@ export default function ProductosPage() {
 
     } catch (error) {
       console.error('Error al guardar:', error)
+      if (isMissingHalfBoxColumn(error as { code?: string; message?: string })) {
+        alert('Primero ejecutá la migración 202611060001_product_half_box.sql en Supabase para guardar la opción de media caja.')
+        return
+      }
       alert(isMissingVariantsColumn(error as { code?: string; message?: string }) ? 'Primero ejecutá la migración 202611010001_product_variants.sql en Supabase para guardar variantes.' : isMissingBoxUnitsColumn(error as { code?: string; message?: string }) ? 'Primero ejecutá la migración 202610250001_product_units_per_box.sql en Supabase para guardar las unidades por caja.' : 'Error al guardar el producto')
     } finally {
       setSaving(false)
@@ -581,6 +589,7 @@ export default function ProductosPage() {
         .update({
           name: editName.trim(),
           unit: editUnits,
+          allow_half_box: editUnits.includes('caja') && editAllowHalfBox,
           ...(editedUnitsPerBox !== null || oldProduct.units_per_box !== undefined ? { units_per_box: editedUnitsPerBox } : {}),
           category_id: editCategory,
           subcategory_id: editSubcategory,
@@ -605,6 +614,7 @@ export default function ProductosPage() {
                 ...p,
                 name: editName.trim(),
                 unit: editUnits,
+                allow_half_box: editUnits.includes('caja') && editAllowHalfBox,
                 ...(editedUnitsPerBox !== null || oldProduct.units_per_box !== undefined ? { units_per_box: editedUnitsPerBox } : {}),
                 category_id: editCategory,
                 subcategory_id: editSubcategory,
@@ -629,6 +639,10 @@ export default function ProductosPage() {
       if (navigator.vibrate) navigator.vibrate(50)
     } catch (error) {
       console.error('Error al reemplazar:', error)
+      if (isMissingHalfBoxColumn(error as { code?: string; message?: string })) {
+        alert('Primero ejecutá la migración 202611060001_product_half_box.sql en Supabase para guardar la opción de media caja.')
+        return
+      }
       if ((error as { code?: string })?.code === '23503') {
         alert(productDeletionErrorMessage(error))
         return
@@ -1093,6 +1107,11 @@ export default function ProductosPage() {
             </div>
 
             {editUnits.includes('caja') && <div className="mb-4 rounded-xl border border-border bg-gray-50 p-4">
+              <label className="mb-2 flex items-start gap-3 text-sm font-semibold">
+                <input type="checkbox" checked={editAllowHalfBox} onChange={event => setEditAllowHalfBox(event.target.checked)} className="mt-1" aria-describedby="product-half-box-help" />
+                Permitir pedidos de media caja
+              </label>
+              <p id="product-half-box-help" className="mb-4 text-xs leading-relaxed text-text-muted">Agrega la opción «Media caja» únicamente para este producto. El cliente debe elegirla al armar su pedido. La cantidad 1 equivale a media caja y la cantidad 2 a dos medias cajas.</p>
               <label htmlFor="product-units-per-box" className="mb-2 block text-sm font-semibold text-text-muted">Unidades por caja cerrada <span className="font-normal">(opcional)</span></label>
               <input id="product-units-per-box" type="number" min={1} max={MAX_UNITS_PER_BOX} step={1} inputMode="numeric" value={editUnitsPerBox} onChange={event => setEditUnitsPerBox(event.target.value)} aria-invalid={invalidBoxUnits} aria-describedby="product-units-per-box-help" placeholder="Ej.: 12" className="input" />
               <p id="product-units-per-box-help" className={`mt-2 text-xs leading-relaxed ${invalidBoxUnits ? 'text-red-600' : 'text-text-muted'}`}>{invalidBoxUnits ? 'Ingresá un número entero mayor a cero.' : 'Cantidad de unidades que contiene una caja completa. Se mostrará en el catálogo y en los pedidos por caja. Dejalo vacío si todavía no tenés el dato.'}</p>

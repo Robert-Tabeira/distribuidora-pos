@@ -12,6 +12,7 @@ export interface Product {
   name: string
   unit: string[]
   units_per_box?: number | null
+  allow_half_box?: boolean
   variants?: ProductVariant[] | null
   category_id: string | null
   location: string | null

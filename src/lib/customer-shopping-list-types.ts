@@ -1,4 +1,5 @@
 import type { ProductVariant } from '@/lib/product-variants'
+import { customerSaleUnits } from '@/lib/product-packaging'
 
 export interface ShoppingListItem {
   product_id: string
@@ -25,12 +26,13 @@ export interface ListCatalogProduct {
   name: string
   units: string[]
   units_per_box: number | null
+  allow_half_box?: boolean
   image_url: string | null
   variants?: ProductVariant[]
 }
 
 export function listProductUnits(product: ListCatalogProduct): string[] {
-  return [...new Set(['unidad', ...product.units.filter(unit => unit === 'caja' || unit === 'funda')])]
+  return customerSaleUnits({ unit: product.units, allow_half_box: product.allow_half_box })
 }
 
 export function shoppingListDate(value: string): string {
