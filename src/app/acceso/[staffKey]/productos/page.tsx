@@ -116,6 +116,7 @@ export default function ProductosPage() {
   
   // Modal de edición
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [creatingProduct, setCreatingProduct] = useState(false)
   const [editName, setEditName] = useState('')
   const [editUnits, setEditUnits] = useState<string[]>(['unidad'])
   const [editUnitsPerBox, setEditUnitsPerBox] = useState('')
@@ -286,6 +287,7 @@ export default function ProductosPage() {
   const filteredCompleteProducts = sortProducts(completeProducts.filter(matchesSearch))
 
   function openEditModal(product: Product) {
+    setCreatingProduct(false)
     setEditingProduct(product)
     setEditName(product.name)
     setEditVariants(productVariants(product).map(variant => ({ ...variant })))
@@ -304,8 +306,31 @@ export default function ProductosPage() {
     setImagePreview(null)
   }
 
+  function openNewProduct() {
+    setEditingProduct(null)
+    setCreatingProduct(true)
+    setEditName('')
+    setEditUnits(['unidad'])
+    setEditUnitsPerBox('')
+    setEditAllowHalfBox(false)
+    setEditAllowHalfWheel(false)
+    setEditVariants([])
+    setEditCategory(null)
+    setEditSubcategory(null)
+    setEditLocation('')
+    setEditDescription('')
+    setEditProductCode(generateProductCode(null))
+    setEditGallery([])
+    setShowLocationDropdown(false)
+    setImagePreview(null)
+    setShowSimilarModal(false)
+    setSimilarProducts([])
+    setSelectedDuplicateId(null)
+  }
+
   function closeEditModal() {
     setEditingProduct(null)
+    setCreatingProduct(false)
     setShowLocationDropdown(false)
     setImagePreview(null)
   }
@@ -489,11 +514,11 @@ export default function ProductosPage() {
   }
 
   async function saveProduct() {
-    if (!editingProduct || !editName.trim() || editUnits.length === 0) return
+    if ((!editingProduct && !creatingProduct) || saving || resolvingDuplicate || !editName.trim() || editUnits.length === 0) return
     if (invalidBoxUnits) { alert('Las unidades por caja deben ser un número entero mayor a cero.'); return }
     if (variantsError) { alert(variantsError); return }
 
-    const similar = findSimilarProducts(editName.trim(), editingProduct.id)
+    const similar = findSimilarProducts(editName.trim(), editingProduct?.id || '')
     
     if (similar.length > 0) {
       setSimilarProducts(similar)
@@ -506,7 +531,7 @@ export default function ProductosPage() {
   }
 
   async function performSave() {
-    if (!editingProduct || !editName.trim() || editUnits.length === 0) return
+    if ((!editingProduct && !creatingProduct) || saving || resolvingDuplicate || !editName.trim() || editUnits.length === 0) return
     if (invalidBoxUnits) { alert('Las unidades por caja deben ser un número entero mayor a cero.'); return }
     if (variantsError) { alert(variantsError); return }
 
@@ -515,47 +540,38 @@ export default function ProductosPage() {
     try {
       const newLocation = editLocation.trim() || null
       
-      const { error } = await supabase
-        .from('products')
-        .update({
-          name: editName.trim(),
-          unit: editUnits,
-          allow_half_box: editUnits.includes('caja') && editAllowHalfBox,
-          allow_half_wheel: editUnits.includes('horma') && editAllowHalfWheel,
-          ...(editedUnitsPerBox !== null || editingProduct.units_per_box !== undefined ? { units_per_box: editedUnitsPerBox } : {}),
-          category_id: editCategory,
-          subcategory_id: editSubcategory,
-          location: newLocation,
-          description: editDescription.trim() || null,
-          product_code: editProductCode.trim() || null,
-          gallery: editGallery,
-          variants: editVariants.map(variant => ({ ...variant, name: variant.name.trim() })),
-          status: 'complete',
-        })
-        .eq('id', editingProduct.id)
+      const values = {
+        name: editName.trim(),
+        unit: editUnits,
+        allow_half_box: editUnits.includes('caja') && editAllowHalfBox,
+        allow_half_wheel: editUnits.includes('horma') && editAllowHalfWheel,
+        ...(editedUnitsPerBox !== null || editingProduct?.units_per_box !== undefined ? { units_per_box: editedUnitsPerBox } : {}),
+        category_id: editCategory,
+        subcategory_id: editSubcategory,
+        location: newLocation,
+        description: editDescription.trim() || null,
+        product_code: editProductCode.trim() || null,
+        gallery: editGallery,
+        variants: editVariants.map(variant => ({ ...variant, name: variant.name.trim() })),
+        status: 'complete' as const,
+      }
+      const query = creatingProduct
+        ? supabase.from('products').insert({ ...values, visible_in_catalog: true })
+        : supabase.from('products').update(values).eq('id', editingProduct!.id)
+      const { data, error } = await query.select('*').single()
 
       if (error) throw error
+      if (!data) throw new Error('product_save_not_confirmed')
 
-      setProducts(products.map(p => 
-        p.id === editingProduct.id 
-          ? { 
-              ...p, 
-              name: editName.trim(), 
-              unit: editUnits, 
-              allow_half_box: editUnits.includes('caja') && editAllowHalfBox,
-              allow_half_wheel: editUnits.includes('horma') && editAllowHalfWheel,
-              ...(editedUnitsPerBox !== null || editingProduct.units_per_box !== undefined ? { units_per_box: editedUnitsPerBox } : {}),
-              category_id: editCategory, 
-              subcategory_id: editSubcategory,
-              location: newLocation,
-              description: editDescription.trim() || null,
-              product_code: editProductCode.trim() || null,
-              gallery: editGallery,
-              variants: editVariants.map(variant => ({ ...variant, name: variant.name.trim() })),
-              status: 'complete' as const
-            }
-          : p
-      ))
+      const savedProduct = data as Product
+      setProducts(current => creatingProduct
+        ? [savedProduct, ...current]
+        : current.map(product => product.id === savedProduct.id ? savedProduct : product))
+      if (creatingProduct) {
+        setActiveTab('complete')
+        setSearchQuery('')
+        setSortOption('updated_desc')
+      }
 
       if (newLocation && !locations.includes(newLocation)) {
         setLocations([...locations, newLocation].sort())
@@ -585,7 +601,7 @@ export default function ProductosPage() {
   // producto pendiente que está editando. Actualiza el producto viejo con
   // los datos nuevos, y borra el pendiente (ya no hace falta, era el duplicado).
   async function replaceOldWithNew(oldProduct: Product) {
-    if (!editingProduct || !editName.trim() || editUnits.length === 0) return
+    if (!editingProduct || saving || resolvingDuplicate || !editName.trim() || editUnits.length === 0) return
     if (invalidBoxUnits) { alert('Las unidades por caja deben ser un número entero mayor a cero.'); return }
     if (variantsError) { alert(variantsError); return }
 
@@ -671,6 +687,13 @@ export default function ProductosPage() {
   // El usuario marcó que hay un duplicado, pero decide quedarse con el
   // producto viejo tal cual está y descartar el pendiente que estaba editando.
   async function discardNewKeepOld() {
+    if (saving || resolvingDuplicate) return
+    if (creatingProduct) {
+      closeEditModal()
+      setShowSimilarModal(false)
+      setSelectedDuplicateId(null)
+      return
+    }
     if (!editingProduct) return
 
     setResolvingDuplicate(true)
@@ -761,6 +784,13 @@ export default function ProductosPage() {
         
         <div className="h-6 bg-bg rounded-t-[2rem]"></div>
       </header>
+
+      <div className="px-4 -mt-2 mb-5 flex justify-end">
+        <button type="button" onClick={openNewProduct} className="btn btn-primary w-full gap-2 sm:w-auto">
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v14m-7-7h14" /></svg>
+          Nuevo producto
+        </button>
+      </div>
 
       {/* Tabs */}
       <div className="px-4 -mt-2 mb-4">
@@ -1015,12 +1045,13 @@ export default function ProductosPage() {
       </div>
 
       {/* Modal de edición */}
-      {editingProduct && !showSimilarModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50" onClick={closeEditModal}>
+      {(editingProduct || creatingProduct) && !showSimilarModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50" onClick={() => { if (!saving && !uploadingImage) closeEditModal() }}>
           <div className="bg-surface w-full max-w-lg rounded-t-3xl p-6 animate-slide-up max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
             <div className="w-12 h-1.5 bg-border rounded-full mx-auto mb-6" />
             
-            <h3 className="font-bold text-xl mb-6">Editar producto</h3>
+            <h3 className="font-bold text-xl mb-6">{creatingProduct ? 'Nuevo producto' : 'Editar producto'}</h3>
+            {creatingProduct && <p className="-mt-3 mb-5 text-sm text-text-muted">Completá la ficha para agregarlo al catálogo. Después de crearlo, podés cargar sus fotos desde el botón de imágenes.</p>}
             
             {/* Nombre */}
             <div className="mb-4">
@@ -1229,15 +1260,15 @@ export default function ProductosPage() {
             </div>
 
             <div className="flex gap-3">
-              <button onClick={closeEditModal} className="btn btn-outline flex-1">
+              <button onClick={closeEditModal} disabled={saving || uploadingImage} className="btn btn-outline flex-1">
                 Cancelar
               </button>
               <button 
                 onClick={saveProduct} 
-                disabled={saving || !editName.trim() || invalidBoxUnits || Boolean(variantsError)}
+                disabled={saving || uploadingImage || !editName.trim() || editUnits.length === 0 || invalidBoxUnits || Boolean(variantsError)}
                 className="btn btn-primary flex-1"
               >
-                {saving ? 'Guardando...' : 'Guardar'}
+                {saving ? 'Guardando...' : creatingProduct ? 'Crear producto' : 'Guardar'}
               </button>
             </div>
           </div>
@@ -1269,6 +1300,7 @@ export default function ProductosPage() {
                 return (
                   <button
                     key={product.id}
+                    disabled={saving || resolvingDuplicate}
                     onClick={() => setSelectedDuplicateId(selected ? null : product.id)}
                     className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
                       selected ? 'border-primary bg-primary/5' : 'border-border bg-bg'
@@ -1305,21 +1337,29 @@ export default function ProductosPage() {
                 <button
                   onClick={() => {
                     const old = similarProducts.find(p => p.id === selectedDuplicateId)
-                    if (old) replaceOldWithNew(old)
+                    if (!old) return
+                    if (creatingProduct) {
+                      setShowSimilarModal(false)
+                      setSelectedDuplicateId(null)
+                      openEditModal(old)
+                    } else {
+                      void replaceOldWithNew(old)
+                    }
                   }}
-                  disabled={resolvingDuplicate}
+                  disabled={saving || resolvingDuplicate}
                   className="btn btn-primary w-full"
                 >
-                  {resolvingDuplicate ? 'Aplicando...' : '🔄 Reemplazar el anterior con este'}
+                  {resolvingDuplicate ? 'Aplicando...' : creatingProduct ? 'Editar el producto existente' : '🔄 Reemplazar el anterior con este'}
                 </button>
                 <button
                   onClick={discardNewKeepOld}
-                  disabled={resolvingDuplicate}
+                  disabled={saving || resolvingDuplicate}
                   className="btn btn-outline w-full !text-red-600 !border-red-200 hover:!bg-red-50"
                 >
-                  {resolvingDuplicate ? 'Eliminando...' : '🗑️ Eliminar este nuevo (mantener el anterior)'}
+                  {resolvingDuplicate ? 'Eliminando...' : creatingProduct ? 'Descartar el alta y mantener el existente' : '🗑️ Eliminar este nuevo (mantener el anterior)'}
                 </button>
                 <button
+                  disabled={saving || resolvingDuplicate}
                   onClick={() => setSelectedDuplicateId(null)}
                   className="text-sm text-text-muted text-center w-full py-2"
                 >
@@ -1329,12 +1369,13 @@ export default function ProductosPage() {
             ) : (
               <button 
                 onClick={performSave}
-                disabled={saving}
+                disabled={saving || resolvingDuplicate}
                 className="btn btn-primary w-full"
               >
                 {saving ? 'Guardando...' : 'Ninguno es igual, continuar guardando'}
               </button>
             )}
+            <button type="button" disabled={saving || resolvingDuplicate} onClick={() => { setShowSimilarModal(false); setSelectedDuplicateId(null) }} className="mt-3 w-full py-2 text-sm font-semibold text-text-muted">Volver al formulario</button>
           </div>
         </div>
       )}
