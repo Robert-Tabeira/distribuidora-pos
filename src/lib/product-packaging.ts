@@ -8,7 +8,9 @@ export function customerSaleUnits(product: BoxProduct): string[] {
 }
 
 export function saleUnitLabel(unit: string): string {
-  return unit === 'media_caja' ? 'Media caja' : `Por ${unit}`
+  if (unit === 'media_caja') return '1/2 caja'
+  if (unit === 'caja') return '1 caja'
+  return `Por ${unit}`
 }
 
 export function saleQuantityLabel(unit: string, quantity: number): string {

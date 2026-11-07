@@ -14,7 +14,9 @@ Las variantes del producto comparten esta autorización. No se crea una presenta
 
 ## Catálogo, pedidos y listas
 
-El catálogo ofrece Media caja únicamente si el producto admite Caja y tiene la casilla habilitada. No se preselecciona ninguna presentación. Media caja se conserva como `media_caja`, separada de `caja`; no se usan cantidades decimales ni se convierte una selección en otra automáticamente.
+En la ficha del catálogo, el cliente selecciona primero «Por caja». Debajo se despliegan las opciones «1 caja» y «1/2 caja»; esta última aparece únicamente si el producto tiene la casilla habilitada. Es obligatorio elegir una de ellas antes de agregar al pedido. No se preselecciona ninguna presentación y cambiar a Por unidad o Por funda descarta la elección anterior de caja. Volver a pulsar Por caja cuando ya está seleccionado conserva la elección.
+
+El carrito, sus selectores de reparación y las listas guardadas también usan las etiquetas «1 caja» y «1/2 caja». Media caja se conserva internamente como `media_caja`, separada de `caja`; no se usan cantidades decimales ni se convierte una selección en otra automáticamente. Este ajuste de interfaz no requiere otra migración ni altera los pedidos o listas existentes.
 
 Una cantidad de 1 corresponde a media caja; una cantidad de 2 corresponde a dos medias cajas. Para una caja de 12 unidades, el detalle, el carrito y las listas muestran 6 unidades por media caja, y el pedido de dos medias cajas informa 12 unidades en total. Si no hay cantidad por caja, se muestra la presentación sin inventar el contenido. Si la caja contiene un número impar, se indica la cantidad de la caja completa sin deducir un fraccionamiento de sus unidades.
 
@@ -26,7 +28,7 @@ Al deshabilitar la casilla y volver a cargar el catálogo o la lista, una media 
 
 1. Aplicar la migración. Comprobar que un producto existente no ofrece media caja.
 2. Habilitar Caja y Media caja, indicar 12 unidades, guardar y reabrir la ficha.
-3. En móvil y escritorio, intentar agregar sin elegir presentación y comprobar el aviso. Seleccionar Media caja: debe mostrar 6 unidades.
+3. En móvil y escritorio, intentar agregar sin elegir presentación y comprobar el aviso. Seleccionar Por caja y volver a intentar agregar sin elegir una opción: debe pedir 1 caja o 1/2 caja y enfocar el selector. Elegir 1/2 caja: debe mostrar 6 unidades. Comprobar también 1 caja, cambiar a unidad y volver a caja, y abrir otro producto para verificar que no herede una elección anterior.
 4. Agregar una caja completa y una media caja del mismo producto. Comprobar que son líneas distintas y que aumentar la media caja a cantidad 2 informa 12 unidades.
 5. Revisar el texto de WhatsApp sin enviarlo. Guardar la lista desde una cuenta aprobada, editarla y repetirla.
 6. Deshabilitar Media caja, recargar y comprobar que no puede enviarse o repetirse la selección anterior sin revisarla. Probar también un producto sin cantidad por caja y otro con cantidad impar.
