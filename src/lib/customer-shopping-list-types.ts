@@ -10,6 +10,7 @@ export interface ShoppingListItem {
   variant_id?: string | null
   variant_name?: string
   units_per_box?: number | null
+  units_per_bag?: number | null
   image_url?: string | null
 }
 
@@ -26,6 +27,7 @@ export interface ListCatalogProduct {
   name: string
   units: string[]
   units_per_box: number | null
+  units_per_bag?: number | null
   allow_half_box?: boolean
   allow_half_wheel?: boolean
   image_url: string | null

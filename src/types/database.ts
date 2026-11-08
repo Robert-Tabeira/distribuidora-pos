@@ -12,6 +12,7 @@ export interface Product {
   name: string
   unit: string[]
   units_per_box?: number | null
+  units_per_bag?: number | null
   allow_half_box?: boolean
   allow_half_wheel?: boolean
   variants?: ProductVariant[] | null

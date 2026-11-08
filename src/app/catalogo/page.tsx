@@ -11,13 +11,13 @@ import { SiteImage } from '@/components/site-image'
 import styles from './catalog.module.css'
 import { normalizeSearchTerm, trackSiteEvent } from '@/lib/site-analytics'
 import { SITE_ANALYTICS_ENABLED } from '@/lib/analytics-config'
-import { getUnitsPerBox, describeBoxContents, isMissingBoxUnitsColumn, isMissingHalfBoxColumn, isMissingHalfWheelColumn, customerSaleUnits, saleUnitLabel, saleQuantityLabel } from '@/lib/product-packaging'
+import { getUnitsPerBox, getUnitsPerBag, describePackageContents, isMissingBoxUnitsColumn, isMissingBagUnitsColumn, isMissingHalfBoxColumn, isMissingHalfWheelColumn, customerSaleUnits, saleUnitLabel, saleQuantityLabel } from '@/lib/product-packaging'
 import { activeProductVariants, productVariants, validProductVariant, productVariantName, isMissingVariantsColumn } from '@/lib/product-variants'
 
 type CartEntry = { itemId: string; productId: string; quantity: number; unit: string; notes: string; variantId: string | null; variantName: string }
 type InquiryEntry = { productId: string; variantId: string | null; variantName: string }
 
-interface ProductWithDiscount extends Pick<Product, 'id' | 'name' | 'unit' | 'units_per_box' | 'allow_half_box' | 'allow_half_wheel' | 'variants' | 'category_id' | 'created_at' | 'gallery' | 'description' | 'product_code'> {
+interface ProductWithDiscount extends Pick<Product, 'id' | 'name' | 'unit' | 'units_per_box' | 'units_per_bag' | 'allow_half_box' | 'allow_half_wheel' | 'variants' | 'category_id' | 'created_at' | 'gallery' | 'description' | 'product_code'> {
   discount?: Discount
   subcategory_id?: string | null
 }
@@ -244,14 +244,14 @@ export default function CatalogPage() {
 
   async function loadData() {
     try {
-      let fields = 'id,name,unit,units_per_box,allow_half_box,allow_half_wheel,variants,category_id,subcategory_id,status,created_at,product_code,gallery,description'
+      let fields = 'id,name,unit,units_per_box,units_per_bag,allow_half_box,allow_half_wheel,variants,category_id,subcategory_id,status,created_at,product_code,gallery,description'
       const readProducts = () => supabase.from('products').select(fields).eq('status', 'complete').eq('visible_in_catalog', true)
       const [firstProducts, categoriesRes, discountsRes] = await Promise.all([
         readProducts(), supabase.from('categories').select('*').order('order_position'), supabase.from('discounts').select('*').eq('is_active', true)
       ])
       let productsRes = firstProducts
-      for (let attempt = 0; attempt < 4 && (isMissingVariantsColumn(productsRes.error) || isMissingBoxUnitsColumn(productsRes.error) || isMissingHalfBoxColumn(productsRes.error) || isMissingHalfWheelColumn(productsRes.error)); attempt++) {
-        const missing = isMissingVariantsColumn(productsRes.error) ? 'variants' : isMissingHalfWheelColumn(productsRes.error) ? 'allow_half_wheel' : isMissingHalfBoxColumn(productsRes.error) ? 'allow_half_box' : 'units_per_box'
+      for (let attempt = 0; attempt < 5 && (isMissingVariantsColumn(productsRes.error) || isMissingBoxUnitsColumn(productsRes.error) || isMissingBagUnitsColumn(productsRes.error) || isMissingHalfBoxColumn(productsRes.error) || isMissingHalfWheelColumn(productsRes.error)); attempt++) {
+        const missing = isMissingVariantsColumn(productsRes.error) ? 'variants' : isMissingBagUnitsColumn(productsRes.error) ? 'units_per_bag' : isMissingHalfWheelColumn(productsRes.error) ? 'allow_half_wheel' : isMissingHalfBoxColumn(productsRes.error) ? 'allow_half_box' : 'units_per_box'
         fields = fields.split(',').filter(field => field !== missing).join(',')
         productsRes = await readProducts()
       }
@@ -497,7 +497,7 @@ export default function CatalogPage() {
           return
         }
         const lines = cartProducts.map(({ product, quantity, unit, notes, variantId, variantName }) => {
-          const contents = describeBoxContents(product, quantity, unit)
+          const contents = describePackageContents(product, quantity, unit)
           return `• ${quantity} ${saleQuantityLabel(unit, quantity)} de ${product.name}${productVariantName(product, variantId, variantName) ? ` — ${productVariantName(product, variantId, variantName)}` : ''}${contents ? ` (${contents})` : ''}${notes ? `\n  Nota: ${notes}` : ''}`
         })
         const message = access.status === 'approved'
@@ -1111,6 +1111,7 @@ export default function CatalogPage() {
               </div>}
 
               {!customerOrderingEnabled && getUnitsPerBox(selectedProduct) !== null && <p className="mb-4 text-sm font-semibold text-[#575b36]">Caja cerrada: {getUnitsPerBox(selectedProduct)} {getUnitsPerBox(selectedProduct) === 1 ? 'unidad' : 'unidades'}.</p>}
+              {!customerOrderingEnabled && getUnitsPerBag(selectedProduct) !== null && <p className="mb-4 text-sm font-semibold text-[#575b36]">{describePackageContents(selectedProduct, 1, 'funda')}.</p>}
               {customerOrderingEnabled && <div className="mb-4">
                 <p id="catalog-product-unit-label" className="text-sm font-semibold text-[#514738] mb-2">¿Cómo lo querés? <span className="font-normal text-[#817565]">(obligatorio)</span></p>
                 <div ref={productUnitOptionsRef} role="group" aria-labelledby="catalog-product-unit-label" aria-describedby={productUnitError ? 'catalog-product-unit-error' : 'catalog-product-unit-help'} className={`grid grid-cols-2 gap-2 rounded-xl ${productUnitError ? 'ring-2 ring-red-500 ring-offset-2' : ''}`}>
@@ -1121,6 +1122,7 @@ export default function CatalogPage() {
                     setProductUnitError(false)
                   }} className={`py-2.5 px-3 rounded-xl border font-semibold capitalize ${selectedProductPresentation === unit ? 'border-[#73794e] bg-[#eeeedf] text-[#575b36]' : 'border-[#d9cdb8] text-[#514738]'}`}>
                     {unit === 'caja' || unit === 'horma' ? `Por ${unit}` : saleUnitLabel(unit)}
+                    {unit === 'funda' && describePackageContents(selectedProduct, 1, unit) && <span className="mt-1 block text-xs font-normal normal-case">{describePackageContents(selectedProduct, 1, unit)}</span>}
                   </button>)}
                 </div>
                 {selectingPortion && <div id="catalog-product-portion-options" className="mt-3 rounded-xl border border-[#d9cdb8] bg-[#faf7ef] p-3">
@@ -1128,7 +1130,7 @@ export default function CatalogPage() {
                   <div ref={productPortionOptionsRef} role="group" aria-labelledby="catalog-product-portion-label" aria-describedby={productUnitError ? 'catalog-product-unit-error' : undefined} className={`grid grid-cols-2 gap-2 rounded-xl ${productUnitError ? 'ring-2 ring-red-500 ring-offset-2' : ''}`}>
                     {productPortionOptions.map(unit => <button key={unit} type="button" aria-pressed={selectedProductUnit === unit} onClick={() => { setSelectedProductUnit(unit); setProductUnitError(false) }} className={`min-h-14 rounded-xl border px-3 py-3 font-semibold ${selectedProductUnit === unit ? 'border-[#73794e] bg-[#eeeedf] text-[#575b36]' : 'border-[#d9cdb8] bg-white text-[#514738]'}`}>
                       <span className="text-lg">{saleUnitLabel(unit)}</span>
-                      {describeBoxContents(selectedProduct, 1, unit) && <span className="mt-1 block text-xs font-normal">{describeBoxContents(selectedProduct, 1, unit)}</span>}
+                      {describePackageContents(selectedProduct, 1, unit) && <span className="mt-1 block text-xs font-normal">{describePackageContents(selectedProduct, 1, unit)}</span>}
                     </button>)}
                   </div>
                 </div>}
@@ -1169,7 +1171,7 @@ export default function CatalogPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="break-words font-semibold">{product.name}</p><p className="text-xs text-[#817565] capitalize">{saleUnitLabel(unit)}</p>
-                    {describeBoxContents(product, quantity, unit) && <p className="mt-1 text-xs leading-5 text-[#575b36]">{describeBoxContents(product, quantity, unit)}</p>}
+                    {describePackageContents(product, quantity, unit) && <p className="mt-1 text-xs leading-5 text-[#575b36]">{describePackageContents(product, quantity, unit)}</p>}
                     {!customerSaleUnits(product).includes(unit) && <label className="mt-2 block text-xs font-semibold text-red-700">Esta presentación ya no está disponible. Elegí otra o quitá el artículo.
                       <select aria-label={`Cambiar presentación de ${product.name}`} value="" onChange={event => saveCart(cartItems.map(item => item.itemId === itemId ? { ...item, unit: event.target.value } : item))} className="mt-1 w-full rounded-lg border border-[#d9cdb8] bg-white px-2 py-2 text-sm text-[#514738]">
                         <option value="" disabled>Elegí una presentación</option>

@@ -6,6 +6,7 @@ import { Icon } from '@/components/ui/icon'
 import { clearAnalyticsAccess } from '@/lib/analytics-admin'
 import { SITE_ANALYTICS_ENABLED } from '@/lib/analytics-config'
 import { endStaffSession } from '@/lib/staff-auth'
+import { AdminCustomerNotifications } from '@/components/admin-customer-notifications'
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -30,9 +31,12 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <h1 className="text-4xl font-black text-gray-900">Dashboard Admin</h1>
-          <p className="text-gray-600">Bienvenido, {admin?.name}</p>
+        <div className="max-w-7xl mx-auto flex items-start justify-between gap-4 px-6 py-6">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-black text-gray-900 sm:text-4xl">Dashboard Admin</h1>
+            <p className="text-gray-600">Bienvenido, {admin?.name}</p>
+          </div>
+          <AdminCustomerNotifications />
         </div>
       </header>
 
@@ -82,7 +86,7 @@ export default function AdminDashboard() {
           <button onClick={() => router.push('/admin/clientes')} className="p-6 bg-gradient-to-br from-teal-50 to-teal-100 border-2 border-teal-200 rounded-2xl hover:shadow-lg transition-all text-left">
             <div className="w-12 h-12 mb-4 rounded-xl bg-teal-600/10 text-teal-700 flex items-center justify-center"><Icon name="store" className="w-6 h-6" /></div>
             <h3 className="font-bold text-lg text-gray-900">Clientes</h3>
-            <p className="text-sm text-gray-600">Ver clientes y restablecer contraseñas</p>
+            <p className="text-sm text-gray-600">Autorizar registros y gestionar accesos</p>
           </button>
 
           {/* EDICIÓN WEB - PRINCIPAL */}

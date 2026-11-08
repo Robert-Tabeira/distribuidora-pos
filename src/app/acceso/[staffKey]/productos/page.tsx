@@ -5,7 +5,7 @@ import { useStaffRouter as useRouter } from '@/lib/staff-navigation'
 import { supabase } from '@/lib/supabase'
 import type { Employee, Product } from '@/types/database'
 import { uploadImageToSupabase } from '@/lib/image-upload-helper'
-import { MAX_UNITS_PER_BOX, isMissingBoxUnitsColumn, isMissingHalfBoxColumn, isMissingHalfWheelColumn } from '@/lib/product-packaging'
+import { MAX_UNITS_PER_BOX, MAX_UNITS_PER_BAG, isMissingBoxUnitsColumn, isMissingBagUnitsColumn, isMissingHalfBoxColumn, isMissingHalfWheelColumn } from '@/lib/product-packaging'
 import { productVariants, productVariantsError, isMissingVariantsColumn, MAX_PRODUCT_VARIANTS, MAX_VARIANT_NAME, type ProductVariant } from '@/lib/product-variants'
 
 // Normaliza texto para comparar sin importar tildes/diacríticos
@@ -120,12 +120,15 @@ export default function ProductosPage() {
   const [editName, setEditName] = useState('')
   const [editUnits, setEditUnits] = useState<string[]>(['unidad'])
   const [editUnitsPerBox, setEditUnitsPerBox] = useState('')
+  const [editUnitsPerBag, setEditUnitsPerBag] = useState('')
   const [editAllowHalfBox, setEditAllowHalfBox] = useState(false)
   const [editAllowHalfWheel, setEditAllowHalfWheel] = useState(false)
   const [editVariants, setEditVariants] = useState<ProductVariant[]>([])
   const variantsError = productVariantsError(editVariants)
   const invalidBoxUnits = editUnits.includes('caja') && editUnitsPerBox.trim() !== '' && (!/^\d+$/.test(editUnitsPerBox.trim()) || Number(editUnitsPerBox) < 1 || Number(editUnitsPerBox) > MAX_UNITS_PER_BOX)
   const editedUnitsPerBox = editUnits.includes('caja') && editUnitsPerBox.trim() !== '' ? Number(editUnitsPerBox) : null
+  const invalidBagUnits = editUnits.includes('funda') && editUnitsPerBag.trim() !== '' && (!/^\d+$/.test(editUnitsPerBag.trim()) || Number(editUnitsPerBag) < 1 || Number(editUnitsPerBag) > MAX_UNITS_PER_BAG)
+  const editedUnitsPerBag = editUnits.includes('funda') && editUnitsPerBag.trim() !== '' ? Number(editUnitsPerBag) : null
   const [editCategory, setEditCategory] = useState<string | null>(null)
   const [editSubcategory, setEditSubcategory] = useState<string | null>(null)
   const [editLocation, setEditLocation] = useState('')
@@ -294,6 +297,7 @@ export default function ProductosPage() {
     const units = Array.isArray(product.unit) ? product.unit : [product.unit]
     setEditUnits(units.length > 0 ? units : ['unidad'])
     setEditUnitsPerBox(product.units_per_box == null ? '' : String(product.units_per_box))
+    setEditUnitsPerBag(product.units_per_bag == null ? '' : String(product.units_per_bag))
     setEditAllowHalfBox(product.allow_half_box === true)
     setEditAllowHalfWheel(product.allow_half_wheel === true)
     setEditCategory(product.category_id)
@@ -312,6 +316,7 @@ export default function ProductosPage() {
     setEditName('')
     setEditUnits(['unidad'])
     setEditUnitsPerBox('')
+    setEditUnitsPerBag('')
     setEditAllowHalfBox(false)
     setEditAllowHalfWheel(false)
     setEditVariants([])
@@ -516,6 +521,7 @@ export default function ProductosPage() {
   async function saveProduct() {
     if ((!editingProduct && !creatingProduct) || saving || resolvingDuplicate || !editName.trim() || editUnits.length === 0) return
     if (invalidBoxUnits) { alert('Las unidades por caja deben ser un número entero mayor a cero.'); return }
+    if (invalidBagUnits) { alert('Las unidades por funda deben ser un número entero mayor a cero dentro del rango permitido.'); return }
     if (variantsError) { alert(variantsError); return }
 
     const similar = findSimilarProducts(editName.trim(), editingProduct?.id || '')
@@ -533,6 +539,7 @@ export default function ProductosPage() {
   async function performSave() {
     if ((!editingProduct && !creatingProduct) || saving || resolvingDuplicate || !editName.trim() || editUnits.length === 0) return
     if (invalidBoxUnits) { alert('Las unidades por caja deben ser un número entero mayor a cero.'); return }
+    if (invalidBagUnits) { alert('Las unidades por funda deben ser un número entero mayor a cero dentro del rango permitido.'); return }
     if (variantsError) { alert(variantsError); return }
 
     setSaving(true)
@@ -546,6 +553,7 @@ export default function ProductosPage() {
         allow_half_box: editUnits.includes('caja') && editAllowHalfBox,
         allow_half_wheel: editUnits.includes('horma') && editAllowHalfWheel,
         ...(editedUnitsPerBox !== null || editingProduct?.units_per_box !== undefined ? { units_per_box: editedUnitsPerBox } : {}),
+        ...(editedUnitsPerBag !== null || editingProduct?.units_per_bag !== undefined ? { units_per_bag: editedUnitsPerBag } : {}),
         category_id: editCategory,
         subcategory_id: editSubcategory,
         location: newLocation,
@@ -583,6 +591,10 @@ export default function ProductosPage() {
 
     } catch (error) {
       console.error('Error al guardar:', error)
+      if (isMissingBagUnitsColumn(error as { code?: string; message?: string })) {
+        alert('Primero ejecutá la migración 202611070001_product_units_per_bag.sql en Supabase para guardar las unidades por funda.')
+        return
+      }
       if (isMissingHalfWheelColumn(error as { code?: string; message?: string })) {
         alert('Primero ejecutá la migración 202611060002_product_half_wheel.sql en Supabase para guardar la opción de media horma.')
         return
@@ -603,6 +615,7 @@ export default function ProductosPage() {
   async function replaceOldWithNew(oldProduct: Product) {
     if (!editingProduct || saving || resolvingDuplicate || !editName.trim() || editUnits.length === 0) return
     if (invalidBoxUnits) { alert('Las unidades por caja deben ser un número entero mayor a cero.'); return }
+    if (invalidBagUnits) { alert('Las unidades por funda deben ser un número entero mayor a cero dentro del rango permitido.'); return }
     if (variantsError) { alert(variantsError); return }
 
     setResolvingDuplicate(true)
@@ -617,6 +630,7 @@ export default function ProductosPage() {
           allow_half_box: editUnits.includes('caja') && editAllowHalfBox,
           allow_half_wheel: editUnits.includes('horma') && editAllowHalfWheel,
           ...(editedUnitsPerBox !== null || oldProduct.units_per_box !== undefined ? { units_per_box: editedUnitsPerBox } : {}),
+          ...(editedUnitsPerBag !== null || oldProduct.units_per_bag !== undefined ? { units_per_bag: editedUnitsPerBag } : {}),
           category_id: editCategory,
           subcategory_id: editSubcategory,
           location: newLocation,
@@ -643,6 +657,7 @@ export default function ProductosPage() {
                 allow_half_box: editUnits.includes('caja') && editAllowHalfBox,
                 allow_half_wheel: editUnits.includes('horma') && editAllowHalfWheel,
                 ...(editedUnitsPerBox !== null || oldProduct.units_per_box !== undefined ? { units_per_box: editedUnitsPerBox } : {}),
+                ...(editedUnitsPerBag !== null || oldProduct.units_per_bag !== undefined ? { units_per_bag: editedUnitsPerBag } : {}),
                 category_id: editCategory,
                 subcategory_id: editSubcategory,
                 location: newLocation,
@@ -666,6 +681,10 @@ export default function ProductosPage() {
       if (navigator.vibrate) navigator.vibrate(50)
     } catch (error) {
       console.error('Error al reemplazar:', error)
+      if (isMissingBagUnitsColumn(error as { code?: string; message?: string })) {
+        alert('Primero ejecutá la migración 202611070001_product_units_per_bag.sql en Supabase para guardar las unidades por funda.')
+        return
+      }
       if (isMissingHalfWheelColumn(error as { code?: string; message?: string })) {
         alert('Primero ejecutá la migración 202611060002_product_half_wheel.sql en Supabase para guardar la opción de media horma.')
         return
@@ -1163,6 +1182,12 @@ export default function ProductosPage() {
               <p id="product-units-per-box-help" className={`mt-2 text-xs leading-relaxed ${invalidBoxUnits ? 'text-red-600' : 'text-text-muted'}`}>{invalidBoxUnits ? 'Ingresá un número entero mayor a cero.' : 'Cantidad de unidades que contiene una caja completa. Se mostrará en el catálogo y en los pedidos por caja. Dejalo vacío si todavía no tenés el dato.'}</p>
             </div>}
 
+            {editUnits.includes('funda') && <div className="mb-4 rounded-xl border border-border bg-gray-50 p-4">
+              <label htmlFor="product-units-per-bag" className="mb-2 block text-sm font-semibold text-text-muted">Unidades por funda <span className="font-normal">(opcional)</span></label>
+              <input id="product-units-per-bag" type="number" min={1} max={MAX_UNITS_PER_BAG} step={1} inputMode="numeric" value={editUnitsPerBag} onChange={event => setEditUnitsPerBag(event.target.value)} aria-invalid={invalidBagUnits} aria-describedby="product-units-per-bag-help" placeholder="Ej.: 6" className="input" />
+              <p id="product-units-per-bag-help" className={`mt-2 text-xs leading-relaxed ${invalidBagUnits ? 'text-red-600' : 'text-text-muted'}`}>{invalidBagUnits ? `Ingresá un número entero entre 1 y ${MAX_UNITS_PER_BAG}.` : 'Cantidad de unidades que contiene una funda. Se mostrará en el catálogo y en los pedidos por funda. Dejalo vacío si todavía no tenés el dato.'}</p>
+            </div>}
+
             {editUnits.includes('horma') && <div className="mb-4 rounded-xl border border-border bg-gray-50 p-4">
               <label className="flex items-start gap-3 text-sm font-semibold">
                 <input type="checkbox" checked={editAllowHalfWheel} onChange={event => setEditAllowHalfWheel(event.target.checked)} className="mt-1" aria-describedby="product-half-wheel-help" />
@@ -1265,7 +1290,7 @@ export default function ProductosPage() {
               </button>
               <button 
                 onClick={saveProduct} 
-                disabled={saving || uploadingImage || !editName.trim() || editUnits.length === 0 || invalidBoxUnits || Boolean(variantsError)}
+                disabled={saving || uploadingImage || !editName.trim() || editUnits.length === 0 || invalidBoxUnits || invalidBagUnits || Boolean(variantsError)}
                 className="btn btn-primary flex-1"
               >
                 {saving ? 'Guardando...' : creatingProduct ? 'Crear producto' : 'Guardar'}
